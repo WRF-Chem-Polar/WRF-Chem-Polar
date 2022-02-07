@@ -136,7 +136,9 @@
        lnox_total_tend(i,k,j) = NOperkm(v)/mass_of_air * 1E6  ! ppmv (/s)
 
        k = k + 1
-       IF ( int(zkm(k)) .gt. v ) v = int( zkm(k) )
+       IF ( k .le. kte) THEN
+         IF ( int(zkm(k)) .gt. v ) v = int( zkm(k) )
+       ENDIF
      ENDDO
    ENDDO
  ENDDO

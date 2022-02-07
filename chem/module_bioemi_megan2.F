@@ -1896,6 +1896,8 @@ is_mozm_species : &
 
       ! Eqn (5) of Guenther et al. [2006]
       X = ( (1.0/Topt)-(1.0/TEMP) ) / 0.00831
+      !LMarelle - prevent overflow - CT2*X should be < 80.
+      X = MIN(X, 0.4)
       AAA = Eopt*CT2*EXP(CT1*X)
       BBB = (  CT2-CT1*( 1.0-EXP(CT2*X) )  )
       gam_T = AAA/BBB

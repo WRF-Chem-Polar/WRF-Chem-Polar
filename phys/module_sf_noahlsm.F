@@ -4504,6 +4504,12 @@ IF ( OPT_THCND == 1 .OR. ( OPT_THCND == 2 .AND. (SOILTYP /= 4 .AND. SOILTYP /= 3
 ! VERSION D_10CM: ........  FACTR1 = 0.2/SMCMAX
 ! WEIGHTED APPROACH...................... PABLO GRUNMANN, 28_SEP_1999.
 ! ----------------------------------------------------------------------
+      !LMarelle - prevent FACTR2 to be below 0 - TODO understand why this
+      !sometimes happen
+      IF(FACTR2 .LT. 0.0) THEN
+        write(*,*) 'WDFCND Error: FACTR2<0.0 - DWSAT,FACTR2,EXPON',DWSAT,FACTR2,EXPON
+        FACTR2 = MAX(FACTR2, 0.0)
+      ENDIF
       WDF = DWSAT * FACTR2 ** EXPON
       IF (SICEMAX .gt. 0.0) THEN
          VKWGT = 1./ (1. + (500.* SICEMAX)**3.)
