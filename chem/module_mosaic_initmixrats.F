@@ -26,8 +26,11 @@
 
 	USE module_state_description
 
-	integer, parameter :: mosaic_init_wrf_mixrats_flagaa = 1
+	integer, parameter :: mosaic_init_wrf_mixrats_flagaa = 0
                             ! turns subr mosaic_init_wrf_mixrats on/off
+                            !LMarelle disable to allow using wrfinput and wrfbdy
+                            !values. This should be controlled by a namelist
+                            !option.
 
 	contains
 
