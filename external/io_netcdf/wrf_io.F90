@@ -43,7 +43,7 @@ module wrf_data
 #if(WRF_CHEM == 1)
   integer                , parameter      :: MaxVars          = 10000
 #else
-  integer                , parameter      :: MaxVars          = 3000
+  integer                , parameter      :: MaxVars          = 10000
 #endif
   integer                , parameter      :: MaxTimes         = 60000
   integer                , parameter      :: DateStrLen       = 19
