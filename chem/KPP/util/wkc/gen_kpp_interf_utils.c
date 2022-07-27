@@ -328,7 +328,7 @@ wki_one_d_vars( FILE * ofile,   knode_t * pp )
   }
 
    fprintf(ofile,"      ! water concentration (molec/cm^3)\n");
-   fprintf(ofile,"    FIX(indf_H2O) = REAL(dens2con_w * moist(i,k,j,P_QV) * rho_phy(i,k,j), KIND=dp)\n\n\n");
+   fprintf(ofile,"    FIX(indf_H2O) = REAL(MAX(dens2con_w * moist(i,k,j,P_QV) * rho_phy(i,k,j), 0.), KIND=dp)\n\n\n");
 
 
 
