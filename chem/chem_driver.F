@@ -531,6 +531,11 @@
            CALL wrf_error_fatal( trim(msg) )
          ENDIF
          num_irr_diag = num_irr_diag_mozart_mosaic_4bin
+       ELSE
+         ! Placeholders to avoid calling kpp_mechanism_driver with unallocated
+         ! arrays as arguments
+         ALLOCATE( irr_rates(1, 1, 1, 1), stat=astat )
+         num_irr_diag = 0
        ENDIF
 #endif
        haveaer = .true.
@@ -544,6 +549,11 @@
            CALL wrf_error_fatal( trim(msg) )
          ENDIF
          num_irr_diag = num_irr_diag_mozart_mosaic_4bin_aq
+       ELSE
+         ! Placeholders to avoid calling kpp_mechanism_driver with unallocated
+         ! arrays as arguments
+         ALLOCATE( irr_rates(1, 1, 1, 1), stat=astat )
+         num_irr_diag = 0
        ENDIF
 #endif
        haveaer = .true.
@@ -615,6 +625,11 @@
            CALL wrf_error_fatal( trim(msg) )
          ENDIF
          num_irr_diag = num_irr_diag_mozcart
+       ELSE
+         ! Placeholders to avoid calling kpp_mechanism_driver with unallocated
+         ! arrays as arguments
+         ALLOCATE( irr_rates(1, 1, 1, 1), stat=astat )
+         num_irr_diag = 0
        ENDIF
 #endif
      CASE (T1_MOZCART_KPP)
@@ -627,6 +642,11 @@
            CALL wrf_error_fatal( trim(msg) )
          ENDIF
          num_irr_diag = num_irr_diag_t1_mozcart
+       ELSE
+         ! Placeholders to avoid calling kpp_mechanism_driver with unallocated
+         ! arrays as arguments
+         ALLOCATE( irr_rates(1, 1, 1, 1), stat=astat )
+         num_irr_diag = 0
        ENDIF
 #endif
      CASE (CB05_SORG_AQ_KPP)

@@ -8537,6 +8537,9 @@
 
 ! calculate gas diffusivity and mean free path for condensing gases
 ! ioa
+      ! freepath has to be initialized as 0.0 or it can take arbitrary values
+      ! causing floating point errors in fuchs_sutugin
+      freepath(:) = 0.0
       do iv = 1, ngas_ioa
         speed  = mean_molecular_speed(t_k,mw_vol(iv))	! cm/s
         dg(iv) = gas_diffusivity(t_k,p_atm,mw_vol(iv),v_molar(iv)) ! cm^2/s

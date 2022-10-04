@@ -342,7 +342,11 @@ SUBROUTINE setup_gasprofile_maps(chem_opt, numgas)
      SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP, SAPRC99_MOSAIC_8BIN_VBS2_KPP)!BSINGH(12/04/2013): Added SAPRC 8 bin and non-aq on 04/03/2014)
      call setup_gasprofile_map_saprcnov
 
-
+  case (MOZCART_KPP, T1_MOZCART_KPP, MOZART_KPP, &
+        MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP)
+     !LMarelle Need to define a MOZART case here or else iref can take
+     ! out-of-bounds values in make_chem_profile
+     call setup_gasprofile_map_mozart(numgas)
 
   case (CBMZ, CBMZ_BB, CBMZ_BB_KPP, &
         CBMZ_MOSAIC_KPP, CBMZ_MOSAIC_4BIN,  &
@@ -373,23 +377,8 @@ SUBROUTINE setup_gasprofile_maps(chem_opt, numgas)
      call wrf_debug("setup_profile_maps: nothing done for volcanic ash")
   case (DUST)
      call wrf_debug("setup_profile_maps: nothing done for volcanic ash")
-  case (MOZART_KPP)
-     call wrf_debug("setup_profile_maps: nothing done for mozart_kpp")
-
   case (CRIMECH_KPP, CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP)
       call wrf_debug("setup_profile_maps: nothing done for crimech")
-
-  case (MOZCART_KPP)
-     call wrf_debug("setup_profile_maps: nothing done for mozcart_kpp")
-
-  case (T1_MOZCART_KPP)
-     call wrf_debug("setup_profile_maps: nothing done for t1_mozcart_kpp")
-
-  case (MOZART_MOSAIC_4BIN_KPP)
-     call wrf_debug("setup_profile_maps: nothing done for mozart_mosaic_4bin_kpp")
-
-  case (MOZART_MOSAIC_4BIN_AQ_KPP)
-     call wrf_debug("setup_profile_maps: nothing done for mozart_mosaic_4bin_aq_kpp")
 
  case (CO2_TRACER,GHG_TRACER)
      call wrf_debug("setup_profile_maps: nothing done for the GHG options")
@@ -469,6 +458,23 @@ SUBROUTINE setup_gasprofile_map_saprcnov
 
 END SUBROUTINE setup_gasprofile_map_saprcnov
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! Maps for indices and fractional apportionment of the default
+! species profiles to the MOZART species for ICs and BCs.
+! Louis Marelle, 2022/09/27
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE setup_gasprofile_map_mozart(numgas)
+  integer, intent(in) :: numgas
+  iref(:)    = 7 !default value
+  fracref(:)    = 1. !default value
+  ggnam(:) = 'JUNK' !default value
+  !TODO fill using this, need to make sure the order of species stay the same in all submechanisms or find a workaround
+! package   mozart_kpp        chem_opt==111                  -          chem:o3,o1d_cb4,o,no,no2,no3,n2o5,hno3,hno4,so2,ho,ho2,h2o2,sulf,co,hcho,ch3ooh,ch3o2,ch4,h2,eo2,ch3cooh,c2h4,n2o,ch3oh,aco3,acet,mgly,paa,gly,c3h6ooh,pan,mpan,macr,mvk,c3h6,etooh,prooh,acetp,xooh,onitr,isooh,acetol,glyald,mek,eto2,open,alkooh,mekooh,tolooh,terpooh,ald,mco3,c2h5oh,eo,c2h6,c3h8,pro2,po2,aceto2,bigene,bigalk,eneo2,alko2,isopr,iso2,mvko2,mvkooh,hydrald,xo2,c10h16,terpo2,tol,cres,to2,xoh,onit,isopn,dms,nh3,meko2
+! package   mozcart_kpp       chem_opt==112                  -          chem:o3,o1d_cb4,o,no,no2,no3,n2o5,hno3,hno4,so2,ho,ho2,h2o2,sulf,co,hcho,ch3ooh,ch3o2,ch4,h2,eo2,ch3cooh,c2h4,n2o,ch3oh,aco3,acet,mgly,paa,gly,c3h6ooh,pan,mpan,macr,mvk,c3h6,etooh,prooh,acetp,xooh,onitr,isooh,acetol,glyald,mek,eto2,open,alkooh,mekooh,tolooh,terpooh,ald,mco3,c2h5oh,eo,c2h6,c3h8,pro2,po2,aceto2,bigene,bigalk,eneo2,alko2,isopr,iso2,mvko2,mvkooh,hydrald,xo2,c10h16,terpo2,tol,cres,to2,xoh,onit,isopn,dms,nh3,meko2
+! package  t1_mozcart_kpp     chem_opt==114                  -          chem:alknit,alkooh,apin,bcary,benzene,benzooh,bepomuc,open,bigald1,bigald2,bigald3,bigald4,bigalk,bigene,bpin,bzald,bzooh,c2h2,c2h4,c2h5oh,etooh,c2h6,c3h6,prooh,c3h8,c6h5ooh,hcho,ald,ch3cn,acet,mgly,ch3cooh,paa,ch3oh,ch3ooh,ch4,co,cres,dms,eooh,glyald,gly,h2,h2o2,hcn,hcooh,hmprop,hmpropo2,hno3,hno4,honitr,hpald,acetol,hydrald,iepox,isopr,isopnita,isopnitb,isopn,isopnooh,isooh,limon,macr,mvkooh,malo2,mbo,mbono3o2,mboo2,mboooh,mek,mekooh,mpan,mvk,myrc,n2o,n2o5,nc4ch2oh,nc4cho,nh3,no,no2,no3,noa,nterpooh,o,o3,onitr,pan,pbznit,pheno,phenol,phenooh,c3h6ooh,acetp,so2,sulf,tepomuc,terp2ooh,terpnit,terpooh,terprod1,terprod2,tolooh,tol,xooh,xylenes,xylenooh,xylol,xylolooh,acbzo2,alko2,benzo2,bzoo,eto2,pro2,c6h5o2,aco3,ch3o2,dicarbo2,eneo2,eo,eo2,ho2,hoch2oo,isopao2,isopbo2,mvko2,mco3,mdialo2,meko2,nterpo2,o1d,ho,pheno2,po2,aceto2,terp2o2,terpo2,to2,xo2,xyleno2,xylolo2
+! package mozart_mosaic_4bin_kpp    chem_opt==201   -                        chem:o3,o1d_cb4,o,no,no2,no3,n2o5,hno3,hno4,so2,ho,ho2,h2o2,sulf,co,hcho,hcooh,c2h2,hoch2oo,ch3ooh,ch3o2,ch4,h2,eo2,ch3cooh,c2h4,n2o,ch3oh,aco3,acet,mgly,paa,gly,c3h6ooh,pan,mpan,macr,mvk,c3h6,etooh,prooh,acetp,xooh,onitr,isooh,acetol,glyald,mek,eto2,open,alkooh,mekooh,tolooh,terpooh,ald,mco3,c2h5oh,eo,c2h6,c3h8,pro2,po2,aceto2,bigene,bigalk,eneo2,alko2,isopr,iso2,mvko2,mvkooh,hydrald,xo2,apin,bpin,limon,myrc,bcary,terprod1,terprod2,terp2o2,terp2ooh,nterpo2,terpo2,tol,cres,to2,onit,isopn,dms,mbo,mboo2,hmprop,hmpropo2,mboooh,mbono3o2,nh3,nume,den,voca,vocbb,smpa,smpbb,biog1_c,biog1_o,benzene,phen,bepomuc,benzo2,pheno2,pheno,phenooh,c6h5o2,c6h5ooh,benzooh,bigald1,bigald2,bigald3,bigald4,malo2,tepomuc,bzoo,bzooh,bald,acbzo2,dicarbo2,mdialo2,xyl,xylol,xylolo2,xylolooh,xyleno2,xylenooh,pbznit,hono,meko2
+! package   mozart_mosaic_4bin_aq_kpp  chem_opt==202           -             chem:o3,o1d_cb4,o,no,no2,no3,n2o5,hno3,hno4,so2,ho,ho2,h2o2,sulf,co,hcho,hcooh,c2h2,hoch2oo,ch3ooh,ch3o2,ch4,h2,eo2,ch3cooh,c2h4,n2o,ch3oh,aco3,acet,mgly,paa,gly,c3h6ooh,pan,mpan,macr,mvk,c3h6,etooh,prooh,acetp,xooh,onitr,isooh,acetol,glyald,mek,eto2,open,alkooh,mekooh,tolooh,terpooh,ald,mco3,c2h5oh,eo,c2h6,c3h8,pro2,po2,aceto2,bigene,bigalk,eneo2,alko2,isopr,iso2,mvko2,mvkooh,hydrald,xo2,apin,bpin,limon,myrc,bcary,terprod1,terprod2,terp2o2,terp2ooh,nterpo2,terpo2,tol,cres,to2,onit,isopn,dms,mbo,mboo2,hmprop,hmpropo2,mboooh,mbono3o2,nh3,nume,den,cvasoaX,cvasoa1,cvasoa2,cvasoa3,cvasoa4,cvbsoaX,cvbsoa1,cvbsoa2,cvbsoa3,cvbsoa4,benzene,phen,bepomuc,benzo2,pheno2,pheno,phenooh,c6h5o2,c6h5ooh,benzooh,bigald1,bigald2,bigald3,bigald4,malo2,tepomuc,bzoo,bzooh,bald,acbzo2,dicarbo2,mdialo2,xyl,xylol,xylolo2,xylolooh,xyleno2,xylenooh,pbznit,hono,meko2
+END SUBROUTINE setup_gasprofile_map_mozart
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Maps for indices and fractional apportionment of the default

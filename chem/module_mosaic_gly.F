@@ -171,6 +171,13 @@
       dr1_nh4 = 0.0
       dr1_oh  = 0.0
       dg_sfc  = 0.0
+      ! LMarelle: this subroutine is also called from rk4 (renamed "derivs" in
+      ! there as an external), with y=yt, that is y extrapolated at a half
+      ! time step from dydx.  However since dydx is not calculated for all
+      ! species, the extrapolation can give arbitrary large or negative dydx
+      ! values, and the routine can fail for the corresponding yt. Initialize
+      ! dydx = 0 to avoid this
+      dydx(:) = 0.0
 
       ! convert gas-phase glyoxal concentration
       ! -------------------------------------------------------------
