@@ -775,6 +775,11 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
           QV_TEND1D(k)  = 0.
           nc_tend1d(k) = 0. ! wrf-chem
 
+#if (WRF_CHEM == 1)
+          IF ( PRESENT( rainprod ) ) rainprod(i,k,j) = 0.0
+          IF ( PRESENT( evapprod ) ) evapprod(i,k,j) = 0.0
+#endif
+
           QC1D(k)       = QC(i,k,j)
           QI1D(k)       = QI(i,k,j)
           QS1D(k)       = QS(i,k,j)
@@ -816,7 +821,6 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
    ENDIF
 
 !jdf  end do
-
       call MORR_TWO_MOMENT_MICRO(QC_TEND1D, QI_TEND1D, QNI_TEND1D, QR_TEND1D,            &
        NI_TEND1D, NS_TEND1D, NR_TEND1D,                                                  &
        QC1D, QI1D, QS1D, QR1D,NI1D, NS1D, NR1D,                                          &
@@ -1288,7 +1292,12 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 #if (WRF_CHEM == 1)
          rainprod(K) = 0.
          evapprod(K) = 0.
+         EPRDS(K)    = 0.
+         EPRDG(K)    = 0.
+         EVPMS(K)    = 0.
+         EVPMG(K)    = 0.
          tqimelt(K)  = 0.
+         PRE(K)      = 0.
          PRC(K)      = 0.
          PRA(K)      = 0.
 #endif
