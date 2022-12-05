@@ -637,7 +637,7 @@
          col_press_mb,col_temp_K,col_ozone,col_optical_depth
 	dimension col_press_mb(lpar+2),col_temp_K(lpar+1),   &
         	col_ozone(lpar+1),col_optical_depth(lpar+1)
-    character*80 msg	
+    character*160 msg
 
 ! define logical processingAerosols
 ! if processingAerosols = true, uses values calculated in subroutine

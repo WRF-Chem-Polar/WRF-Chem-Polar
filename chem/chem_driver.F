@@ -228,7 +228,6 @@
 
       real, dimension(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,ldrog_vbs) ::vdrog3_vbs
 
-      real, dimension(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33) ::n2o5_het 
       REAL,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33) ::              &
                                                               p_phy,u_phy,v_phy                   &
                                                              ,t_phy,dz8w,t8w,p8w                  &
@@ -1219,13 +1218,6 @@
 
           end if
      end if
-!
-!
-!
-!
-     n2o5_het(its:ite,kts:kte,jts:jte)=0.
-! Calculate rate of n2o5 hydrolysis 
-     call wrf_debug(15,'calling calc_het_n2o5')
 
      write(msg,'(''chem_driver('',i2.2,''): Calling dchm_tstep_init'')') grid%id
      call wrf_debug( 200,trim(msg) )
