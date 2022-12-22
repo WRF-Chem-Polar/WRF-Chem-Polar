@@ -1377,14 +1377,18 @@ CONTAINS
 !     1      entup,entupk,detupk
 !         if(j.eq.jpr.and.i.eq.ipr)print *,'dddr stuff = ',entdo,
 !     1      detdo,entdoj
+         ! LMarelle - increase this max value to 2.0E-6 - this can be exceeded
+         ! in large domains near the boundary, where in my experience
+         ! grid-scale clouds and cumulus are always very unrealistic anyway.
          if(abs(totmas).gt.1.e-6)then
-           print *,'*********************',i,j,k,totmas,name
-           print *,kpbl(i),k22(i),kbcon(i),ktop(i)
-!c          print *,'updr stuff = ',subin,
-!c    1      subdown,detup,entup,entupk,detupk
-!c          print *,'dddr stuff = ',entdo,
-!c    1      detdo,entdoj
-        CALL wrf_error_fatal ( 'cup_dellas_tr: TOTMAS > CRITICAL VALUE')
+           CALL wrf_message ( 'cup_dellas_tr: TOTMAS > 1.e-6')
+           if(abs(totmas).gt.2.e-6)then
+             print *,'*********************',i,j,k,totmas,name
+             print *,kpbl(i),k22(i),kbcon(i),ktop(i)
+             print *,'updr stuff = ',subin,subdown,detup,entup,entupk,detupk
+             print *,'dddr stuff = ',entdo,detdo,entdoj
+             CALL wrf_error_fatal ( 'cup_dellas_tr: TOTMAS > 2.e-6')
+           endif
          endif
          dp=100.*(p_cup(i,k-1)-p_cup(i,k))
          do nv=2,num_chem
