@@ -348,10 +348,11 @@
   IF ( ktau==1 ) then
      do_photstep = .true.
   ELSE IF ( adapt_step_flag ) THEN
-     IF ( (grid%photdt<=0) .or. &
-          ( curr_secs+real(grid%dt,8)+0.01 >= &
+     IF ( (grid%photdt<=0)) THEN
+       do_photstep = .true.
+     ELSE IF (( curr_secs+real(grid%dt,8)+0.01 >= &
           ( INT( curr_secs/real(grid%photdt*60.,8)+1,8 )*real(grid%photdt*60.,8) ) ) &
-          ) then
+          ) THEN
           !NOTE: The 0.01 added to the LHS of the conditional is to compensate
           !      for occasional round off errors that prevented the >= from
           !      ever testing as true. This adjustment has been added to the
@@ -393,8 +394,18 @@
      do_chemstep = .true.
      grid%ktauc = 1
   ELSE IF ( adapt_step_flag ) THEN
-     IF ( (grid%chemdt<=0) .or. &
-          ( curr_secs+real(grid%dt,8)+0.01 >= &
+     IF ( (grid%chemdt<=0)) THEN
+        do_chemstep = .true.
+        grid%ktauc = grid%ktauc+1
+        last_chem_time(grid%id) = domain_get_current_time( grid )
+        call WRFU_TimeGet( last_chem_time(grid%id),         &
+                           YY = grid%last_chem_time_year,   &
+                           MM = grid%last_chem_time_month,  &
+                           DD = grid%last_chem_time_day,    &
+                           H  = grid%last_chem_time_hour,   &
+                           M  = grid%last_chem_time_minute, &
+                           S  = grid%last_chem_time_second  )
+     ELSE IF ( ( curr_secs+real(grid%dt,8)+0.01 >= &
           ( INT( curr_secs/real(grid%chemdt*60.,8)+1,8 )*real(grid%chemdt*60.,8) ) ) &
           ) then
         do_chemstep = .true.
@@ -1803,12 +1814,14 @@ end if !Chemistry time step check
 !-- set upper boundary condition
     if( config_flags%have_bcs_upper )then
        call wrf_debug(15,'set upper boundary condition')
+       call wrf_debug(100, 'Upper boundary condition - call tropopause_driver')
        call tropopause_driver( grid%id, grid%dt, current_date_char,         &
                                t_phy, p_phy, p8w, zmid, z_at_w,             &
                                grid%tropo_lev, grid%tropo_p,  grid%tropo_z, &
                                ids, ide, jds, jde, kds, kde,                &
                                ims, ime, jms, jme, kms, kme,                &
                                its, ite, jts, jte, kts, kte                 )
+       call wrf_debug(100, 'Upper boundary condition - call upper_bc_driver')
        call upper_bc_driver  ( grid%id, grid%dt, current_date_char, &
                                chem, p_phy, p8w, grid%tropo_lev,    &
                                ids,ide, jds,jde, kds,kde,           &
@@ -1832,6 +1845,7 @@ end if !Chemistry time step check
      deallocate( irr_rates )
    ENDIF
 
+   call wrf_debug(100, 'chem_driver - exiting chem_driver')
 
     END subroutine chem_driver
 

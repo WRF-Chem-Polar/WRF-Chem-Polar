@@ -1687,7 +1687,9 @@ real, PARAMETER :: G = 9.81, CP = 1004.
 !
 do k=2,m1-1
 
-   VTC = VCONST * RHO (k) **.125   ! median volume fallspeed (KTable4)
+   IF(RHO (k) .GT. 0.0) THEN
+     VTC = VCONST * RHO (k) **.125   ! median volume fallspeed (KTable4)
+   ENDIF
                                 
 !  hydrometeor assembly velocity calculations (K Table4)
 !  VTH(k)=-VTC*QH(k)**.125  !median volume fallspeed, water            
