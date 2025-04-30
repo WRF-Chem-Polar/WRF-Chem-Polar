@@ -58,6 +58,7 @@ CONTAINS
    INTEGER :: i_start, i_end, j_start, j_end, k_start, k_end
    INTEGER :: i, j, k
    REAL    :: w1, w2, z0, z1, z2
+   REAL , DIMENSION( ims:ime , kms:kme , jms:jme ) :: th_phy,pi_phy
 
 !-----------------------------------------------------------------------
 
@@ -71,13 +72,32 @@ CONTAINS
     k_start = kts
     k_end = min( kte, kde-1 )
 
+    IF ( ( config_flags%use_theta_m .EQ. 1 ) .AND. (P_QV .GE. PARAM_FIRST_SCALAR) ) THEN
+       do j = j_start,j_end
+       do k = k_start, k_end
+       do i = i_start, i_end
+         th_phy(i,k,j) = (t(i,k,j)+t0)/(1.+R_v/R_d*moist(i,k,j,P_QV))
+       enddo
+       enddo
+       enddo
+    ELSE
+       do j = j_start,j_end
+       do k = k_start, k_end
+       do i = i_start, i_end
+         th_phy(i,k,j) =  t(i,k,j)+t0
+       enddo
+       enddo
+       enddo
+    END IF
+
 !  compute thermodynamics and velocities at pressure points
     do j = j_start,j_end
     do k = k_start, k_end
     do i = i_start, i_end
 
       p_phy(i,k,j) = p(i,k,j) + pb(i,k,j)
-      t_phy(i,k,j) = (t(i,k,j)+t0)*(p_phy(i,k,j)/p1000mb)**rcp
+      pi_phy(i,k,j) = (p_phy(i,k,j)/p1000mb)**rcp
+      t_phy(i,k,j) = th_phy(i,k,j)*pi_phy(i,k,j)
       rho(i,k,j) = 1./alt(i,k,j)*(1.+moist(i,k,j,P_QV))
       u_phy(i,k,j) = 0.5*(u(i,k,j)+u(i+1,k,j))
       v_phy(i,k,j) = 0.5*(v(i,k,j)+v(i,k,j+1))
