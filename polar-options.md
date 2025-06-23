@@ -23,8 +23,6 @@ Emission options:
 - blowing_snow_opt (0, 1): This option controls the emissions from blowing snow.
   - 0 (default): Disables emissions associated with blowing snow
   - 1: Includes sea salt aerosol emissions from blowing snow (on the main branch) and bromine emissions from blowing snow (halogens and mercury branches)
-In the main WRF-Chem branch, this enables the emission of sea salt aerosols from blowing snow.
-In the halogen/mercury development branch, this also turns on blowign snow sea salt aerosol emission and activates associated heterogeneous halogen and mercury chemistry on the blowing snow-derived aerosols.
 - biomass_burn_opt (6, 7)
 
 Aerosol-cloud interaction options:
