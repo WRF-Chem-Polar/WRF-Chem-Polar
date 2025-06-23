@@ -47,6 +47,7 @@ This option controls the treatment of dimethyl sulfide (DMS) emissions from the 
   - 2:
 ### aci_wrf_opt (0, 1, 2, 3), &phys namelist option: This option controls the aerosol-cloud interactions for liquid droplets in WRF (without chemistry) in Thompson aerosol-aware microphysics. The option does not work with other microphysics scheme.
   - 0 (default): Uses the default aerosol-cloud interaction in Thompson aerosol-aware microphysics. With Thompson aerosol-aware microphysics, uses the default water-friendly and ice-friendly aerosol number concentrations supplied by the scheme.
+
 For option 1,2,3, an external NWFA and NIFA aerosol climatology is read in Thompson aerosol-aware microphysics in the auxiliary input file auxinput18. The auxinput file needs to contain QNWFA_EXT and QNIFA_EXT fields in #/kg (option 1,2,3), WRF_AER_SO4_EXT in µg/kg (option 2) and WRF_AER_SOLUBLE_EXT in µg/kg (option 3). These namelist options also need to be included in namelist &time_control:
 
 auxinput18_inname                    = 'wrf_wfa_ifa_d<domain>_<date>'
