@@ -48,10 +48,15 @@ This option controls the treatment of dimethyl sulfide (DMS) emissions from the 
 ### aci_wrf_opt (0, 1, 2, 3), &phys namelist option: This option controls the aerosol-cloud interactions for liquid droplets in WRF (without chemistry) in Thompson aerosol-aware microphysics. The option does not work with other microphysics scheme.
   - 0 (default): Uses the default aerosol-cloud interaction in Thompson aerosol-aware microphysics. With Thompson aerosol-aware microphysics, uses the default water-friendly and ice-friendly aerosol number concentrations supplied by the scheme.
 For option 1,2,3, an external NWFA and NIFA aerosol climatology is read in Thompson aerosol-aware microphysics in the auxiliary input file auxinput18. The auxinput file needs to contain QNWFA_EXT and QNIFA_EXT fields in #/kg (option 1,2,3), WRF_AER_SO4_EXT in µg/kg (option 2) and WRF_AER_SOLUBLE_EXT in µg/kg (option 3). These namelist options also need to be included in namelist &time_control:
+
 auxinput18_inname                    = 'wrf_wfa_ifa_d<domain>_<date>'
+
 auxinput18_interval_h                = 3,
+
 frames_per_auxinput18                = 1,
+
 io_form_auxinput18                   = 2
+
   - 1: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the Thompson and Eidhammer (2014) activation scheme, using aerosols from an external NWFA and NIFA aerosol climatology. The climatology is read from auxiliary input file auxinput18. The aux file needs to contain QNWFA_EXT and QNIFA_EXT fields, the water friendly and ice friendly aerosol numbers in #/kg.
   - 2: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the Boucher and Lohmann (1995) scheme, using a sulfate aerosol concentration climatology. The option requires additional 3D input fields QNWFA_EXT, QNIFA_EXT and WRF_AER_SO4_EXT (accumulation-mode sulfate mixing ratio in ug/kg). In the radiation driver, cloud droplet number concentrations predicted by the microphysics are overwritten by values calculated from Boucher and Lohmann (1995).
   - 3: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the LMDZ6 (Madeleine et al., 2020) scheme, using a soluble aerosol concentration climatology. The option requires additional 3D input fields QNWFA_EXT, QNIFA_EXT and WRF_AER_SOLUBLE_EXT (accumulation-mode sulfate+seasalt+ammonium aerosol mixing ratio in ug/kg). In the radiation driver, cloud droplet number concentrations predicted by the microphysics are overwritten by values calculated from Madeleine et al. (2020).
