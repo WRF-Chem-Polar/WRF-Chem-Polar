@@ -6,7 +6,7 @@ This file describes the new options or new option values in the WRF-Chem-Polar v
 
 Emission options (&chem namelist):
 - seas_opt (5, 6, 7, 8): This option controls the sea spray emissions source function.
-  - 0: Dsiables aerosol emissions from sea-spray.
+  - 0: Disables aerosol emissions from sea-spray.
   - 5: Sea-spray emissions from Monahan et al. (1986). No emissions below 100 nm diameters
   - 6 (recommended): Sea-spray emissions from Ioannidis et al. (2023). Uses Gong et al. (1997) above 200 nm and O'Dowd et al. (1997) below 200 nm; uses the whitecap fraction from Salisbury et al. (2013) as a function of windspeed. Uses the emission dependence on SST from Jaegle et al (2011).
   - 7: Sea-spray emissions from Gong et al. (1997) and O'Dowd et al. (1997). Uses Gong et al. (1997) above 200 nm and O'Dowd et al. (1997) below 200 nm; uses the whitecap fraction from Monahan et al. (1986) and does not use a correction factor for SST.
