@@ -7,6 +7,7 @@ Emission options:
 - seas_so4_opt (0, 1)
 - seas_oa_opt (0, 1)
 - seas_leads_opt (0, 1)
+
 New values for native WRF options:
 - biomass_burn_opt (6, 7)
 - seas_opt (5, 6, 7, 8)
