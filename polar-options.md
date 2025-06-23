@@ -1,8 +1,10 @@
 # New options in the polar version:
 
+This file describes the new options or new option values in the WRF-Chem-Polar version. Unless specified otherwise, these options are not specific to polar regions and should improve model results in other regions.
+
 ## In polar/main
 
-Emission options:
+Emission options (&chem namelist):
 - seas_opt (5, 6, 7, 8): This option controls the sea spray emissions source function.
   - 0: Dsiables aerosol emissions from sea-spray.
   - 5: Sea-spray emissions from Monahan et al. (1986). No emissions below 100 nm diameters
