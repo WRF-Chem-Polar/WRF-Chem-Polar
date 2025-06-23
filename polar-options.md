@@ -4,6 +4,7 @@
 
 Emission options:
 - seas_opt (5, 6, 7, 8): This option controls the sea spray emissions source function.
+  - 0: Dsiables aerosol emissions from sea-spray.
   - 5: Sea-spray emissions from Monahan et al. (1986). No emissions below 100 nm diameters
   - 6 (recommended): Sea-spray emissions from Ioannidis et al. (2023). Uses Gong et al. (1997) above 200 nm and O'Dowd et al. (1997) below 200 nm; uses the whitecap fraction from Salisbury et al. (2013) as a function of windspeed. Uses the emission dependence on SST from Jaegle et al (2011).
   - 7: Sea-spray emissions from Gong et al. (1997) and O'Dowd et al. (1997). Uses Gong et al. (1997) above 200 nm and O'Dowd et al. (1997) below 200 nm; uses the whitecap fraction from Monahan et al. (1986) and does not use a correction factor for SST.
@@ -23,7 +24,10 @@ Emission options:
 - blowing_snow_opt (0, 1): This option controls the emissions from blowing snow.
   - 0 (default): Disables emissions associated with blowing snow
   - 1: Includes sea salt aerosol emissions from blowing snow (on the main, halogen and mercury branches) and bromine emissions from blowing snow (halogens and mercury branches)
-- biomass_burn_opt (6, 7)
+- biomass_burn_opt (6, 7): This option controls the biomass burning emissions.
+  - 0 (default): Disables biomass burning emissions.
+  - 6: Biomass burning emissions for SAPRC gas-phase chemistry mechanisms. Requires wrffirechemi input files for SAPRC, created by the fire_emis preprocessor.
+  - 7: Biomass burning emissions for CBMZ gas-phase chemistry mechanisms. Requires wrffirechemi input files for CBMZ, created by the fire_emis preprocessor.
 
 Aerosol-cloud interaction options:
 - aci_wrfchem_opt (0, 1, 2)
