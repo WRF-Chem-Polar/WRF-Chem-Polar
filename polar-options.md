@@ -22,7 +22,7 @@ Emission options:
   - 1 (recommended): DMS emissions from the surface ocean are activated for the open ocean grid cell fraction, using the Nightingale et al. (2000) air–sea flux parameterization. In sea ice, emissions are scaled by the open ocean fraction to the power of 0.4 (Loose et al., 2009). Requires oceanic DMS concentration input in the wrflowinp files in variable DMS_OCEAN. DMS_OCEAN can be taken from the climatologies of [Lana 2011](https://doi.org/10.1029/2010GB003850), [Hulswar 2021](https://doi.org/10.5194/essd-14-2963-2022) or the CSIB model [(Hayashida et al., 2019)](https://doi.org/10.5194/gmd-12-1965-2019).
 - blowing_snow_opt (0, 1): This option controls the emissions from blowing snow.
   - 0 (default): Disables emissions associated with blowing snow
-  - 1: Includes sea salt aerosol emissions from blowing snow (on the main branch) and bromine emissions from blowing snow (halogens and mercury branches)
+  - 1: Includes sea salt aerosol emissions from blowing snow (on the main, halogen and mercury branches) and bromine emissions from blowing snow (halogens and mercury branches)
 - biomass_burn_opt (6, 7)
 
 Aerosol-cloud interaction options:
