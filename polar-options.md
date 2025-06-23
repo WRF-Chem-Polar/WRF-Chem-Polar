@@ -40,10 +40,9 @@ Aerosol-cloud interaction options:
 - mp_morr_icenuc_option (0, 1)
 
 Deposition options:
-- mosaic_aer_settling_opt (0, 1)
-
-## In the halogen and mercury branches only
-- surface_snow_opt (0, 1)
+- mosaic_aer_settling_opt (0, 1): This option controls aerosol sedimentation above the first vertical level for MOSAIC aerosols.
+   - 0 (default): No aerosol sedimentation above the first level in MOSAIC. Settling velocities are calculated in the first level and taken into account in the dry deposition velocity.
+   - 1: Includes aerosol sedimentation of MOSAIC aerosols at all vertical levels.
 
 ## New developments that might introduce new polar options:
 - The 17-reaction DMS mechanism (von Glasow and Crutzen 2004, Marelle et al 2025).
