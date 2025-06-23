@@ -1,6 +1,6 @@
-# New options in the polar version
+# New namelist.input options in the polar version
 
-This file describes the new options or new option values in the WRF-Chem-Polar version. 
+This file describes the new namelist.input options in the WRF-Chem-Polar version. 
 
 *Many of these options are not specific to polar regions and can be used for modeling outside the poles.  The main polar specific developments are related to sea ice, which shoudl not negatively impact the results outside the polar regions.*
 
@@ -8,7 +8,7 @@ This file describes the new options or new option values in the WRF-Chem-Polar v
 
 ### seas_opt (5, 6, 7, 8)
 This option controls the sea spray emissions source function.
-  - 0: Disables aerosol emissions from sea-spray.
+  - 0 (default): Disables aerosol emissions from sea-spray.
   - 5: Sea-spray emissions from Monahan et al. (1986). No emissions below 100 nm diameters
   - 6 (recommended): Sea-spray emissions from Ioannidis et al. (2023). Uses Gong et al. (1997) above 200 nm and O'Dowd et al. (1997) below 200 nm; uses the whitecap fraction from Salisbury et al. (2013) as a function of windspeed. Uses the emission dependence on SST from Jaegle et al (2011).
   - 7: Sea-spray emissions from Gong et al. (1997) and O'Dowd et al. (1997). Uses Gong et al. (1997) above 200 nm and O'Dowd et al. (1997) below 200 nm; uses the whitecap fraction from Monahan et al. (1986) and does not use a correction factor for SST.
@@ -41,9 +41,24 @@ This option controls the treatment of dimethyl sulfide (DMS) emissions from the 
   - 1: Halogen emissions and recycling from surface snow, following Toyota et al. (2011).
 
 ## Aerosol-cloud interaction options
-### aci_wrfchem_opt (0, 1, 2)
-###  aci_wrf_opt (0, 1, 2, 3)
-###  mp_morr_icenuc_option (0, 1)
+### aci_wrfchem_opt (0, 1, 2): This option controls the aerosol-cloud interactions for liquid droplets in WRF-Chem.
+  - 0 (default): 
+  - 1:
+  - 2:
+### aci_wrf_opt (0, 1, 2, 3), &phys namelist option: This option controls the aerosol-cloud interactions for liquid droplets in WRF (without chemistry) in Thompson aerosol-aware microphysics. The option does not work with other microphysics scheme.
+  - 0 (default): Uses the default aerosol-cloud interaction in Thompson aerosol-aware microphysics. With Thompson aerosol-aware microphysics, uses the default water-friendly and ice-friendly aerosol number concentrations supplied by the scheme.
+For option 1,2,3, an external NWFA and NIFA aerosol climatology is read in Thompson aerosol-aware microphysics in the auxiliary input file auxinput18. The auxinput file needs to contain QNWFA_EXT and QNIFA_EXT fields in #/kg (option 1,2,3), WRF_AER_SO4_EXT in µg/kg (option 2) and WRF_AER_SOLUBLE_EXT in µg/kg (option 3). These namelist options also need to be included in namelist &time_control:
+auxinput18_inname                    = 'wrf_wfa_ifa_d<domain>_<date>'
+auxinput18_interval_h                = 3,
+frames_per_auxinput18                = 1,
+io_form_auxinput18                   = 2
+  - 1: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the Thompson and Eidhammer (2014) activation scheme, using aerosols from an external NWFA and NIFA aerosol climatology. The climatology is read from auxiliary input file auxinput18. The aux file needs to contain QNWFA_EXT and QNIFA_EXT fields, the water friendly and ice friendly aerosol numbers in #/kg.
+  - 2: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the Boucher and Lohmann (1995) scheme, using a sulfate aerosol concentration climatology. The option requires additional 3D input fields QNWFA_EXT, QNIFA_EXT and WRF_AER_SO4_EXT (accumulation-mode sulfate mixing ratio in ug/kg). In the radiation driver, cloud droplet number concentrations predicted by the microphysics are overwritten by values calculated from Boucher and Lohmann (1995).
+  - 3: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the LMDZ6 (Madeleine et al., 2020) scheme, using a soluble aerosol concentration climatology. The option requires additional 3D input fields QNWFA_EXT, QNIFA_EXT and WRF_AER_SOLUBLE_EXT (accumulation-mode sulfate+seasalt+ammonium aerosol mixing ratio in ug/kg). In the radiation driver, cloud droplet number concentrations predicted by the microphysics are overwritten by values calculated from Madeleine et al. (2020).
+### mp_morr_icenuc_option (0, 1): This option controls the aerosol-cloud interactions for ice crystals in WRF-Chem.
+  - 0 (default):
+  - 1 (in development, not recommended):
+  - 2 (in development, not recommended):
 
 ## Deposition options
 ###  mosaic_aer_settling_opt (0, 1)
