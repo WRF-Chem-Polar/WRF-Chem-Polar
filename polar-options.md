@@ -10,8 +10,12 @@ Emission options:
 - seas_so4_opt (0, 1): This option controls the primary sulfate emission in sea-spray. Only compatible with seas_opt 5,6,7,8
   - 0 (default): No sea-spray sulfate emissions
   - 1: Sea-spray sulfate emissions assuming a sulfate/sodium mass ratio of 0.252 (Calhoun et al., 1991)
-- seas_oa_opt (0, 1)
-- seas_leads_opt (0, 1)
+- seas_oa_opt (0, 1): This option controls the primary marine organic emissions in sea-spray. Only compatible with seas_opt 5,6,7,8
+  - 0 (default): No marine organic emissions from sea-spray
+  - 1 (recommended): Marine organic emissions from Vignati et al. (2010). Requires chlorophyll-a input in the wrflowinp files in variable CHLOROA
+- seas_leads_opt (0, 1): This option controls the sea-spray emissions from sea ice leads. Only compatible with seas_opt 5,6,7,8
+  - 0 (default): Sea-spray emissions from leads use the seas_opt source function weighted by the open ocean fraction (1-seaice_concentration)
+  - 1: Sea-spray emissions from leads use the seas_opt source function weighted by the leads fraction, also applying a correction factor to reduce the emissions to account for the reduced wind fetch over leads (Lapere et al., 2024). Requires lead fraction input in the wrflowinp files in variable LEADFRAC
 - dms_opt (0, 1, previoulsy dmsemis_opt)
 - blowing_snow_opt (0, 1)
 - biomass_burn_opt (6, 7)
