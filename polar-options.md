@@ -30,6 +30,9 @@ Emission options (&chem namelist):
   - 0 (default): Disables biomass burning emissions.
   - 6: Biomass burning emissions for SAPRC gas-phase chemistry mechanisms. Requires wrffirechemi input files for SAPRC, created by the fire_emis preprocessor.
   - 7: Biomass burning emissions for CBMZ gas-phase chemistry mechanisms. Requires wrffirechemi input files for CBMZ, created by the fire_emis preprocessor.
+- surface_snow_opt (0, 1): This option controls halogen emissions and recycling from surface snow in the halogens and mercury branches.
+  - 0 (default): Disables halogen emissions and recycling from surface snow.
+  - 1: Halogen emissions and recycling from surface snow, following Toyota et al. (2011).
 
 Aerosol-cloud interaction options:
 - aci_wrfchem_opt (0, 1, 2)
