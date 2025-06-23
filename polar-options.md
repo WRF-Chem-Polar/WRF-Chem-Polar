@@ -1,6 +1,7 @@
 # New options in the polar version:
 
 ## In polar/main
+
 Emission options:
 - seas_opt (5, 6, 7, 8): This option controls the sea spray emissions source function.
   - 5: Sea-spray emissions from Monahan et al. (1986). No emissions below 100 nm diameters
@@ -25,10 +26,6 @@ Emission options:
 In the main WRF-Chem branch, this enables the emission of sea salt aerosols from blowing snow.
 In the halogen/mercury development branch, this also turns on blowign snow sea salt aerosol emission and activates associated heterogeneous halogen and mercury chemistry on the blowing snow-derived aerosols.
 - biomass_burn_opt (6, 7)
-
-New values for native WRF options:
-- biomass_burn_opt (6, 7)
-- seas_opt (5, 6, 7, 8)
 
 Aerosol-cloud interaction options:
 - aci_wrfchem_opt (0, 1, 2)
