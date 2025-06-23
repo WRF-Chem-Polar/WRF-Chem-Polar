@@ -1,4 +1,4 @@
-# New polar options:
+# New options in the polar version:
 
 ## In polar/main
 Emission options:
@@ -19,7 +19,11 @@ Emission options:
 - dms_opt (0, 1, previoulsy dmsemis_opt): This option controls the treatment of dimethyl sulfide (DMS) emissions from the surface ocean in the model. This replaces the old option dmsemis_opt (deprecated but can still be used if needed).
   - 0 (default): No DMS emissions from the ocean surface.
   - 1 (recommended): DMS emissions from the surface ocean are activated for the open ocean grid cell fraction, using the Nightingale et al. (2000) air–sea flux parameterization. In sea ice, emissions are scaled by the open ocean fraction to the power of 0.4 (Loose et al., 2009). Requires oceanic DMS concentration input in the wrflowinp files in variable DMS_OCEAN. DMS_OCEAN can be taken from the climatologies of [Lana 2011](https://doi.org/10.1029/2010GB003850), [Hulswar 2021](https://doi.org/10.5194/essd-14-2963-2022) or the CSIB model [(Hayashida et al., 2019)](https://doi.org/10.5194/gmd-12-1965-2019).
-- blowing_snow_opt (0, 1) 
+- blowing_snow_opt (0, 1): This option controls the emissions from blowing snow.
+  - 0 (default): Disables emissions associated with blowing snow
+  - 1: Includes sea salt aerosol emissions from blowing snow (on the main branch) and bromine emissions from blowing snow (halogens and mercury branches)
+In the main WRF-Chem branch, this enables the emission of sea salt aerosols from blowing snow.
+In the halogen/mercury development branch, this also turns on blowign snow sea salt aerosol emission and activates associated heterogeneous halogen and mercury chemistry on the blowing snow-derived aerosols.
 - biomass_burn_opt (6, 7)
 
 New values for native WRF options:
