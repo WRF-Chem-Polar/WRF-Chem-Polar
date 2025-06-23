@@ -1,7 +1,7 @@
 # New options in the polar version
 
 This file describes the new options or new option values in the WRF-Chem-Polar version. 
-** Many of these options are not specific to polar regions and can be used for modeling outside the poles.  The main polar specific developments are related to sea ice, which shoudl not negatively impact the results outside the polar regions. **
+**Many of these options are not specific to polar regions and can be used for modeling outside the poles.  The main polar specific developments are related to sea ice, which shoudl not negatively impact the results outside the polar regions.**
 
 ## Emission options (&chem namelist)
 
