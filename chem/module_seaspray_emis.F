@@ -363,13 +363,11 @@ MODULE module_seaspray_emis
               ENDIF
               ! GOCART sulf aerosol
               IF(DO_SEAS_SO4) THEN
-                IF(iaerbin == 1 ) THEN ! Only do once - sulf is not size-resolved
-                  ! Convert ug/m2/s -> ug/kg -> mg/kg (1E-6 g/g) -> ppmv (1E-6
-                  ! mol/mol)
-                  conv_sulf_ppmv =  conv * 1E-3 * mwdry/MW_SO4
-                  IF (p_sulf >= param_first_scalar) THEN
-                    chem(i,kts,j,p_sulf) = chem(i,kts,j,p_sulf) + so4_mass_emiss * conv_sulf_ppmv
-                  ENDIF
+                ! Convert ug/m2/s -> ug/kg -> mg/kg (1E-6 g/g) -> ppmv (1E-6
+                ! mol/mol)
+                conv_sulf_ppmv =  conv * 1E-3 * mwdry/MW_SO4
+                IF (p_sulf >= param_first_scalar) THEN
+                  chem(i,kts,j,p_sulf) = chem(i,kts,j,p_sulf) + so4_mass_emiss * conv_sulf_ppmv
                 ENDIF
               ENDIF
             !---- Other chem_opt cases are not supported
