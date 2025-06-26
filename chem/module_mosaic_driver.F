@@ -481,7 +481,7 @@
 	    call mosaic_newnuc_1clm( istat,  &
 		it, jt, kclm_calcbgn, kclm_calcend,   &
 		idiagbb_dum, dtchem, dtnuc, rsub0,   &
-		id, ktau, ktauc, its, ite, jts, jte, kts, kte )
+		id, ktau, ktauc, its, ite, jts, jte, kts, kte, config_flags%nucleation_msa, config_flags%nucleation_msa_factor )
 	end if
 
 

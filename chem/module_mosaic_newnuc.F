@@ -27,7 +27,7 @@
 		it, jt, kclm_calcbgn, kclm_calcend,   &
 		idiagbb_in,   &
 		dtchem, dtnuc_in, rsub0,   &
-		id, ktau, ktauc, its, ite, jts, jte, kts, kte )
+		id, ktau, ktauc, its, ite, jts, jte, kts, kte, nucleation_msa, nucleation_msa_factor)
 !
 !   calculates new particle nucleation for grid points in
 !	the i=it, j=jt vertical column over timestep dtnuc_in
@@ -52,6 +52,7 @@
 		id, ktau, ktauc, its, ite, jts, jte, kts, kte
 	real, intent(in) :: dtchem, dtnuc_in
 	real, intent(in) :: rsub0(l2maxd,kmaxd,nsubareamaxd)
+	real, intent(in) :: nucleate_msa, nucleate_msa_factor
 !           rsub0 holds mixrat values before the aerchemistry calcs
 
 !   NOTE - much information is passed via arrays in 
@@ -67,8 +68,8 @@
 
 !   local variables
 	integer, parameter :: newnuc_method = 2
-        integer, parameter :: nucleate_msa = 1 ! needs to be a namelist input option
-        real, parameter :: factor_msa_nuc = 1.0/15.0 ! needs to be a namelist input option 
+!        integer, parameter :: nucleate_msa = 1 ! needs to be a namelist input option
+!        real, parameter :: factor_msa_nuc = 1.0/15.0 ! needs to be a namelist input option 
 	
 	integer :: k, l, ll, m
 	integer :: isize, itype, iphase
@@ -207,7 +208,7 @@
                dtnuc, temp_box, rh_box, cair_box, qh2so4_avg, qh2so4_cur, &
                qnh3_avg, maxd_asize, volumlo_nuc, volumhi_nuc, &
                qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, &
-               j2_msa, factor_msa_nuc )
+               j2_msa, nucleate_msa_factor )
             end if
 	else
 	    istat_newnuc = -1
@@ -1091,6 +1092,9 @@
            maxd_asize, volumlo_sect, volumhi_sect,   &
            qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, j2_msa, factor_msa_nuc )
 
+           ! REFERENCES
+           ! (1) Riccobono et al. (2014) - doi: 10.1126/science.1243527
+           ! (2) Hodshire et al. (2019) - doi: 10.5194/acp-19-3137-2019
 
            implicit none
 
@@ -1142,23 +1146,21 @@
 	   
            j2_msa = 0.0
 
-
-!       gas mixing ratios are in ppm !
+           ! input gas mixing ratios are in ppm
            ppm_to_num = cair*avogad ! conversion from mole/mole-air to #/cm3
            qh2so4_avg_num = qh2so4_avg*ppm_to_num
            qmsa_avg_num = qmsa_avg*ppm_to_num
 
-
-!	 nucleation rate from Riccobono 2014
+           ! nucleation rate from Riccobono et al. (2014) - ref (1)
            j2_msa = k_m*qh2so4_avg_num*qh2so4_avg_num*qmsa_avg_num
 	   j2_msa = j2_msa*factor_msa_nuc
 
-! convert nucleation rate to wrf-chem expected units
+           ! convert nucleation rate to wrf-chem expected units
            j2_msa = max(0.0, j2_msa*dtnuc) ! # particles per cm3 per nucleation time step
            j2_msa = j2_msa/cair ! # per mole-air per nucleation time step
 
 
-! temperature threshold from Hodshire et al 2019 ACP
+           ! temperature threshold from Hodshire et al. (2019) - ref (2)
            a = 252
            b = 0.619
            c = 0.0349
@@ -1170,7 +1172,7 @@
 	      j2_msa = 0.0
 	   end if
 
-! dependence on ammonia concentration from Hodshire et al 2019 ACP
+           ! dependence on ammonia concentration from Hodshire et al. (2019) - ref (2)
 	   if (qnh3_avg_ppt .le. 10.0) then
 		if (rh100 .le. 90.0) then
 			j2_msa = 0.0
