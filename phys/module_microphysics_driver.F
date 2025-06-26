@@ -3516,22 +3516,22 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          ENDIF
          nwfa(i,k,j)= nwfa(i,k,j) + chem(i,k,j,p_num_cw03) * scale_num
          ! Calculate total dry volume of dust aerosol in bin
-         dryvol_ai_dust = 1.0E-6 * ( chem(i,k,j,p_oin_a02) / dens_oin_aer)
-         dryvol_cw_dust = 1.0E-6 * ( chem(i,k,j,p_oin_cw02) / dens_oin_aer)
+         dryvol_ai_dust = 1.0E-6 * ( chem(i,k,j,p_oin_a03) / dens_oin_aer)
+         dryvol_cw_dust = 1.0E-6 * ( chem(i,k,j,p_oin_cw03) / dens_oin_aer)
          IF(dryvol_ai_dust> 0.0) THEN
            scale_num = dryvol_ai_dust / dryvol_ai_tot
            scale_num = MAX(MIN(scale_num, 1.0), 0.0)
          ELSE
            scale_num = 0.0
          ENDIF
-         nifa(i,k,j) = nifa(i,k,j) + chem(i,k,j,p_num_a02) * scale_num
+         nifa(i,k,j) = nifa(i,k,j) + chem(i,k,j,p_num_a03) * scale_num
          IF(dryvol_cw_dust> 0.0) THEN
            scale_num = dryvol_cw_dust / dryvol_cw_tot
            scale_num = MAX(MIN(scale_num, 1.0), 0.0)
          ELSE
            scale_num = 0.0
          ENDIF
-         nifa(i,k,j) = nifa(i,k,j) + chem(i,k,j,p_num_cw02) * scale_num
+         nifa(i,k,j) = nifa(i,k,j) + chem(i,k,j,p_num_cw03) * scale_num
          ! Bin 4
          isize = 4
          dryvol_ai_tot = 0.0
@@ -3569,22 +3569,22 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
          ENDIF
          nwfa(i,k,j)= nwfa(i,k,j) + chem(i,k,j,p_num_cw04) * scale_num
          ! Calculate total dry volume of dust aerosol in bin
-         dryvol_ai_dust = 1.0E-6 * ( chem(i,k,j,p_oin_a02) / dens_oin_aer)
-         dryvol_cw_dust = 1.0E-6 * ( chem(i,k,j,p_oin_cw02) / dens_oin_aer)
+         dryvol_ai_dust = 1.0E-6 * ( chem(i,k,j,p_oin_a04) / dens_oin_aer)
+         dryvol_cw_dust = 1.0E-6 * ( chem(i,k,j,p_oin_cw04) / dens_oin_aer)
          IF(dryvol_ai_dust> 0.0) THEN
            scale_num = dryvol_ai_dust / dryvol_ai_tot
            scale_num = MAX(MIN(scale_num, 1.0), 0.0)
          ELSE
            scale_num = 0.0
          ENDIF
-         nifa(i,k,j) = nifa(i,k,j) + chem(i,k,j,p_num_a02) * scale_num
+         nifa(i,k,j) = nifa(i,k,j) + chem(i,k,j,p_num_a04) * scale_num
          IF(dryvol_cw_dust> 0.0) THEN
            scale_num = dryvol_cw_dust / dryvol_cw_tot
            scale_num = MAX(MIN(scale_num, 1.0), 0.0)
          ELSE
            scale_num = 0.0
          ENDIF
-         nifa(i,k,j) = nifa(i,k,j) + chem(i,k,j,p_num_cw02) * scale_num
+         nifa(i,k,j) = nifa(i,k,j) + chem(i,k,j,p_num_cw04) * scale_num
 
        ELSE
          ! If chem_opt aerosol is not covered call fatal - but this should have
