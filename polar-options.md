@@ -62,10 +62,11 @@ io_form_auxinput18                   = 2
   - 1: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the Thompson and Eidhammer (2014) activation scheme, using aerosols from an external NWFA and NIFA aerosol climatology. The climatology is read from auxiliary input file auxinput18. The aux file needs to contain QNWFA_EXT and QNIFA_EXT fields, the water friendly and ice friendly aerosol numbers in #/kg.
   - 2: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the Boucher and Lohmann (1995) scheme, using a sulfate aerosol concentration climatology. The option requires additional 3D input fields QNWFA_EXT, QNIFA_EXT and WRF_AER_SO4_EXT (accumulation-mode sulfate mixing ratio in ug/kg). In the radiation driver, cloud droplet number concentrations predicted by the microphysics are overwritten by values calculated from Boucher and Lohmann (1995).
   - 3: Calculates aerosol-cloud interactions in Thompson aerosol-aware microphysics with the LMDZ6 (Madeleine et al., 2020) scheme, using a soluble aerosol concentration climatology. The option requires additional 3D input fields QNWFA_EXT, QNIFA_EXT and WRF_AER_SOLUBLE_EXT (accumulation-mode sulfate+seasalt+ammonium aerosol mixing ratio in ug/kg). In the radiation driver, cloud droplet number concentrations predicted by the microphysics are overwritten by values calculated from Madeleine et al. (2020).
-### mp_morr_icenuc_option (0, 1): This option controls the aerosol-cloud interactions for ice crystals in WRF-Chem.
-  - 0 (default):
-  - 1 (in development, not recommended):
-  - 2 (in development, not recommended):
+
+### mp_morr_icenuc_option (0, 1): This option controls the aerosol-cloud interactions for ice crystals in Morrison microphysics in WRF-Chem.
+- 0 (default): Use the default Morrison ice nucleation scheme depending on temperature only
+- 1 (in development, not recommended, for testing only): Use a simplified aerosol-aware ice nucleation by increasing the heterogeneous freezing temperature in Morrison by one degree for each order of magnitude increase in dust aerosol number.
+- 2 (in development, not recommended): Use classical nucleation theory (CNT) for deposition from Keita et al. (2020) and immersion from Hoose et al. (2010) to calculate heterogeneous freezing in Morrison microphysics. CNT aerosol parameters are calculated from WRF-Chem dust aerosols (MOSAIC-4bin only).
 
 ## Deposition options
 ###  mosaic_aer_settling_opt (0, 1)
