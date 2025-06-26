@@ -265,7 +265,7 @@ MODULE module_seaspray_emis
           !- seas_leads_opt=0 sea_spray*(1-sea_ice) everywhere
           !- seas_leads_opt=1 Nilsson ratio average in leads
           lead_frac = leadfrac(i,j)
-          IF ((seas_leads_opt >0 .AND. lead_frac > 0.0)) THEN
+          IF ((seas_leads_opt == 1 .AND. lead_frac > 0.0)) THEN
              ! oo flux versus lead flux in Nilsson 2001
              leads_to_oo_ratio = EXP(0.11*w10-1.93)/EXP(0.20*w10-1.71)
              ! Recalculate the open ocean fraction to remove the contribution
@@ -318,7 +318,7 @@ MODULE module_seaspray_emis
             ENDIF ! seas_opt
             !---- Correct sea-spray flux by open ocean fraction or open leads
             !  fraction
-            IF(seas_leads_opt > 0 .AND. lead_frac > 0.) THEN
+            IF(seas_leads_opt == 1 .AND. lead_frac > 0.) THEN
               seaspray_vol_emiss = seaspray_vol_emiss*open_ocean_frac &
                               + seaspray_vol_emiss*leads_to_oo_ratio*lead_frac
             ELSE
