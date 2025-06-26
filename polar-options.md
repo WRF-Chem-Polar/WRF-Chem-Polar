@@ -42,11 +42,13 @@ This option controls the treatment of dimethyl sulfide (DMS) emissions from the 
 
 ## Aerosol-cloud interaction options
 ### aci_wrfchem_opt (0, 1, 2): This option controls the aerosol-cloud interactions for liquid droplets in WRF-Chem.
+This option only works with Thompson aerosol-aware microphysics, but not with other microphysics scheme.
   - 0 (default): Uses the default aerosol-cloud interaction in Thompson aerosol-aware microphysics. Uses the default water-friendly and ice-friendly aerosol number concentrations supplied by the Thompson aerosol-aware microphysics scheme.
   - 1: In Thompson aerosol-aware microphysics, calculate aerosol-cloud interactions for liquid clouds with the Abdul-Razzak and Ghan 2002 (ARG02) parameterization and for ice clouds with the DeMott2010  (D10) parameterization. ARG02 is used, both for the droplet number in the microphysics code and to set cw aerosols for cloud chemistry and wet scavenging. The aerosol parameters are calculated from WRF-Chem aerosols (MOSAIC-4bin only). Ice friendly aerosols for D10 are also calculated from the WRF-Chem dust aerosol.
   - 2: In Thompson aerosol-aware microphysics, calculate aerosol-cloud interactions for liquid clouds with the Thompson and Eidhammer 2014 (TE14) parameterization and for ice clouds with the DeMott2010 (D10) parameterization. Water friendly and ice friendly aerosols for TE14 and D10 are set up from WRF-Chem aerosols (GOCART or MOSAIC-4bin only). For MOSAIC-4bin, cw aerosols for cloud chemistry and wet scavenging are still calculated using Abdul-Razzak and Ghan 2002.
 
-### aci_wrf_opt (0, 1, 2, 3), &phys namelist option: This option controls the aerosol-cloud interactions for liquid droplets in WRF (without chemistry) in Thompson aerosol-aware microphysics. The option does not work with other microphysics scheme.
+### aci_wrf_opt (0, 1, 2, 3), &phys namelist option: This option controls the aerosol-cloud interactions for liquid droplets in WRF (without chemistry).
+This option only works with Thompson aerosol-aware microphysics, but not with other microphysics scheme.
   - 0 (default): Uses the default aerosol-cloud interaction in Thompson aerosol-aware microphysics. Uses the default water-friendly and ice-friendly aerosol number concentrations supplied by the Thompson aerosol-aware microphysics scheme.
 
 For option 1,2,3, an external 4D aerosol climatology is read in Thompson aerosol-aware microphysics in the auxiliary input file auxinput18. The auxinput file needs to contain QNWFA_EXT and QNIFA_EXT fields in #/kg (option 1,2,3), WRF_AER_SO4_EXT in µg/kg (option 2) and WRF_AER_SOLUBLE_EXT in µg/kg (option 3). These namelist options also need to be included in namelist &time_control for a 3-hourly climatology:
