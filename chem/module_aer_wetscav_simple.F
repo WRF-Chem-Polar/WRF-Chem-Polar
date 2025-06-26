@@ -457,7 +457,7 @@ CONTAINS
     ! This could be recovered from the aerosol scheme data directly
     IF(chem_opt == MOZCART_KPP .OR. chem_opt == GOCART_SIMPLE) THEN
       ! MOZCART
-      naerspecies = 12
+      naerspecies = 13
     ELSE
       CALL wrf_error_fatal ('wetscav_simple_init: chem_opt not supported')
     ENDIF
