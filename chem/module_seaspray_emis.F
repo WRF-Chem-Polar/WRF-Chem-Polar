@@ -17,9 +17,11 @@
 ! (4) Salter et al., 2015: doi:10.5194/acp-15-11047-2015
 ! (5) Ioannidis et al., 2023: https://doi.org/10.5194/acp-23-5641-2023
 ! (6) O'Dowd et al., 1997: https://doi.org/10.1016/S1352-2310(96)00106-9
+! (7) Lapere et al., 2024: https://doi.org/10.5194/acp-24-12107-2024
 ! Correction factors:
 ! (1) Jaegle et al., 2011: doi:10.5194/acp-11-3137-2011
 ! (2) Salisbury et al., 2013: doi:10.1002/2013JC008797
+! (3) Nilsson et al., 2001: https://doi.org/10.1029/2000JD900747
 ! Sea spray SO4 fraction:
 ! (1) Calhoun et al., 1991, https://doi.org/10.1029/91GL02304
 ! Sea spray organic fraction:
@@ -52,9 +54,10 @@ MODULE module_seaspray_emis
 !------------------------------------------------------------------------------
 
   SUBROUTINE seaspray_emis( id, dtstep, dz8w, chem_opt, seas_opt,    &
+         seas_leads_opt, &
          seas_so4_opt, seas_oa_opt,                                 &
-         rho_phy, chem, e_nacl_ocean,                               &
-         u10, v10, xland, tsk, xice, lakemask, chloroa,             &
+         rho_phy, chem, e_nacl_ocean, e_nacl_leads,                 &
+         u10, v10, xland, tsk, xice, lakemask, leadfrac, chloroa,   &
          ids,ide, jds,jde, kds,kde,                                 &
          ims,ime, jms,jme, kms,kme,                                 &
          its,ite, jts,jte, kts,kte                                  )
@@ -69,6 +72,7 @@ MODULE module_seaspray_emis
     !  dz8w = 3D vertical level depth (m)
     !  chem_opt = chemical mechanism + aerosol mechanism option from config_flags
     !  seas_opt = sea spray emission option from config_flags
+    !  seas_leads_opt = sea spray emission from sea ice leads option from config_flags
     !  seas_so4_opt = sea salt-sulfate emission option from config_flags
     !  seas_oa_opt = marine organic emission option from config_flags
     !  rho_phy = 3D air density (kg/m3)
@@ -79,10 +83,12 @@ MODULE module_seaspray_emis
     !  xice = sea ice or lake ice fraction (0-1)
     !  lakemask = lake mask (1 for lakes, 0 for rest)
     !  chloroa = cholorphyll-a concentration at sea surface (mg m-3)
+    !  leadfrac = fraction of grid-cell covered by sea ice leads (0-1)
     !  ids,ims,its etc. = domain, memory, and tile start and end indices
     ! Input/output
     !  chem = advected chemical species (gases in ppm, aerosols in microg/kg)
     !  e_nacl_ocean = accumulated NaCl emission flux from sea spray (microg/m2) !TODO should be mg/m2
+    !  e_nacl_leads = accumulated NaCl emission flux from sea ice leads (microg/m2) !TODO should be mg/m2
 
     !TODO Should include all explicit ONLY: associations for module_state_description
     ! chem_opt, seas_opt, param_first_scalar, num_chem, p_seas_1, p_seas_2, p_seas_3, p_seas_4, p_oc1, p_sulf
@@ -96,7 +102,8 @@ MODULE module_seaspray_emis
 
     !---- Arguments
     ! Input
-    INTEGER, INTENT(IN) :: chem_opt, seas_opt, seas_so4_opt, seas_oa_opt
+    INTEGER, INTENT(IN) :: chem_opt, seas_opt
+    INTEGER, INTENT(IN) :: seas_leads_opt, seas_so4_opt, seas_oa_opt
     INTEGER, INTENT(IN) :: id,                                      &
                            ids,ide, jds,jde, kds,kde,               &
                            ims,ime, jms,jme, kms,kme,               &
@@ -105,11 +112,12 @@ MODULE module_seaspray_emis
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: dz8w, &
                                                               rho_phy
     REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: u10, v10, xland, &
-                                          tsk, xice, lakemask, chloroa
+                                          tsk, xice, lakemask, leadfrac, chloroa
     ! Input/output
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme, num_chem), &
         INTENT(INOUT) :: chem
     REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_ocean
+    REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_leads
 
     !---- Local variables
     ! Sea spray emission fluxes, microm3/m2/s, #/m2/s
@@ -122,6 +130,8 @@ MODULE module_seaspray_emis
     REAL :: open_ocean_frac
     ! Whitecap fraction in grid cell (0-1), Salter2015 entrainment factor (0-1)
     REAL :: whitecap_frac, entrainment_factor
+    ! Lead fraction in grid cell (0-1)
+    REAL :: lead_frac
     ! SST scaling factor (unitless), SST constrained to valid range (celsius)
     REAL :: sst_dependence, sst_valid
     ! Salter emissions number production fluxes for emission modes 1,2,3 (1/m2/s)
@@ -144,6 +154,11 @@ MODULE module_seaspray_emis
     REAL :: so4_nacl_mass_ratio, org_nacl_mass_ratio
     ! Vignati org/(org+nacl) mass ratio (kg/kg)
     REAL :: org_mass_ratio
+    ! Sea ice lead emission parameterization
+    ! Flux ratio between sea-spray from open leads in sea-ice and sea-spray
+    ! from the ice-free open ocean, from Nilsson et al. (2001)
+    REAL :: leads_to_oo_ratio
+
     ! Indices
     INTEGER :: i, j, isize, iphase
     INTEGER :: iaerbin
@@ -244,6 +259,20 @@ MODULE module_seaspray_emis
             salter_n2 = A2*sst_valid**3.0 + B2*sst_valid**2.0 + C2*sst_valid + D2
             salter_n3 = A3*sst_valid**3.0 + B3*sst_valid**2.0 + C3*sst_valid + D3
           ENDIF ! seas_opt
+          !---- Correction factor for the flux from sea ice leads
+          ! Following Lapere et al. (2024)
+          leads_to_oo_ratio = 1.0
+          !- seas_leads_opt=0 sea_spray*(1-sea_ice) everywhere
+          !- seas_leads_opt=1 Nilsson ratio average in leads
+          lead_frac = leadfrac(i,j)
+          IF ((seas_leads_opt == 1 .AND. lead_frac > 0.0)) THEN
+             ! oo flux versus lead flux in Nilsson 2001
+             leads_to_oo_ratio = EXP(0.11*w10-1.93)/EXP(0.20*w10-1.71)
+             ! Recalculate the open ocean fraction to remove the contribution
+             ! from leads
+             open_ocean_frac = MIN(1., MAX(0., open_ocean_frac - lead_frac))
+          ENDIF
+
           !---- Volume fractions of organics, so4 and nacl in sea spray
           IF(DO_SEAS_SO4) THEN
             ! so4/na mass ratio = 0.252, Ioannidis et al.( 2023)
@@ -276,17 +305,25 @@ MODULE module_seaspray_emis
             IF(seas_opt == SEASSALTER) THEN
               ! Salter2015 emissions have 3 lognormal modes scaled independently
               ! as a function of SST
-              seaspray_vol_emiss = open_ocean_frac * entrainment_factor &
-                          * (salter_n1 * vol_emiss_dist_mode1(iaerbin) &
-                          + salter_n2 * vol_emiss_dist_mode2(iaerbin) &
-                          + salter_n3 * vol_emiss_dist_mode3(iaerbin))
+              seaspray_vol_emiss = entrainment_factor &
+                          *(salter_n1*vol_emiss_dist_mode1(iaerbin) &
+                          + salter_n2*vol_emiss_dist_mode2(iaerbin) &
+                          + salter_n3*vol_emiss_dist_mode3(iaerbin))
             ELSE
               ! Other source functions have the same w10 and SST scaling for all
               ! sizes and only one size distribution is needed and precalculated in
               ! vol_emiss_dist
-              seaspray_vol_emiss = open_ocean_frac * sst_dependence * whitecap_frac &
-                          * vol_emiss_dist(iaerbin)
+              seaspray_vol_emiss = sst_dependence*whitecap_frac &
+                          *vol_emiss_dist(iaerbin)
             ENDIF ! seas_opt
+            !---- Correct sea-spray flux by open ocean fraction or open leads
+            !  fraction
+            IF(seas_leads_opt == 1 .AND. lead_frac > 0.) THEN
+              seaspray_vol_emiss = seaspray_vol_emiss*open_ocean_frac &
+                              + seaspray_vol_emiss*leads_to_oo_ratio*lead_frac
+            ELSE
+              seaspray_vol_emiss = seaspray_vol_emiss*open_ocean_frac
+            ENDIF
             ! Do not allow negative emissions
             seaspray_vol_emiss = MAX(seaspray_vol_emiss, 0.0)
             !---- Convert sea spray aerosol volume emission flux (microm3/m2/s)

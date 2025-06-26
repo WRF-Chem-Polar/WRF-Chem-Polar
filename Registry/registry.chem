@@ -615,6 +615,7 @@ state    real  wdflx          ijo     misc        1         Z      r       "WET_
 
 state    real  e_nacl_ocean   ij      misc        1         Z      rh      "E_NACL_OCEAN"       "Ocean NaCl emiss"               "ug m^-2"
 state    real  e_nacl_blow    ij      misc        1         Z      rh      "E_NACL_BLOW"        "Blowing snow NaCl emiss"        "ug m^-2"
+state    real  e_nacl_leads    ij      misc        1         Z      rh      "E_NACL_LEADS"        "Leads NaCl emiss"        "ug m^-2"
 
 #
 state    real  e_bio          ijo     misc        1         Z      r        "E_BIO"             "EMISSIONS"             "ppm m/min"
@@ -3935,6 +3936,7 @@ rconfig   integer     dmsemis_opt         namelist,chem          1              
 rconfig   integer     dms_opt             namelist,chem          1              0       rh    "dms_opt"             ""      ""
 rconfig   integer     seas_opt            namelist,chem          1              0       rh    "seas_opt"            ""      ""
 rconfig   integer     blowing_snow_opt    namelist,chem          1              0       rh    "blowing_snow_opt"    ""      ""
+rconfig   integer     seas_leads_opt      namelist,chem          max_domains    0 	rh    "seas_leads_opt"      ""      ""
 rconfig   integer     seas_so4_opt        namelist,chem          max_domains    0       rh    "seas_so4_opt"        ""      ""
 rconfig   integer     seas_oa_opt         namelist,chem          max_domains    0       rh    "seas_oa_opt"         ""      ""
 rconfig   integer     bio_emiss_opt       namelist,chem          max_domains    0       rh    "bio_emiss_opt"       ""      ""
