@@ -27,7 +27,7 @@
 		it, jt, kclm_calcbgn, kclm_calcend,   &
 		idiagbb_in,   &
 		dtchem, dtnuc_in, rsub0,   &
-		id, ktau, ktauc, its, ite, jts, jte, kts, kte, nucleation_msa, nucleation_msa_factor)
+		id, ktau, ktauc, its, ite, jts, jte, kts, kte, nuc_msa_opt, nuc_msa_fac)
 !
 !   calculates new particle nucleation for grid points in
 !	the i=it, j=jt vertical column over timestep dtnuc_in
@@ -52,7 +52,8 @@
 		id, ktau, ktauc, its, ite, jts, jte, kts, kte
 	real, intent(in) :: dtchem, dtnuc_in
 	real, intent(in) :: rsub0(l2maxd,kmaxd,nsubareamaxd)
-	real, intent(in) :: nucleate_msa, nucleate_msa_factor
+	integer, intent(in) :: nuc_msa_opt
+	real, intent(in) :: nuc_msa_fac
 !           rsub0 holds mixrat values before the aerchemistry calcs
 
 !   NOTE - much information is passed via arrays in 
@@ -203,12 +204,12 @@
                nsize, maxd_asize, volumlo_nuc, volumhi_nuc,   &
                isize, qnuma_del, qso4a_del, qnh4a_del,   &
                qh2so4_del, qnh3_del, dens_nh4so4a )
-        if (nucleate_msa .eq. 1) then
+        if (nuc_msa_opt .eq. 1) then
             call riccobono_nuc_msa(   &
                dtnuc, temp_box, rh_box, cair_box, qh2so4_avg, qh2so4_cur, &
                qnh3_avg, maxd_asize, volumlo_nuc, volumhi_nuc, &
                qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, &
-               j2_msa, nucleate_msa_factor )
+               j2_msa, nuc_msa_fac )
             end if
 	else
 	    istat_newnuc = -1
@@ -1090,7 +1091,7 @@
         subroutine riccobono_nuc_msa(   &
            dtnuc, temp_in, rh_in, cair, qh2so4_avg, qh2so4_cur, qnh3_avg, &
            maxd_asize, volumlo_sect, volumhi_sect,   &
-           qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, j2_msa, factor_msa_nuc )
+           qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, j2_msa, nuc_msa_fac )
 
            ! REFERENCES
            ! (1) Riccobono et al. (2014) - doi: 10.1126/science.1243527
@@ -1114,7 +1115,7 @@
            real, intent(out) :: qh2so4_del ! change to gas h2so4 mixing ratio (mole/mole-air)
            real, intent(out) :: qmsa_del
            real, intent(out) :: qmsaa_del
-	   real, intent(in) :: factor_msa_nuc
+	   real, intent(in) :: nuc_msa_fac
 
            real, parameter :: dens_msaa = 1.48 ! g/cm3
 
@@ -1153,7 +1154,8 @@
 
            ! nucleation rate from Riccobono et al. (2014) - ref (1)
            j2_msa = k_m*qh2so4_avg_num*qh2so4_avg_num*qmsa_avg_num
-	   j2_msa = j2_msa*factor_msa_nuc
+	   ! apply tuning factor
+	   j2_msa = j2_msa*nuc_msa_fac
 
            ! convert nucleation rate to wrf-chem expected units
            j2_msa = max(0.0, j2_msa*dtnuc) ! # particles per cm3 per nucleation time step
