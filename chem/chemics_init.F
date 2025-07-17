@@ -386,10 +386,9 @@ call wrf_message("**************************************************************
        endif
      ! MOZART options and domain id = 1
      elseif( id == 1 ) then
-       if ( config_flags%mp_physics /= 6 .and. config_flags%mp_physics /= 8 &
+       if ( config_flags%mp_physics /= 6 .and. config_flags%mp_physics /= THOMPSON &
             .and. config_flags%mp_physics /= 10 .and. config_flags%mp_physics /= 17  &
             .and. config_flags%mp_physics /= 18 .and. config_flags%mp_physics /= 22 &
-            .and. config_flags%mp_physics /= THOMPSON &
             .and. config_flags%mp_physics /= THOMPSONAERO) then
          call wrf_error_fatal("ERROR: wet scavenging option for &
                 & MOZART,MOZCART requires mp_phys = 6 (WSM6) or 8,28 &
