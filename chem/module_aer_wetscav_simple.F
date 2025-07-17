@@ -490,21 +490,24 @@ CONTAINS
       ! be disabled in mozcart_wetscav)
       aer_pointers(:) = (/ p_sulf, p_seas_1, p_seas_2, p_seas_3, &
                         p_seas_4, p_bc2, p_oc2, p_dust_1, &
-                        p_dust_2, p_dust_3, p_dust_4, p_bc1 /)
+                        p_dust_2, p_dust_3, p_dust_4, p_dust_5, &
+                        p_bc1 /)
       ! Fraction of activated aerosols for aer_pointers species, values from
       ! Luo et al. (2020)
-      aq_aer_ratio(:) = (/ 1., 1., 1., 1., 1., 0.5, 0.5, 0., 0., 0., 0., 0. /)
-      ice_aer_ratio(:) = (/ 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 0. /)
+      aq_aer_ratio(:) = (/ 1., 1., 1., 1., 1., 0.5, 0.5, 0., 0., 0., 0., 0., 0. /)
+      ice_aer_ratio(:) = (/ 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 0. /)
       ! List of washed out fine aerosol for aer_pointers species (r<=1
       ! micrometer)
       aer_is_fine(:) = (/ .true., .true., .true., .false., &
                        .false., .true., .true. , .true., &
-                       .false., .false., .false., .false. /)
+                       .false., .false., .false., .false., &
+                       .false. /)
       ! List of washed out coarse aerosol for aer_pointers species (r>1
       ! micrometer)
       aer_is_coarse(:) = (/ .false., .false., .false., .true., &
                        .true., .false., .false. , .false., &
-                       .true., .true., .true., .false. /)
+                       .true., .true., .true., .true., &
+                       .false. /)
     ELSE
       CALL wrf_error_fatal ('wetscav_simple_init: chem_opt not supported')
     ENDIF
