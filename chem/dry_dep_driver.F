@@ -22,7 +22,8 @@ CONTAINS
                cvalk1,cvole1,cvapi1,cvapi2,cvlim1,cvlim2,dep_vel_o3,      &
                ddlen,ddflx,                                               &
                emis_ant,ebu_in,                                           &
-               sf_urban_physics,numgas,current_month,dvel,snowh,          & 
+               sf_urban_physics,numgas,current_month,dvel,snowh,          &
+               xice,                                                      &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
                depvelocity,                                               &               
@@ -130,6 +131,7 @@ CONTAINS
                                                      xlat,      &
                                                      xlong,     &
                                                      snowh,     &
+                                                     xice,      &
                                           xland,znt,raincv,ash_fall
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         ,        &
           INTENT(IN ) ::                                     &
@@ -626,6 +628,7 @@ CONTAINS
                       t_phy, rho_phy, p_phy,                                   &
                       alt, p8w, t8w, dz8w, z, z_at_w,                          &
                       ust, aer_res, ivgtyp, vegfra, pbl, rmol, znt,            &
+                      snowh, xice,                                             &
                       moist, chem, ddvel,                                      &
                       h2oai, h2oaj, numgas,                                    &
                       ids,ide, jds,jde, kds,kde,                               &
