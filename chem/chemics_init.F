@@ -389,7 +389,7 @@ call wrf_message("**************************************************************
      elseif( id == 1 ) then
        if ( config_flags%mp_physics /= WSM6SCHEME &
             .and. config_flags%mp_physics /= THOMPSON &
-            .and. config_flags%mp_physics /= THOMPSONAERO
+            .and. config_flags%mp_physics /= THOMPSONAERO &
             .and. config_flags%mp_physics /= MORR_TWO_MOMENT &
             .and. .not. ( config_flags%mp_physics == NSSL_2MOM &
                           .and. config_flags%nssl_2moment_on == 1 ) ) then
