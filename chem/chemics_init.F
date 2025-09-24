@@ -530,28 +530,28 @@ call wrf_message("**************************************************************
       call wrf_error_fatal( trim(message_txt) )
    endif
 
-   ! Checks for sea spray aerosol emissions option seas_opt = SEASMONAHAN,
-   ! SEASIOANNIDIS, SEASGONG, SEASSALTER
-   IF ( config_flags%seas_opt == SEASMONAHAN .OR. config_flags%seas_opt == SEASIOANNIDIS &
-        .OR. config_flags%seas_opt == SEASGONG .OR. config_flags%seas_opt == SEASSALTER) THEN
+   !-- Checks for sea spray aerosol emissions option
+   SELECT CASE(config_flags%seas_opt)
+   CASE(SEASMONAHAN, SEASIOANNIDIS, SEASGONG, SEASSALTER)
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
-       ! Initialize seaspray emissions for valid chem_opt
+       ! Initialize seaspray emissions
        CALL seaspray_emis_init(config_flags%chem_opt, config_flags%seas_opt)
      ELSE
-       CALL wrf_error_fatal ('chemics_init: error, sea salt emissions seas_opt &
-         == SEASMONAHAN,SEASIOANNIDIS,SEASGONG,SEASSALTER, are only compatible &
-         with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
+       CALL wrf_error_fatal ('chemics_init: error, selected sea spray emissions &
+        option seas_opt is only compatible with GOCART, MOSAIC_4BIN and &
+        MOSAIC_8BIN.')
      ENDIF
-   ENDIF
-   ! Checks for blowing snow aerosol emissions option
+   END SELECT ! seas_opt
+   !-- Checks for blowing snow aerosol emissions option
    IF ( config_flags%blowing_snow_opt == 1 ) THEN
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
-       ! Initialize blowing snow emissions for valid chem_opt
+       ! Initialize blowing snow emissions
        CALL wrf_debug( 15, 'Calling blowing_snow_emis_init')
        CALL blowing_snow_emis_init(config_flags%chem_opt)
      ELSE
-       CALL wrf_error_fatal ('chemics_init: error, blowing snow emissions are &
-           only compatible with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
+       CALL wrf_error_fatal ('chemics_init: error, blowing snow emission &
+           blowing_snow_opt is only compatible with GOCART, MOSAIC_4BIN &
+           and MOSAIC_8BIN.')
      ENDIF
    ENDIF
 
