@@ -68,6 +68,7 @@
    USE module_ctrans_grell, only: conv_tr_wetscav_init
    USE module_aer_aqchem_simple, only: aer_aqchem_simple_init
    USE module_aer_wetscav_simple, only: aer_wetscav_simple_init
+   USE module_aer_drydep_simple, only: aer_drydep_simple_init
 
 !!! TUCCELLA (BUG)
    USE module_prep_wetscav_sorgam, only: aerosols_sorgam_init_aercld_ptrs, aerosols_soa_vbs_init_aercld_ptrs
@@ -425,6 +426,14 @@ call wrf_message("**************************************************************
             & requires mp_phys = THOMPSON, THOMPSONAERO, WSM6SCHEME, &
             & CAMMGMPSCHEME or MORR_TWO_MOMENT")
      ENDIF
+   ENDIF
+
+   ! Simple aerosol dry deposition for GOCART aerosols
+   ! - Can be enabled for any GOCART chem_opt
+   !TODO add MMINLU_LOC input to initialize Zhang2001 interception parameters
+   IF(config_flags%aer_drydep_opt > 0 .AND. aer_is_gocart) THEN
+      CALL wrf_debug( 15, 'Chemics_init: Calling aer_drydep_simple_init' )
+      CALL aer_drydep_simple_init(config_flags%chem_opt)
    ENDIF
 
    ! LMarelle - WRF-Chem aerosol aware ice nucleation, only coupled for now with
