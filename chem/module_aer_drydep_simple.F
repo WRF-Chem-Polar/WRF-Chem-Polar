@@ -39,8 +39,8 @@ MODULE module_aer_drydep_simple
 
   !TODO following parameters could be moved to a data module
   ! Interception efficiency land-dependent coefficient, from Zhang2001
-  REAL, SAVE :: rad_collector_zhang(5,15)
-  DATA rad_collector_zhang/ &
+  REAL, SAVE :: RAD_COLLECTOR_ZHANG(5,15)
+  DATA RAD_COLLECTOR_ZHANG/ &
          0.002, 0.002, 0.002, 0.002, 0.002, &  ! luc 1
          0.005, 0.005, 0.005, 0.005, 0.005, &  ! luc 2
          0.002, 0.002, 0.005, 0.005, 0.002, &  ! luc 3
@@ -58,8 +58,8 @@ MODULE module_aer_drydep_simple
          0.010, 0.010, 0.010, 0.010, 0.010  /  ! luc 15
 
   ! Maps MODIS surface categories to zhang categories
-  INTEGER, SAVE  :: zhangsurf_from_modis(21)
-  DATA zhangsurf_from_modis / &
+  INTEGER, SAVE  :: ZHANG_SURF_FROM_MODIS(21)
+  DATA ZHANG_SURF_FROM_MODIS / &
     !   ! zhang category        <---- modis category
     1, &! evergreen needle-leaf    1 'Evergreen Needleleaf Forest'
     2, &! evergreen broadleaf      2 'Evergreen Broadleaf Forest'
@@ -84,8 +84,8 @@ MODULE module_aer_drydep_simple
     13/ ! inland water            21 'Lakes'
 
   ! Maps USGS surface categories to zhang categories
-  INTEGER, SAVE  :: zhangsurf_from_usgs(25)
-  DATA zhangsurf_from_usgs / &
+  INTEGER, SAVE :: ZHANGSURF_FROM_USGS(25)
+  DATA ZHANGSURF_FROM_USGS / &
     !     ! zhang category        <---  usgs category
    15, &  ! urban                    1: urban and built-up land
     7, &  ! crops, mixed farming     2: dryland cropland & pasture
@@ -118,11 +118,11 @@ CONTAINS
 !----------------------------------------------------------------------------
 
   SUBROUTINE aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh, &
-                               snowh, xice, ivgtyp, &
-                               res_adyn, julday, dtstep, &
-                               ids,ide, jds,jde, kds,kde,                   &
-                               ims,ime, jms,jme, kms,kme,                   &
-                               its,ite, jts,jte, kts,kte                    )
+                               xlat, snowh, xice, ivgtyp,           &
+                               res_adyn, julday, dtstep,            &
+                               ids,ide, jds,jde, kds,kde,           &
+                               ims,ime, jms,jme, kms,kme,           &
+                               its,ite, jts,jte, kts,kte            )
    ! Purpose:
    !  Calculates and applies dry deposition tendencies for aerosols
    !  
@@ -133,6 +133,7 @@ CONTAINS
    !    ust = friction velocity (m/s)
    !    dz8w = model vertical level depth (m)
    !    rh = relative humidity (0-1)
+   !    xlat = latitude (-90 to 90)
    !    snowh = snow depth (m)
    !    xice = sea ice concentration (fraction)
    !    ivgtyp = land use category (categorical)
@@ -156,6 +157,7 @@ CONTAINS
    REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ust
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: dz8w
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: rh
+   REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: xlat
    REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: snowh
    REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: xice
    INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ivgtyp
@@ -185,14 +187,14 @@ CONTAINS
    REAL :: freepath
    ! Aerodynamical deposition resistance (s/cm)
    REAL :: res_adyn_scm
-   ! Aerosol wet density (g/cm3)
-   REAL :: aerodens
+   ! Aerosol dry and wet densities (g/cm3)
+   REAL :: aer_dry_dens_gcm3, aer_wet_dens_gcm3
    ! Stokes and schmidt numbers (dimensionless)
    REAL :: stokes, schmidt
    ! Particle Brownian diffusivity (cm2/s)
    REAL :: aerodiffus
-   ! Aerosol wet diameter (cm)
-   REAL :: aer_diam_cm
+   ! Aerosol dry and wet diameters (cm)
+   REAL :: aer_dry_d_cm, aer_wet_d_cm
    ! Air kinematic viscosity (cm2/s)
    REAL :: airkinvisc
    ! Cunningham correction factor
@@ -205,44 +207,39 @@ CONTAINS
    REAL :: ebrown, eimpact, eintercept
    ! Particle bounce correction factor
    REAL :: r1fac
-   !TODO describe
-   REAL :: c1_wet,c2_wet,c3_wet,c4_wet
    ! x,y,z, and chemical species index, chemical species pointer
    INTEGER :: i, j, k, nv, p_chem
-   !TODO
-   INTEGER :: zhangsurfcat, wrfsurfcat, iseason, iseason_in
+   ! Zhang2001 surface category
+   INTEGER :: zhangsurfcat
+   ! WRF (USGS or MODIS) surface category
+   INTEGER :: wrfsurfcat
+   ! Zhang2001 Seasonal category
+   INTEGER :: iseason
+   ! Flag for vegetated surfaces (true if vegetation is present)
    LOGICAL :: is_vegetated
 
    !---- Parameters
+   !TODO move to data module?
+   !TODO use model constants when available?
    ! Surface resistance parameterization empirical coefficient
-   !TODO This is varying by process in Zhang2001
    REAL, PARAMETER :: EPSZ = 3.
    ! Parameters for the deposition efficiencies, from Emerson2020
-   REAL, PARAMETER :: cbrown = 0.2
-   REAL, PARAMETER :: cimpact = 0.4, alphaimpact = 0.8, betaimpact = 1.7
-   REAL, PARAMETER :: cintercept=2.5, nuintercept=0.8
-   ! REAL, PARAMETER :: boltzmann = 1.3807E-23 ! J/K = kg m-2 s-2 K-1
-   REAL, PARAMETER :: boltzmann = 1.3807E-16 ! erg/K = g cm2 s-2 K-1
-   REAL, PARAMETER :: pi = 3.1416
-   REAL, PARAMETER :: gravity = 980.616 ! cm s-2
-
-   !---- Initialize seasonal category parameter
-   !TODO this is hardcoded for the northern hemisphere midlatitudes
-   !TODO read in XLAT
-   ! This should not cause too many issues in the high NH latitudes but will
-   ! cause problems in the southern hemisphere and the tropics
-   iseason_in = 2 ! Default: autumn with cropland that has not been harvested.
-   IF(julday >= 60 .and. julday <= 150) THEN
-     iseason_in = 5 ! Transitional spring with partially green short annuals.
-   ELSEIF(julday > 151 .and. julday < 245) THEN
-     iseason_in = 1 ! Midsummer with lush vegetation.
-   ELSEIF(julday >= 245 .and. julday < 305) THEN
-     iseason_in = 2 ! Autumn with cropland that has not been harvested.
-   ELSEIF (julday < 60 .or. julday > 300) THEN
-     iseason_in = 3 ! Late autumn after frost, no snow.
-   ENDIF
-   ! category 4 (Winter, snow on ground and sub-freezing.) can be set below
-   ! depending on snow/ice cover
+   REAL, PARAMETER :: CBROWN = 0.2
+   REAL, PARAMETER :: CIMPACT = 0.4, ALPHAIMPACT = 0.8, BETAIMPACT = 1.7
+   REAL, PARAMETER :: CINTERCEPT = 2.5, NUINTERCEPT = 0.8
+   ! REAL, PARAMETER :: BOLTZMANN = 1.3807E-23 ! J/K = kg m-2 s-2 K-1
+   REAL, PARAMETER :: BOLTZMANN = 1.3807E-16 ! erg/K = g cm2 s-2 K-1
+   REAL, PARAMETER :: PI = 3.1416
+   REAL, PARAMETER :: GRAVITY = 980.616 ! cm s-2
+   ! Parameters for the wet diameter calculation of Gerber (1985)
+   REAL, PARAMETER :: C1_WET_SEASALT = 0.7674
+   REAL, PARAMETER :: C2_WET_SEASALT = 3.079
+   REAL, PARAMETER :: C3_WET_SEASALT = 2.573E-11
+   REAL, PARAMETER :: C4_WET_SEASALT = -1.424
+   REAL, PARAMETER :: C1_WET_SULFATE = 0.4809
+   REAL, PARAMETER :: C2_WET_SULFATE = 3.082
+   REAL, PARAMETER :: C3_WET_SULFATE = 3.110E-11
+   REAL, PARAMETER :: C4_WET_SULFATE = -1.428
 
    !-------- Perform dry deposition for aerosol species -------
    DO j=jts,jte
@@ -262,40 +259,74 @@ CONTAINS
        ! Land cover category from WRF
        wrfsurfcat = ivgtyp(i,j)
 
-       !---- Get the surface and seasonal category
-       ! Get the surface category
+       !---- Initialize the seasonal category parameter
+       ! This is only used to set up the interception parameters if the grid
+       ! cell is vegetated, so no need to worry about "lush vegetation" at the
+       ! poles or in other deserts
+       IF(xlat(i,j) > 25.0) THEN
+         !-- Northern midlatitudes and the Arctic
+         iseason = 2 ! Default: autumn with cropland that has not been harvested.
+         IF(julday >= 60 .and. julday <= 150) THEN
+           iseason = 5 ! Transitional spring with partially green short annuals.
+         ELSEIF(julday > 150 .and. julday < 245) THEN
+           iseason = 1 ! Midsummer with lush vegetation.
+         ELSEIF(julday >= 245 .and. julday <= 305) THEN
+           iseason = 2 ! Autumn with cropland that has not been harvested.
+         ELSEIF (julday < 60 .or. julday > 305) THEN
+           iseason = 3 ! Late autumn after frost, no snow.
+         ENDIF
+       ELSEIF(xlat(i,j) > -25.0) THEN
+         !-- Tropical regions
+         iseason = 1 ! Midsummer with lush vegetation.
+       ELSE ! xlat(i,j) <= -25.0
+         !-- Southern midlatitudes and Antarctica
+         iseason = 2 ! Default: autumn with cropland that has not been harvested.
+         IF(julday >= 240 .and. julday <= 330) THEN
+           iseason = 5 ! Transitional spring with partially green short annuals.
+         ELSEIF(julday > 330 .or. julday < 65) THEN
+           iseason = 1 ! Midsummer with lush vegetation.
+         ELSEIF(julday >= 65 .and. julday <= 125) THEN
+           iseason = 2 ! Autumn with cropland that has not been harvested.
+         ELSEIF (julday > 125 .and. julday < 240) THEN
+           iseason = 3 ! Late autumn after frost, no snow.
+         ENDIF
+       ENDIF
+       ! If there is snow on the ground or sea ice at the surface, use the
+       ! winter/frozen ground seasonal category
+       IF(xice(i,j) > 0.15 .OR. snowh(i,j) > 0.1) THEN
+          iseason = 4 ! winter, snow on ground
+       ENDIF
+
+       !---- Initialize the surface category parameters
        zhangsurfcat = 12 ! default to ice
        IF ( trim(mminlu_loc) == 'USGS' ) THEN
          ! Map from usgs to zhang surface category
          IF ((wrfsurfcat >= 1) .and. (wrfsurfcat <= 25)) &
-            zhangsurfcat = zhangsurf_from_usgs(wrfsurfcat)
+            zhangsurfcat = ZHANGSURF_FROM_USGS(wrfsurfcat)
        ENDIF
        IF( trim(mminlu_loc) == 'MODIFIED_IGBP_MODIS_NOAH' ) THEN
          ! Map from MODIS to zhang surface category
          IF ((wrfsurfcat >= 1) .and. (wrfsurfcat <= 20)) &
-            zhangsurfcat = zhangsurf_from_modis(wrfsurfcat)
+            zhangsurfcat = ZHANG_SURF_FROM_MODIS(wrfsurfcat)
        ENDIF
        IF( trim(mminlu_loc) == 'MODIS' ) THEN
          ! Map from MODIS+lakes to zhang surface category
          IF ((wrfsurfcat >= 1) .and. (wrfsurfcat <= 21)) &
-            zhangsurfcat = zhangsurf_from_modis(wrfsurfcat)
+            zhangsurfcat = ZHANG_SURF_FROM_MODIS(wrfsurfcat)
+       ENDIF
+       ! If there is snow on the ground or sea ice at the surface, use the
+       ! snow/ice surface category
+       IF(xice(i,j) > 0.15 .OR. snowh(i,j) > 0.1) THEN
+          zhangsurfcat = 12 ! ice
        ENDIF
        is_vegetated = zhangsurfcat == 8 &
                       .OR. zhangsurfcat == 9 &
                       .OR. zhangsurfcat == 12 &
                       .OR. zhangsurfcat == 13 &
                       .OR. zhangsurfcat == 14
-       ! Get the seasonal category
-       iseason = iseason_in
-       ! Force snow/ice surface and winter if there is snow on ground or sea
-       ! ice
-       IF(xice(i,j) > 0.15 .OR. snowh(i,j) > 0.1) THEN
-          zhangsurfcat = 12 ! ice
-          iseason = 4 ! winter, snow on ground
-       ENDIF
 
        !---- Land-surface dependent interception parameter converted to cm
-       aintercept = rad_collector_zhang(iseason, zhangsurfcat) * 1.E2
+       aintercept = RAD_COLLECTOR_ZHANG(iseason, zhangsurfcat) * 1.E2
 
        DO nv = 1,naerspecies
          !---- Initialize aerosol parameters and convert units
@@ -303,60 +334,50 @@ CONTAINS
          p_chem = aer_pointers(nv)
 
          !-- Aerosol wet diameter (cm)
-         aer_diam_cm = aer_dry_diam(nv) * 1.0E2
+         aer_dry_d_cm = aer_dry_diam(nv) * 1.0E2
          ! Calculate wet diameter with eq. 10 in Zhang2001, also see Gerber1985
-         !TODO only for hygrophilic aerosols, sea salt, sulfate, and oc2, bc2
+         ! Ths should only be done for hydrophilic aerosols, sea salt, sulfate
+         !TODO maybe enable with oc2, bc2, using 'rural' parameters from Zhang2001
          IF(p_chem == p_seas_1 .OR. p_chem == p_seas_2 .OR. p_chem == p_seas_3 .OR. p_chem == p_seas_4) THEN
-           !TODO move to data module?
-           c1_wet = 0.7674
-           c2_wet = 3.079
-           c3_wet = 2.573E-11
-           c4_wet = -1.424
-           aer_diam_cm = ( c1_wet*aer_diam_cm**c2_wet &
-                         / (c3_wet*aer_diam_cm**c4_wet - log(relhum)) &
-                         + aer_diam_cm**3.0 ) ** (1./3.)
-           ! WRITE(*,*) 'i,j,nv,rh,aer_diam_dry,aer_diam_wet: ', i,j,nv,relhum,aer_dry_diam(nv),aer_diam_cm
+           aer_wet_d_cm = ( C1_WET_SEASALT*aer_dry_d_cm**C2_WET_SEASALT &
+                         / (C3_WET_SEASALT*aer_dry_d_cm**C4_WET_SEASALT - log(relhum)) &
+                         + aer_dry_d_cm**3.0 ) ** (1./3.)
+           ! WRITE(*,*) 'i,j,nv,rh,aer_diam_dry,aer_diam_wet: ', i,j,nv,relhum,aer_dry_diam(nv),aer_wet_d_cm
          ELSEIF(p_chem == p_sulf) THEN
-           !TODO move to data module?
-           c1_wet = 0.4809
-           c2_wet = 3.082
-           c3_wet = 3.110E-11
-           c4_wet = -1.428
-           aer_diam_cm = ( c1_wet*aer_diam_cm**c2_wet &
-                         / (c3_wet*aer_diam_cm**c4_wet - log(relhum)) &
-                         + aer_diam_cm**3.0 ) ** (1./3.)
-           ! WRITE(*,*) 'i,j,nv,rh,aer_diam_dry,aer_diam_wet: ', i,j,nv,relhum,aer_dry_diam(nv),aer_diam_cm
+           aer_wet_d_cm = ( C1_WET_SULFATE*aer_dry_d_cm**C2_WET_SULFATE &
+                         / (C3_WET_SULFATE*aer_dry_d_cm**C4_WET_SULFATE - log(relhum)) &
+                         + aer_dry_d_cm**3.0 ) ** (1./3.)
+           ! WRITE(*,*) 'i,j,nv,rh,aer_diam_dry,aer_diam_wet: ', i,j,nv,relhum,aer_dry_diam(nv),aer_wet_d_cm
          ENDIF
 
          !-- Aerosol wet density (g/cm3)
          !TODO using dry density for now
-         aerodens = aer_dry_dens(nv) * 1.E-3
+         aer_dry_dens_gcm3 = aer_dry_dens(nv) * 1.E-3
 
          !---- Calculate the sedimentation velocity at the surface
          ! Settling (Stokes) velocity (cm/s)
-         vsettl = (gravity*aerodens*aer_diam_cm*aer_diam_cm) &
+         vsettl = (GRAVITY*aer_dry_dens_gcm3*aer_wet_d_cm*aer_wet_d_cm) &
                   / (18.*airkinvisc*rho_gcm3)
          ! Cunningham correction factor for the stokes velocity
-         cunningham_fact = 1.0 + 2.0 * freepath/aer_diam_cm &
-                           * (1.257 + 0.400*EXP(-0.55*aer_diam_cm/freepath) )
+         cunningham_fact = 1.0 + 2.0 * freepath/aer_wet_d_cm &
+                           * (1.257 + 0.400*EXP(-0.55*aer_wet_d_cm/freepath) )
          vsettl = vsettl*cunningham_fact
 
          !---- Calculate the surface deposition resistance
-         !TODO Check zhang for modal factors etc.
          ! g cm2 s-2 K-1 / *** -> g cm2 s-2 / ***
          ! -> g cm2 s-2 / (cm2 s-1 g cm-3 * cm) ->  s-1 / (cm-2) -> cm2/s
-         aerodiffus = boltzmann * tk * cunningham_fact &
-                      / (3.0*pi*airkinvisc*rho_gcm3*aer_diam_cm)
+         aerodiffus = BOLTZMANN * tk * cunningham_fact &
+                      / (3.0*PI*airkinvisc*rho_gcm3*aer_wet_d_cm)
          schmidt = airkinvisc/aerodiffus
          IF(is_vegetated) THEN
-           stokes = ust_cms*vsettl/(gravity*aintercept)
-           eintercept = cintercept * (aer_diam_cm/aintercept)**nuintercept
+           stokes = ust_cms*vsettl/(GRAVITY*aintercept)
+           eintercept = CINTERCEPT * (aer_wet_d_cm/aintercept)**NUINTERCEPT
          ELSE
-           stokes = ust_cms*ust_cms*vsettl/(gravity*airkinvisc)
+           stokes = ust_cms*ust_cms*vsettl/(GRAVITY*airkinvisc)
            eintercept = 0.0
          ENDIF
-         eimpact = cimpact * (stokes/(alphaimpact+stokes))**betaimpact
-         ebrown = cbrown * schmidt**(-0.66666666)
+         eimpact = CIMPACT * (stokes/(ALPHAIMPACT+stokes))**BETAIMPACT
+         ebrown = CBROWN * schmidt**(-0.66666666)
          r1fac = EXP(-(stokes**0.5)) ! Zhang2001
          res_sfc = 1. / (EPSZ * ust(i,j) * (ebrown+eimpact+eintercept) * r1fac) ! s/m
 
@@ -365,14 +386,14 @@ CONTAINS
          vdep = vsettl + 1./(res_adyn(i,j) + res_sfc)
 
          !---- Perform dry deposition
-         ! WRITE(*,*) 'i,j,nv,aerd,aerdens,vdep,vsettl,res_sfc,res_adyn',i,j,nv,aer_diam_cm,aerodens,vdep,vsettl,res_sfc,res_adyn(i,j)
+         ! WRITE(*,*) 'i,j,nv,aerd,aerdens,vdep,vsettl,res_sfc,res_adyn',i,j,nv,aer_wet_d_cm,aer_dry_dens_gcm3,vdep,vsettl,res_sfc,res_adyn(i,j)
          drydeprate = vdep/dz8w(i,kts,j) ! s -1
          aer_mmr_old = chem(i,kts,j,p_chem)
          aer_mmr = aer_mmr_old * EXP(-dtstep*drydeprate)
          chem(i,kts,j,p_chem) = MAX(0.0, aer_mmr)
 
        END DO !nv
-       ! WRITE(*,*) 'i,j,nv,vdep,vsettl,res_sfc,res_adyn',i,j,nv,aer_diam_cm,aerodens,vdep,vsettl,res_sfc,res_adyn(i,j)
+       ! WRITE(*,*) 'i,j,nv,vdep,vsettl,res_sfc,res_adyn',i,j,nv,aer_wet_d_cm,aer_dry_dens_gcm3,vdep,vsettl,res_sfc,res_adyn(i,j)
      END DO ! i
    END DO ! j
 

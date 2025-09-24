@@ -308,7 +308,7 @@ CONTAINS
             !       ims,ime, jms,jme, kms,kme,                              &
             !       its,ite, jts,jte, kts,kte )
             CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
-                                   snowh, xice, ivgtyp,                   &
+                                   xlat, snowh, xice, ivgtyp,             &
                                    aer_res_def, julday, dtstep,           &
                                    ids,ide, jds,jde, kds,kde,             &
                                    ims,ime, jms,jme, kms,kme,             &
@@ -419,7 +419,7 @@ CONTAINS
           !       ims,ime, jms,jme, kms,kme,                                 &
           !       its,ite, jts,jte, kts,kte                                  )
           CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
-                                 snowh, xice, ivgtyp,                   &
+                                 xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
                                  ims,ime, jms,jme, kms,kme,             &
@@ -440,7 +440,7 @@ CONTAINS
           !       ims,ime, jms,jme, kms,kme,                                 &
           !       its,ite, jts,jte, kts,kte                                  )
           CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
-                                 snowh, xice, ivgtyp,                   &
+                                 xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
                                  ims,ime, jms,jme, kms,kme,             &
@@ -472,7 +472,7 @@ CONTAINS
           !       ims,ime, jms,jme, kms,kme,                                 &
           !       its,ite, jts,jte, kts,kte                                  )
           CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
-                                 snowh, xice, ivgtyp,                   &
+                                 xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
                                  ims,ime, jms,jme, kms,kme,             &
