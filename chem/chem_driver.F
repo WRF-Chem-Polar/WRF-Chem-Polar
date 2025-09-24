@@ -856,7 +856,7 @@
               config_flags,                                                                &
               grid%gmt,ijulian,rri,t_phy,moist,p8w,t8w,u_phy,v_phy,vvel,               &
               grid%e_bio,p_phy,chem,rho,dz8w,grid%ne_area,emis_ant,emis_vol,grid%tsk,      &
-              grid%erod,grid%erod_dri,grid%lai_vegmask,                                    &
+              grid%erod,grid%erod_dri,grid%erod_hl,grid%lai_vegmask,                                    &
               g,emis_seas,emis_dust,tracer,                                                &
               emis_seas2,      &
               ebu, ebu_in,grid%mean_fct_agtf,grid%mean_fct_agef,grid%mean_fct_agsv,       &
@@ -906,6 +906,7 @@
               grid%mebio_acet,grid%mebio_mbo,grid%mebio_no,                                &
               current_month,                                                               &
               grid%lakemask,grid%e_nacl_ocean,grid%e_nacl_blow,grid%e_nacl_leads,          &
+              grid%e_dust,                                                                 &
          ! stuff for LNOx emissions
              grid%ht, grid%refl_10cm, grid%ic_flashrate, grid%cg_flashrate,                 &
          ! stuff for aircraft emissions

@@ -75,6 +75,7 @@
 !!CYY
    USE module_model_constants, only:t0
    USE module_seaspray_emis, only:seaspray_emis_init
+   USE module_mineraldust_emis, only:mineraldust_emis_init
    USE module_blowing_snow_emis, only:blowing_snow_emis_init
 
    IMPLICIT NONE
@@ -554,6 +555,41 @@ call wrf_message("**************************************************************
            only compatible with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
      ENDIF
    ENDIF
+   !-- Checks for mineral dust aerosol emissions option
+   SELECT CASE(config_flags%dust_opt)
+   CASE(DUST_WRFGOCART)
+     ! Option DUST_WRFGOCART is only compatible with GOCART aerosols
+     IF(aer_is_gocart) THEN
+       ! Initialize mineraldust emissions
+       CALL wrf_debug( 15, 'Calling mineraldust_emis_init')
+       CALL mineraldust_emis_init(config_flags%chem_opt, config_flags%dust_opt)
+     ELSE
+       CALL wrf_error_fatal ('chemics_init: error, selected mineral dust &
+           emissions option dust_opt is only compatible with GOCART aerosols')
+     ENDIF
+   CASE(DUST_G04, DUST_G01, DUST_MB95, DUST_FLEXDUST)
+     ! These dust options are compatible with MOSAIC or GOCART aerosols
+     IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
+       ! Initialize mineraldust emissions
+       CALL wrf_debug( 15, 'Calling mineraldust_emis_init')
+       CALL mineraldust_emis_init(config_flags%chem_opt, config_flags%dust_opt)
+     ELSE
+       CALL wrf_error_fatal ('chemics_init: error, selected mineral dust &
+           emissions option dust_opt is only compatible with GOCART, &
+           MOSAIC_4BIN or MOSAIC_8BIN aerosols')
+     ENDIF
+   END SELECT ! dust_opt
+   !-- Checks for high latitude dust emissions
+   IF(config_flags%dust_hl_opt == 1) THEN
+     SELECT CASE(config_flags%dust_opt)
+     CASE(DUST_WRFGOCART, DUST_G04, DUST_G01, DUST_FLEXDUST, DUST_MB95, &
+          DUSTGOCARTAFWA)
+       CALL wrf_debug( 15, 'Using high-latitude-dust emissions')
+     CASE DEFAULT
+       CALL wrf_error_fatal ('chemics_init: error, dust_hl_opt=1 is not &
+           compatible with this dust_opt')
+     END SELECT ! dust_opt
+   ENDIF ! dust_hl_opt
 
    ! osipov check that ddflx & ddlen has correct dim size (chem_opt=106 and such)
    if ( config_flags%diagnostic_dep .EQ. 1 .AND. config_flags%ne_area .LT. num_chem ) then
