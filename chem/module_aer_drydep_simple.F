@@ -117,7 +117,8 @@ CONTAINS
 
 !----------------------------------------------------------------------------
 
-  SUBROUTINE aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh, &
+  SUBROUTINE aer_drydep_simple(chem, dustdrydep, seasdrydep,        &
+                               t_phy, rho_phy, ust, dz8w, rh,       &
                                xlat, snowh, xice, ivgtyp,           &
                                res_adyn, julday, dtstep,            &
                                ids,ide, jds,jde, kds,kde,           &
@@ -143,6 +144,8 @@ CONTAINS
    !    ids,ims,its etc. = domain, memory, and tile start and end indices
    !  Input/output:
    !    chem = advected chemical species (gases in ppm, aerosols in ug/kg)
+   !    dustdrydep = accumulated dust dry deposition (kg/m2)
+   !    seasdrydep = accumulated seasalt dry deposition (kg/m2)
 
    ! USE associations:
    !TODO Use ONLY:
@@ -164,6 +167,7 @@ CONTAINS
    REAL, DIMENSION(its:ite, jts:jte), INTENT(IN) :: res_adyn
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme, num_chem),          &
        INTENT(INOUT) :: chem
+   REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: dustdrydep, seasdrydep
    REAL, INTENT(IN) :: dtstep
    INTEGER, INTENT(IN) :: julday
    INTEGER, INTENT(IN) :: ids,ide, jds,jde, kds,kde,    &
@@ -207,6 +211,8 @@ CONTAINS
    REAL :: ebrown, eimpact, eintercept
    ! Particle bounce correction factor
    REAL :: r1fac
+   ! Conversion factor from MMR to deposition (ug/kg to kg/m2)
+   REAL :: conv_mmr_to_dep
    ! x,y,z, and chemical species index, chemical species pointer
    INTEGER :: i, j, k, nv, p_chem
    ! Zhang2001 surface category
@@ -391,6 +397,29 @@ CONTAINS
          aer_mmr_old = chem(i,kts,j,p_chem)
          aer_mmr = aer_mmr_old * EXP(-dtstep*drydeprate)
          chem(i,kts,j,p_chem) = MAX(0.0, aer_mmr)
+
+         !---- Output dry deposition velocities and dry deposited mass for dust and sea salt
+         ! Convert ug/kg to kg/m2
+         conv_mmr_to_dep = rho_phy(i,kts,j)*dz8w(i,kts,j)*1.E-9
+         IF(p_chem == p_dust_1) THEN
+           dustdrydep(i,j) = dustdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         ELSEIF(p_chem == p_dust_2) THEN
+           dustdrydep(i,j) = dustdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         ELSEIF(p_chem == p_dust_3) THEN
+           dustdrydep(i,j) = dustdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         ELSEIF(p_chem == p_dust_4) THEN
+           dustdrydep(i,j) = dustdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         ELSEIF(p_chem == p_dust_5) THEN
+           dustdrydep(i,j) = dustdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         ELSEIF(p_chem == p_seas_1) THEN
+           seasdrydep(i,j) = seasdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         ELSEIF(p_chem == p_seas_2) THEN
+           seasdrydep(i,j) = seasdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         ELSEIF(p_chem == p_seas_3) THEN
+           seasdrydep(i,j) = seasdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         ELSEIF(p_chem == p_seas_4) THEN
+           seasdrydep(i,j) = seasdrydep(i,j) + (aer_mmr_old-aer_mmr)*conv_mmr_to_dep
+         END IF
 
        END DO !nv
        ! WRITE(*,*) 'i,j,nv,vdep,vsettl,res_sfc,res_adyn',i,j,nv,aer_wet_d_cm,aer_dry_dens_gcm3,vdep,vsettl,res_sfc,res_adyn(i,j)

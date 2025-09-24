@@ -26,6 +26,7 @@ CONTAINS
                xice,                                                      &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
+               dustdrydep, seasdrydep, &
                depvelocity,                                               &
                dustgraset_1,dustgraset_2,dustgraset_3,                    &
                dustgraset_4,dustgraset_5,                                 &
@@ -161,6 +162,8 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
                 dustdrydep_1, dustdrydep_2, dustdrydep_3,       &
                 dustdrydep_4, dustdrydep_5, depvelocity
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
+                dustdrydep, seasdrydep
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
                dustgraset_1,dustgraset_2,dustgraset_3,          &
                dustgraset_4,dustgraset_5,                       &
@@ -307,7 +310,8 @@ CONTAINS
             !       ids,ide, jds,jde, kds,kde,                              &
             !       ims,ime, jms,jme, kms,kme,                              &
             !       its,ite, jts,jte, kts,kte )
-            CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
+            CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
+                                   t_phy, rho_phy, ust, dz8w, rh,         &
                                    xlat, snowh, xice, ivgtyp,             &
                                    aer_res_def, julday, dtstep,           &
                                    ids,ide, jds,jde, kds,kde,             &
@@ -418,7 +422,8 @@ CONTAINS
           !       ids,ide, jds,jde, kds,kde,                                 &
           !       ims,ime, jms,jme, kms,kme,                                 &
           !       its,ite, jts,jte, kts,kte                                  )
-          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
+          CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
+                                 t_phy, rho_phy, ust, dz8w, rh,         &
                                  xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
@@ -439,7 +444,8 @@ CONTAINS
           !       ids,ide, jds,jde, kds,kde,                                 &
           !       ims,ime, jms,jme, kms,kme,                                 &
           !       its,ite, jts,jte, kts,kte                                  )
-          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
+          CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
+                                 t_phy, rho_phy, ust, dz8w, rh,         &
                                  xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
@@ -471,7 +477,8 @@ CONTAINS
           !       ids,ide, jds,jde, kds,kde,                                 &
           !       ims,ime, jms,jme, kms,kme,                                 &
           !       its,ite, jts,jte, kts,kte                                  )
-          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
+          CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
+                                 t_phy, rho_phy, ust, dz8w, rh,         &
                                  xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
@@ -1246,7 +1253,7 @@ CONTAINS
           moist(ims,kms,jms,P_QV), moist(ims,kms,jms,P_QC), moist(ims,kms,jms,P_QI), &
           scalar(ims,kms,jms,P_QNDROP), f_qc, f_qi, chem,   &
           ccn1, ccn2, ccn3, ccn4, ccn5, ccn6, nsource,      &
-          qsrflx,                                           &
+          qsrflx, dustdrydep, seasdrydep,                   &
           ids,ide, jds,jde, kds,kde,                        &
           ims,ime, jms,jme, kms,kme,                        &
           its,ite, jts,jte, kts,kte                         )

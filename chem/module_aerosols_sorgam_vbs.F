@@ -8314,6 +8314,7 @@ END SUBROUTINE sorgam_vbs_source_du
                dtstepc,alt,t_phy,p8w,t8w,p_phy,chem,rho_phy,cldfra,        &
                qlsink,precr,preci,precs,precg,qsrflx,                      &
                gas_aqfrac, numgas_aqfrac,                                  &
+        dustwetdep, seaswetdep, &
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -8346,6 +8347,9 @@ END SUBROUTINE sorgam_vbs_source_du
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, num_chem ),          &
          INTENT(INOUT ) ::                                chem
 
+! Dust and sea salt wet deposition flux (kg/m2)
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT ) :: dustwetdep, seaswetdep
+
 ! fraction of gas species in cloud water
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, numgas_aqfrac ),     &
          INTENT(IN ) ::                                   gas_aqfrac
@@ -8374,6 +8378,7 @@ END SUBROUTINE sorgam_vbs_source_du
         volumcen_sect, volumlo_sect, volumhi_sect,                      &
         waterptr_aer, dens_water_aer,                                   &
         scavimptblvol, scavimptblnum, nimptblgrow_mind, nimptblgrow_maxd, dlndg_nimptblgrow, &
+        dustwetdep, seaswetdep, &
         ids,ide, jds,jde, kds,kde,                                      &
         ims,ime, jms,jme, kms,kme,                                      &
         its,ite, jts,jte, kts,kte                                       )
