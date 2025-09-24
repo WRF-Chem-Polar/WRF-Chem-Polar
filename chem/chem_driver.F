@@ -905,6 +905,7 @@
               grid%mebio_isop,grid%mebio_apin,grid%mebio_bpin, grid%mebio_bcar,            &
               grid%mebio_acet,grid%mebio_mbo,grid%mebio_no,                                &
               current_month,                                                               &
+              grid%raincv, grid%rainncv,                                                   &
               grid%lakemask,grid%e_nacl_ocean,grid%e_nacl_blow,grid%e_nacl_leads,          &
               grid%e_dust,                                                                 &
          ! stuff for LNOx emissions

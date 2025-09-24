@@ -64,6 +64,7 @@ CONTAINS
          mebio_isop, mebio_apin, mebio_bpin, mebio_bcar,                   &
          mebio_acet, mebio_mbo, mebio_no,                                  &
          current_month,                                                    &
+         raincv, rainncv, &
          lakemask, e_nacl_ocean, e_nacl_blow, e_nacl_leads, e_dust,        &
          ! end stuff for MEGAN v2.04
          ! stuff for LNOx emissions
@@ -334,6 +335,7 @@ CONTAINS
            adapt_step_flag
 
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: lakemask
+      REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: raincv, rainncv
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_ocean, e_nacl_blow, e_nacl_leads, e_dust
 
 !     stuff for aircraft emissions
@@ -834,7 +836,7 @@ real, save :: freq_industry(24)    = &
         CALL wrf_debug(15,'AFWA modified Gocart dust emissions')
         call gocart_dust_afwa_driver(dtstep,config_flags,alt,             &
          chem,rho_phy,smois,u10,v10,dz8w,erod,erod_dri,erod_hl,dustin,snowh,  &
-         isltyp,vegfra,lai_vegmask,xland,g,emis_dust,                  &
+         isltyp,vegfra,lai_vegmask,xland,g,emis_dust,e_dust,           &
          ust,znt,clayfrac,sandfrac,clayfrac_nga,sandfrac_nga,afwa_dustloft,&!EDH
          tot_dust,tot_edust,vis_dust,dust_alpha,dust_gamma,dust_smtune,dust_ustune, &
          ids,ide, jds,jde, kds,kde,                                        &
@@ -854,23 +856,25 @@ real, save :: freq_industry(24)    = &
         imod = 2
        END SELECT scheme_select
        call uoc_dust_driver (dtstep,config_flags,                     &
-         chem,rho_phy,dz8w,smois,ust, isltyp,vegfra,g,emis_dust,           &
-         ust_t, imod, rough_cor, smois_cor, soil_top_cat, erod,            &
+         chem,rho_phy,dz8w,smois,ust, isltyp,vegfra,g,emis_dust,e_dust,    &
+         ust_t, imod, rough_cor, smois_cor, soil_top_cat, erod, erod_hl,   &
          ids,ide, jds,jde, kds,kde,                                        &
          ims,ime, jms,jme, kms,kme,                                        &
          its,ite, jts,jte, kts,kte                                         )             
-      CASE(DUST_WRFGOCART, DUST_G04, DUST_G01, DUST_FLEXDUST, DUST_MB95)
+      CASE(DUST_WRFGOCART, DUST_WCP, DUST_FLEXDUST)
         ! Mineral dust emissions for GOCART or MOSAIC aerosols
         CALL wrf_debug(15, 'mineraldust_emis dust emissions')
-        CALL mineraldust_emis( id, dtstep, dz8w, config_flags%chem_opt, &
-         config_flags%dust_opt, config_flags%dust_hl_opt,           &
-         rho_phy, chem, e_dust,                               &
-         u10, v10, ust, xland, tsk, xice, snowh, &
-         clayfrac, sandfrac, &
-         erod, erod_hl, vegfra, smois(:,1,:), isltyp, ivgtyp, &
-         ids,ide, jds,jde, kds,kde,                                 &
-         ims,ime, jms,jme, kms,kme,                                 &
-         its,ite, jts,jte, kts,kte                                  )
+        CALL mineraldust_emis( dtstep=dtstep, dz8w=dz8w, tsk=tsk, &
+         chem_opt=config_flags%chem_opt, dust_opt=config_flags%dust_opt, &
+         dust_hl_opt=config_flags%dust_hl_opt, rho_phy=rho_phy, chem=chem, &
+         e_dust=e_dust, u10=u10, v10=v10, ust=ust, xland=xland, xice=xice, &
+         raincv=raincv, rainncv=rainncv, &
+         snowh=snowh, clayfrac=clayfrac, sandfrac=sandfrac, erod=erod, &
+         erod_hl=erod_hl, vegfra=vegfra, smois_top=smois(:,1,:), &
+         isltyp=isltyp, ivgtyp=ivgtyp, &
+         ids=ids, ide=ide, jds=jds, jde=jde, kds=kds, kde=kde,         &
+         ims=ims, ime=ime, jms=jms, jme=jme, kms=kms, kme=kme,         &
+         its=its, ite=ite, jts=jts, jte=jte, kts=kts, kte=kte)
 
       CASE DEFAULT 
         if(dust_emiss_active.eq.1) then

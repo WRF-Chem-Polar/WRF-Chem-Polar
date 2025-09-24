@@ -616,7 +616,7 @@ state    real  wdflx          ijo     misc        1         Z      r       "WET_
 state    real  e_nacl_ocean   ij      misc        1         Z      rh      "E_NACL_OCEAN"       "Ocean NaCl emiss"               "ug m^-2"
 state    real  e_nacl_blow    ij      misc        1         Z      rh      "E_NACL_BLOW"        "Blowing snow NaCl emiss"        "ug m^-2"
 state    real  e_nacl_leads    ij      misc        1         Z      rh      "E_NACL_LEADS"        "Leads NaCl emiss"        "ug m^-2"
-state    real  e_dust         ij      misc        1         Z      rh      "E_DUST"             "Dust aerosol emiss"             "mg m^-2"
+state    real  e_dust         ij      misc        1         Z      rh      "E_DUST"             "Dust aerosol emiss"             "kg m^-2"
 
 #
 state    real  e_bio          ijo     misc        1         Z      r        "E_BIO"             "EMISSIONS"             "ppm m/min"
@@ -4225,10 +4225,8 @@ package   dustgocart    dust_opt==1                  -              emis_dust:ed
 package   dustgocartafwa   dust_opt==3               -              emis_dust:edust1,edust2,edust3,edust4,edust5;state:afwa_dustloft,tot_dust,tot_edust,vis_dust
 package   dustuoc       dust_opt==4                  -              emis_dust:edust1,edust2,edust3,edust4,edust5
 package   dust_wrfgocart dust_opt==5                 -              -
-package   dust_g04      dust_opt==6                  -              -
-package   dust_g01      dust_opt==7                  -              -
-package   dust_flexdust dust_opt==8                  -              -
-package   dust_mb95     dust_opt==9                   -              -
+package   dust_wcp      dust_opt==6                  -              -
+package   dust_flexdust dust_opt==7                  -              -
 package   shao_2001     dust_schme==1                -              emis_dust:edust1,edust2,edust3,edust4,edust5
 package   shao_2004     dust_schme==2                -              emis_dust:edust1,edust2,edust3,edust4,edust5
 package   shao_2011     dust_schme==3                -              emis_dust:edust1,edust2,edust3,edust4,edust5

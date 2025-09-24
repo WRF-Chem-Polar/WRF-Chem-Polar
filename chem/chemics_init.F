@@ -562,17 +562,17 @@ call wrf_message("**************************************************************
      IF(aer_is_gocart) THEN
        ! Initialize mineraldust emissions
        CALL wrf_debug( 15, 'Calling mineraldust_emis_init')
-       CALL mineraldust_emis_init(config_flags%chem_opt, config_flags%dust_opt)
+       CALL mineraldust_emis_init(config_flags%chem_opt)
      ELSE
        CALL wrf_error_fatal ('chemics_init: error, selected mineral dust &
            emissions option dust_opt is only compatible with GOCART aerosols')
      ENDIF
-   CASE(DUST_G04, DUST_G01, DUST_MB95, DUST_FLEXDUST)
+   CASE(DUST_WCP, DUST_FLEXDUST)
      ! These dust options are compatible with MOSAIC or GOCART aerosols
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
        ! Initialize mineraldust emissions
        CALL wrf_debug( 15, 'Calling mineraldust_emis_init')
-       CALL mineraldust_emis_init(config_flags%chem_opt, config_flags%dust_opt)
+       CALL mineraldust_emis_init(config_flags%chem_opt)
      ELSE
        CALL wrf_error_fatal ('chemics_init: error, selected mineral dust &
            emissions option dust_opt is only compatible with GOCART, &
@@ -582,8 +582,8 @@ call wrf_message("**************************************************************
    !-- Checks for high latitude dust emissions
    IF(config_flags%dust_hl_opt == 1) THEN
      SELECT CASE(config_flags%dust_opt)
-     CASE(DUST_WRFGOCART, DUST_G04, DUST_G01, DUST_FLEXDUST, DUST_MB95, &
-          DUSTGOCARTAFWA)
+     CASE(DUST_WRFGOCART, DUST_WCP, DUST_FLEXDUST, &
+          DUSTGOCARTAFWA, DUSTUOC)
        CALL wrf_debug( 15, 'Using high-latitude-dust emissions')
      CASE DEFAULT
        CALL wrf_error_fatal ('chemics_init: error, dust_hl_opt=1 is not &
