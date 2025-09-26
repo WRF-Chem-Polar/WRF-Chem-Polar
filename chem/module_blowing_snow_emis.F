@@ -411,25 +411,25 @@ MODULE module_blowing_snow_emis
     IF(aer_is_gocart) THEN
       ! GOCART sea salt bin center diameters (micrometer)
       ! These should be log-averaged but I follow the GOCART definition instead
-      bin_diameters_cen = (/ 0.60, 2.00, 6.5, 15.0 /)
+      bin_diameters_cen(:) = (/ 0.60, 2.00, 6.5, 15.0 /)
       ! Size-resolved NaCl mass repartition in GOCART size bins
-      emiss_massfrac_nacl = (/ 0.8737, 0.1261, 1.491E-04, 0. /)
+      emiss_massfrac_nacl(:) = (/ 0.8737, 0.1261, 1.491E-04, 0. /)
 
     !-- Initialize NaCl size bin massfrac for MOSAIC-8bin aerosols
     ELSEIF(aer_is_mosaic8bin) THEN
       ! MOSAIC-8bin bin center diameters (micrometer)
-      bin_diameters_cen = (/ 0.0552, 0.1105, 0.2210, 0.4419, &
+      bin_diameters_cen(:) = (/ 0.0552, 0.1105, 0.2210, 0.4419, &
                              0.8839, 1.7678, 3.5355, 7.0711 /)
       ! Size-resolved NaCl mass repartition in MOSAIC-8bin size bins
-      emiss_massfrac_nacl = (/ 2.711E-02, 8.600E-02, 2.181E-01, 0.3580, &
+      emiss_massfrac_nacl(:) = (/ 2.711E-02, 8.600E-02, 2.181E-01, 0.3580, &
                                2.629E-01, 4.721E-02, 7.154E-04, 0. /)
 
     !-- Initialize NaCl size bin massfrac for MOSAIC-4bin aerosols
     ELSEIF(aer_is_mosaic4bin) THEN
       ! MOSAIC-4bin bin center diameters (micrometer)
-      bin_diameters_cen = (/ 0.0781, 0.3125, 1.2500, 5.0000 /)
+      bin_diameters_cen(:) = (/ 0.0781, 0.3125, 1.2500, 5.0000 /)
       ! Size-resolved NaCl mass repartition in MOSAIC-4bin size bins
-      emiss_massfrac_nacl = (/ 0.1131, 0.5761, 0.3101, 0.7155E-03 /)
+      emiss_massfrac_nacl(:) = (/ 0.1131, 0.5761, 0.3101, 0.7155E-03 /)
 
     ELSE ! aer_is_
       CALL wrf_error_fatal ('blowing_snow_emis_init: chem_opt not supported')
