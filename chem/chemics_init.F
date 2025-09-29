@@ -1876,27 +1876,6 @@ ENDIF ghg_block
        CALL wrf_debug(15,'call GOCART chem/aerosols initialization')
        ch_dust(:,:)=0.8D-9
        ch_ss(:,:)=1.
-       if( .NOT. config_flags%restart )then
-       ! if(config_flags%chem_in_opt == 0 )then
-       !    do j=jts,jte
-       !       do k=kts,kte
-       !          do i=its,ite
-       !            do n=1,num_chem
-       !              chem(i,k,j,n)=1.e-12
-       !            enddo
-       !            chem(i,k,j,p_dms)=0.1e-6
-       !            chem(i,k,j,p_so2)=5.e-6
-       !            chem(i,k,j,p_sulf)=3.e-6
-       !            chem(i,k,j,p_msa)=0.1e-6
-       !            chem(i,k,j,p_bc1)=0.1e-3
-       !            chem(i,k,j,p_bc2)=0.1e-3
-       !            chem(i,k,j,p_oc1)=0.1e-3
-       !            chem(i,k,j,p_oc2)=0.1e-3
-       !            chem(i,k,j,p_p25)=1.
-       !          enddo
-       !       enddo
-       !    enddo
-       ! endif
 !
 ! next is done to scale background oh and no3 in dependence on average zenith angle and day/night for no3
 ! this is done since background values are only available as average/month. It will not be necessary if other
