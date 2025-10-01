@@ -2628,25 +2628,48 @@
 !.. results in lookup table.
           if (rg(k).ge. r_g(1)) then
            if (twet(k).lt.T_0) then
-            prg_rcg(k) = tmr_racg(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)  &
-                         + tcr_gacr(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
+            if(is_hail_aware) then
+              prg_rcg(k) = tmr_racg(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)  &
+                           + tcr_gacr(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
+            else
+              prg_rcg(k) = tmr_racg(idx_g1,idx_g,1,idx_r1,idx_r)  &
+                           + tcr_gacr(idx_g1,idx_g,1,idx_r1,idx_r)
+            endif
             prg_rcg(k) = MIN(DBLE(rr(k)*odts), prg_rcg(k))
             prr_rcg(k) = -prg_rcg(k)
-            pnr_rcg(k) = tnr_racg(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)  &   ! RAIN2M
-                         + tnr_gacr(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
+            if(is_hail_aware) then
+              pnr_rcg(k) = tnr_racg(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)  &   ! RAIN2M
+                           + tnr_gacr(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
+            else
+              pnr_rcg(k) = tnr_racg(idx_g1,idx_g,1,idx_r1,idx_r)  &   ! RAIN2M
+                           + tnr_gacr(idx_g1,idx_g,1,idx_r1,idx_r)
+            endif
             pnr_rcg(k) = MIN(DBLE(nr(k)*odts), pnr_rcg(k))
 !-GT        pbg_rcg(k) = prg_rcg(k)/(0.5*(rho_i+rho_g(idx_bg(k))))
             pbg_rcg(k) = prg_rcg(k)/rho_i
            else
-            prr_rcg(k) = tcg_racg(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
+            if(is_hail_aware) then
+              prr_rcg(k) = tcg_racg(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
+            else
+              prr_rcg(k) = tcg_racg(idx_g1,idx_g,1,idx_r1,idx_r)
+            endif
             prr_rcg(k) = MIN(DBLE(rg(k)*odts), prr_rcg(k))
             prg_rcg(k) = -prr_rcg(k)
-            png_rcg(k) = tnr_racg(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
+            if(is_hail_aware) then
+              png_rcg(k) = tnr_racg(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
 !!!                    + tnr_gacr(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)
+            else
+              png_rcg(k) = tnr_racg(idx_g1,idx_g,1,idx_r1,idx_r)
+!!!                    + tnr_gacr(idx_g1,idx_g,1,idx_r1,idx_r)
+            endif
             png_rcg(k) = MIN(DBLE(ng(k)*odts), png_rcg(k))
             pbg_rcg(k) = prg_rcg(k)/rho_g(idx_bg(k))
 !..Put in explicit drop break-up due to collisions.
-            pnr_rcg(k) = -1.5*tnr_gacr(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)  ! RAIN2M
+            if(is_hail_aware) then
+              pnr_rcg(k) = -1.5*tnr_gacr(idx_g1,idx_g,idx_bg(k),idx_r1,idx_r)  ! RAIN2M
+            else
+              pnr_rcg(k) = -1.5*tnr_gacr(idx_g1,idx_g,1,idx_r1,idx_r)  ! RAIN2M
+            endif
            endif
           endif
          endif
