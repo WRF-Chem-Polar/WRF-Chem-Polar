@@ -121,7 +121,7 @@ CONTAINS
               ! fnight/=0.0 (for fnight=0: all cosszax (including current
               ! cossza) > 0.0)
               IF(fnight > 0.) THEN
-                xno3(1,1,1) = backg_no3(i,k,j) / (1.0 - TTDAY(i,j)/86400.)
+                xno3(1,1,1) = backg_no3(i,k,j) / fnight
               ELSE
                 xno3(1,1,1) = 0.0
               ENDIF
