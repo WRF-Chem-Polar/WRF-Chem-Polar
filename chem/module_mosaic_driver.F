@@ -430,7 +430,7 @@
 	rsub0(:,:,:) = rsub(:,:,:)
 
 	idiagaa_dum = 0
-	idiagbb_dum = 110
+	idiagbb_dum = 0 !110
 !rce 29-apr-2004 - following is for debugging texas 16 km run
 !	if ((its.eq.38) .and. (jts.eq.38)   &
 !			.and. (ktau.eq.240)) idiagaa_dum = 1
@@ -481,7 +481,7 @@
 	    call mosaic_newnuc_1clm( istat,  &
 		it, jt, kclm_calcbgn, kclm_calcend,   &
 		idiagbb_dum, dtchem, dtnuc, rsub0,   &
-		id, ktau, ktauc, its, ite, jts, jte, kts, kte, config_flags%nuc_msa_opt, config_flags%nuc_msa_fac )
+		id, ktau, ktauc, its, ite, jts, jte, kts, kte, config_flags%nuc_msa_opt, config_flags%nuc_msa_fac)
 	end if
 
 
