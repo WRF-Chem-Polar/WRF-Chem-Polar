@@ -66,7 +66,7 @@
 
 
 !   local variables
-	integer, parameter :: newnuc_method = 2
+	integer, parameter :: newnuc_method = 4
 
 	integer :: k, l, ll, m
 	integer :: isize, itype, iphase
@@ -96,7 +96,7 @@
 	real :: qh2so4_avg, qh2so4_cur, qh2so4_del 
 	real :: qnh3_avg, qnh3_cur, qnh3_del 
 	real :: qnuma_del, qso4a_del, qnh4a_del
-	real :: temp_box
+	real :: temp_box, qv_box
 	real :: xxdens, xxmass, xxnumb, xxvolu
 
 	real,save :: dumveca(10), dumvecb(10), dumvecc(10), dumvecd(10), dumvece(10)
@@ -108,7 +108,7 @@
 
 !   check newnuc_method
 	istat_newnuc = 0
-	if (newnuc_method .ne. 2) then
+	if (newnuc_method .le. 1) then
 	    if ((it .eq. its) .and. (jt .eq. jts))   &
 		call peg_message( lunerr,   &
 		'*** mosaic_newnuc_1clm -- illegal newnuc_method' )
@@ -159,6 +159,7 @@
 	cair_box = cairclm(k)
 	temp_box = rsub(ktemp,k,m)
 	rh_box = relhumclm(k)
+	qv_box = rsub(kh2o,k,m)
 
 	qh2so4_cur = max(0.0,rsub(kh2so4,k,m))
 	qnh3_cur   = max(0.0,rsub(knh3,k,m))
@@ -173,7 +174,7 @@
 
 	dens_nh4so4a = dens_so4_aer
 
-	isize = 0
+	isize = 1
 
 !   make call to nucleation routine
 	if (newnuc_method .eq. 1) then
@@ -190,6 +191,18 @@
                nsize, maxd_asize, volumlo_nuc, volumhi_nuc,   &
                isize, qnuma_del, qso4a_del, qnh4a_del,   &
                qh2so4_del, qnh3_del, dens_nh4so4a )
+        else if (newnuc_method .eq. 3) then
+	    call kulmala1998(   &
+	       dtnuc, temp_box, rh_box, cair_box, qv_box,  &
+               qh2so4_avg, qh2so4_cur, &
+               isize, maxd_asize, volumlo_sect, volumhi_sect,   &
+               qnuma_del, qh2so4_del, qso4a_del, dens_so4_aer)
+        else if (newnuc_method .eq. 4) then
+            call vehkamaki2002(   &
+               dtnuc, temp_box, rh_box, cair_box,  &
+               qh2so4_avg, qh2so4_cur, &
+               isize, maxd_asize, volumlo_sect, volumhi_sect,   &
+               qnuma_del, qh2so4_del, qso4a_del, dens_so4_aer)
 	else
 	    istat_newnuc = -1
 	    return
@@ -1063,4 +1076,309 @@
 
 
 
+	
+!-----------------------------------------------------------------------
+        subroutine kulmala1998(&
+           dtnuc, temp_in, rh_in, cair, qv_in,  &
+           qh2so4_avg, qh2so4_cur, &
+           isize_nuc, maxd_asize, volumlo_sect, volumhi_sect,   &
+           qnuma_del, qh2so4_del, qso4a_del, dens_so4_aer )
+!-----------------------------------------------------------------------
+!       RLA
+	   ! formulation from https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/97JD03718
+        implicit none
+
+	real, intent(in) :: dtnuc ! nucleation time step (s)
+        real, intent(in) :: temp_in ! temperature, in k
+        real, intent(in) :: rh_in ! relative humidity, as fraction
+        real, intent(in) :: cair ! dry-air molar density (mole-air/cm3)
+	real, intent(in) :: qv_in ! specific humidity - RLA CHECK UNIT
+	real, intent(in) :: dens_so4_aer
+	
+        real, intent(in) :: qh2so4_avg, qh2so4_cur   ! gas h2so4 mixing ratios
+        real, intent(out) :: qh2so4_del, qso4a_del ! change to gas h2so4 and so4 aerosol
+	real, intent(inout) :: qnuma_del ! change to aerosol number in #/cm3
+
+	integer, intent(in) :: maxd_asize ! dimension for volumlo_sect
+        real, intent(in) :: volumlo_sect(maxd_asize) ! dry volume at lower bnd of bin (cm3)        
+	real, intent(in) :: volumhi_sect(maxd_asize) ! dry volume at upper bnd of bin (m3)         
+	integer, intent(out) :: isize_nuc ! size bin into which new particles go
+
+	real vol_part, ppm_to_num
+	
+	real xal, flux
+	real zp, ksi, jsulf, ra, jloc
+	real nac, delta, psat, nsulf
+	real te, rh, nav, nwv
+	real, parameter :: avogad = 6.022e23 ! avogadro number (molecules/mole)
+	real, parameter :: R = 8.31446261815324   ! molar gas constant R in [J mol-1 K-1]
+	real, parameter :: t0k = 273.15
+	real, parameter :: mh2o=18.0
+	real, parameter :: mh2so4=98.0
+	real, parameter :: mw_air=28.966 ! dry-air mean molecular weight (g/mole)
+	real, parameter :: mw_so4a=96.0 
+	
+	te = temp_in
+	rh = rh_in
+
+	jloc = 0.0
+	qh2so4_del = 0.0
+	qso4a_del = 0.0
+	
+	ppm_to_num = cair*avogad ! conversion factor from mole/mole-air to #/cm3
+	nav = qh2so4_avg*ppm_to_num
+	nwv = qv_in*ppm_to_num 
+
+	te = max(min(te,298.0),233.0)
+	rh = max(min(rh,1.0),0.1)
+
+	! ??? from chimere for relative acidity calc - probably should figure this out
+	psat=exp(27.7849-10156.0/te)
+	zp=9.869*nav*R*te/avogad
+	ra=zp/psat
+ 
+	xal = 1.2233-(0.0154*ra)/(ra+rh)+0.0102*log(nav)-0.0415*log(nwv)+0.0016*te
+
+	nac = exp(-14.5125+0.1335*te-10.5462*rh+1958.4*rh/te)
+
+	nsulf = log(nav/nac)
+	delta = 1.0+(te-t0k)/t0k
+	ksi = 25.1289*nsulf-4890.8*nsulf/te-1743.3/te-2.2479*delta*nsulf*rh+7643.4*xal/te-1.9712*xal*delta/rh
+
+	jsulf = exp(ksi) ! #/cm3/s
+	jsulf = max(min(jsulf,1.0e5),1.0e-5)
+
+	jloc = jsulf*dtnuc/cair ! #/mole-air per nucleation time step
+
+!	jloc = jloc*1e3 ! RLA arbitrary - remove after test
+	
+	isize_nuc = 1
+	vol_part = volumlo_sect(1)
+	
+	qso4a_del = jloc*vol_part*dens_so4_aer/mw_so4a/(mw_air) ! #/mole-air  to mole_so4/mole-air
+	qh2so4_del = -qso4a_del
+	qnuma_del = qnuma_del+jloc
+
+		
+	return
+	end subroutine kulmala1998
+
+!----------------------------------------
+
+
+
+!-----------------------------------------------------------------------
+subroutine vehkamaki2002(&
+           dtnuc, temp_in, rh_in, cair,  &
+           qh2so4_avg, qh2so4_cur, &
+           isize_nuc, maxd_asize, volumlo_sect, volumhi_sect,   &
+           qnuma_del, qh2so4_del, qso4a_del, dens_so4_aer )
+!----------------------------------------------------------------------- 
+! taken from chimere
+	
+  implicit none
+
+        real, intent(in) :: dtnuc ! nucleation time step (s)
+        real, intent(in) :: temp_in ! temperature, in k
+        real, intent(in) :: rh_in ! relative humidity, as fraction
+        real, intent(in) :: cair ! dry-air molar density (mole-air/cm3)
+        real, intent(in) :: dens_so4_aer
+
+        real, intent(in) :: qh2so4_avg, qh2so4_cur ! gas h2so4 mixing ratios
+        real, intent(out) :: qh2so4_del, qso4a_del ! change to gas h2so4 and so4 aerosol
+        real, intent(inout) :: qnuma_del ! change to aerosol number in #/cm3
+	
+        integer, intent(in) :: maxd_asize ! dimension for volumlo_sect
+        real, intent(in) :: volumlo_sect(maxd_asize) ! dry volume at lower bnd of bin (cm3)
+        real, intent(in) :: volumhi_sect(maxd_asize) ! dry volume at upper bnd of bin (m3)
+        integer, intent(out) :: isize_nuc ! size bin into which new particles go
+
+        real vol_part, ppm_to_num, jloc
+
+	real :: acoe, bcoe, ccoe, dcoe, ecoe, fcoe, gcoe, hcoe, icoe, jcoe
+	real :: te,rh 
+	real :: so4vol ! concentration of h2so4 (molecules cm-3
+	real :: crit_x
+	real :: tmpa
+	real :: ratenucl ! binary nucleation rate, j (# cm-3 s-1)
+	real :: cnum_tot ! total number of molecules
+	real :: fj
+
+	real, parameter :: avogad = 6.022e23
+
+        real, parameter :: mw_air=28.966 ! dry-air mean molecular weight (g/mole)
+        real, parameter :: mw_so4a=96.0
+	
+!       initial conditions
+	te=temp_in
+	RH=rh_in
+
+	ppm_to_num = cair*avogad ! conversion factor from mole/mole-air to #/cm3
+	so4vol=qh2so4_avg*ppm_to_num
+
+	te = max(min(te,300.15),230.15)
+        rh = max(min(rh,1.0),0.1)
+        so4vol= max(min(so4vol,1.0e11),1.0e4)
+		
+!       calc sulfuric acid mole fraction in critical cluster
+        crit_x = 0.740997d0 - 0.00266379d0 * te              &
+         - 0.00349998d0 * log (so4vol)               &
+         + 0.0000504022d0 * te * log (so4vol)        &
+         + 0.00201048d0  * log (rh)                  &
+         - 0.000183289d0 * te * log (rh)             &
+         + 0.00157407d0  * (log (rh)) ** 2.0d0       &
+         - 0.0000179059d0 * te * (log (rh)) ** 2.0d0 &
+         + 0.000184403d0  * (log (rh)) ** 3.0d0      &
+         - 1.50345d-6 * te * (log (rh)) ** 3.0d0
+
+!       calc nucleation rate
+	 acoe    = 0.14309d0+2.21956d0*te    &
+	 - 0.0273911d0 * te**2.0d0 &
+	 + 0.0000722811d0 * te**3.0d0 + 5.91822d0/crit_x
+	 
+	 bcoe    = 0.117489d0 + 0.462532d0 *te &
+	 - 0.0118059d0 * te**2.0d0   &
+	 + 0.0000404196d0 * te**3.0d0 + 15.7963d0/crit_x
+	 
+         ccoe    = -0.215554d0-0.0810269d0 * te &
+	 + 0.00143581d0 * te**2.0d0   &
+	 - 4.7758d-6 * te**3.0d0      &
+	 - 2.91297d0/crit_x
+	 
+         dcoe    = -3.58856d0+0.049508d0 * te &
+	 - 0.00021382d0 * te**2.0d0 &
+	 + 3.10801d-7 * te**3.0d0   &
+	 - 0.0293333d0/crit_x
+	 
+	 ecoe    = 1.14598d0 - 0.600796d0 * te  &
+	 + 0.00864245d0 * te**2.0d0   &
+	 - 0.0000228947d0 * te**3.0d0 &
+	 - 8.44985d0/crit_x
+	 
+	 fcoe    = 2.15855d0 + 0.0808121d0 * te &
+	 -0.000407382d0 * te**2.0d0   &
+	 -4.01957d-7 * te**3.0d0      &
+	 + 0.721326d0/crit_x
+	 
+	 gcoe    = 1.6241d0 - 0.0160106d0 * te  &
+	 + 0.0000377124d0 * te**2.0d0 &
+	 + 3.21794d-8 * te**3.0d0     &
+	 - 0.0113255d0/crit_x
+	 
+	 hcoe    = 9.71682d0 - 0.115048d0 * te &
+	 + 0.000157098d0 * te**2.0d0 &
+	 + 4.00914d-7 * te**3.0d0    &
+	 + 0.71186d0/crit_x
+	 
+	 icoe    = -1.05611d0 + 0.00903378d0 * te &
+	 - 0.0000198417 * te**2.0d0     &
+	 + 2.46048d-8  * te**3.0d0      &
+	 - 0.0579087d0/crit_x
+	 
+	 jcoe    = -0.148712d0 + 0.00283508d0 * te &
+	 - 9.24619d-6  * te**2.0d0       &
+	 + 5.00427d-9 * te**3.0d0        &
+	 - 0.0127081d0/crit_x
+
+	 tmpa    = (                                    &
+	 acoe                                 &
+	 + bcoe * log (rh)                    &
+	 + ccoe * ( log (rh))**2.0d0          &
+	 + dcoe * ( log (rh))**3.0d0          &
+	 + ecoe * log (so4vol)                &
+	 + fcoe * (log (rh)) * (log (so4vol)) &
+	 + gcoe * ((log (rh) ) **2.0d0)       &
+	 * (log (so4vol))                     &
+	 + hcoe * (log (so4vol)) **2.0d0      &
+	 + icoe * log (rh)                    &
+	 * ((log (so4vol)) **2.0d0)           &
+	 + jcoe * (log (so4vol)) **3.0d0      &
+	 )
+
+	 ratenucl = exp ( tmpa )
+
+!       calc number of molecules in critical cluster
+	 acoe    = -0.00295413d0 - 0.0976834d0 * te &
+	 + 0.00102485d0 * te**2.0d0       &
+	 - 2.18646d0-6 * te**3.0d0 - 0.101717d0 / crit_x
+	 
+	 bcoe    = -0.00205064d0 - 0.00758504d0 * te &
+	 + 0.000192654d0 * te**2.0         &
+	 - 6.7043d-7 * te**3.0d0 - 0.255774d0 / crit_x
+	 
+         ccoe    = +0.00322308d0 + 0.000852637d0 * te &
+	 - 0.0000154757d0 * te**2.0d0       &
+	 + 5.66661d-8 * te**3.0d0           &
+	 + 0.0338444d0 / crit_x
+	 
+         dcoe    = +0.0474323d0 - 0.000625104d0 * te &
+	 + 2.65066d-6 * te**2.0d0          &
+	 - 3.67471d-9 * te**3.0d0          &
+	 - 0.000267251d0 / crit_x
+
+	 ecoe    = -0.0125211d0 + 0.00580655d0 * te &
+	 - 0.000101674 * te**2.0d0        &
+	 + 2.88195d-7 * te**3.0d0         &
+	 + 0.0942243d0/crit_x
+	 
+	 fcoe    = -0.038546d0 - 0.000672316 * te &
+	 + 2.60288d-6 * te**2.0d0       &
+	 + 1.19416d-8 * te**3.0d0       &
+	 - 0.00851515d0 / crit_x
+	 
+	 gcoe    = -0.0183749d0 + 0.000172072d0 * te &
+	 - 3.71766d-7 * te**2.0d0          &
+	 - 5.14875d-10 * te**3.0d0         &
+	 + 0.00026866d0 / crit_x
+	 
+	 hcoe    = -0.0619974d0 + 0.000906958d0 * te &
+	 - 9.11728d-7 * te**2.0d0          &
+	 - 5.36796d-9 * te**3.0d0          &
+	 - 0.00774234d0 / crit_x
+	 
+	 icoe    = +0.0121827d0 - 0.00010665d0 * te &
+	 + 2.5346d-7 * te**2.0d0          &
+	 - 3.63519d-10 * te**3.0d0        &
+	 + 0.000610065d0 / crit_x
+	 
+	 jcoe    = +0.000320184d0 - 0.0000174762d0 * te &
+	 + 6.06504d-8 * te**2.0d0             &
+	 - 1.4177d-11 * te**3.0d0             &
+	 + 0.000135751d0 / crit_x
+	 
+	 cnum_tot = exp (   &
+	 acoe     &
+	 + bcoe * log (rh)                    &
+	 + ccoe * ( log (rh))**2.0d0          &
+	 + dcoe * ( log (rh))**3.0d0          &
+	 + ecoe * log (so4vol)                &
+	 + fcoe * (log (rh)) * (log (so4vol)) &
+	 + gcoe * ((log (rh) ) **2.0d0)       &
+	 * (log (so4vol))                     &
+	 + hcoe * (log (so4vol)) **2.0d0      &
+	 + icoe * log (rh)                    &
+	 * ((log (so4vol)) **2.0d0)    &
+	 + jcoe * (log (so4vol)) **3.0d0      &
+	 )
+
+	 if (ratenucl < 1.0d-7 .or. cnum_tot < 4.d0) return
+	 if (ratenucl > 1.0d11) ratenucl=1.0d11
+
+	 fj=ratenucl
+
+	 jloc = fj*dtnuc/cair
+
+	 isize_nuc = 1
+	 vol_part = volumlo_sect(1)
+
+	 qso4a_del = jloc*vol_part*dens_so4_aer/mw_so4a/(mw_air) ! #/mole-air  to mole_so4/mole-air
+	 qh2so4_del = -qso4a_del
+	 qnuma_del = qnuma_del+jloc
+
+end subroutine vehkamaki2002
+
+!-------------------------
+	
+
+	
 	end module module_mosaic_newnuc
