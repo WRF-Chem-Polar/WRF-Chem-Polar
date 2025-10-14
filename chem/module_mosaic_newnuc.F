@@ -27,7 +27,7 @@
 		it, jt, kclm_calcbgn, kclm_calcend,   &
 		idiagbb_in,   &
 		dtchem, dtnuc_in, rsub0,   &
-		id, ktau, ktauc, its, ite, jts, jte, kts, kte )
+		id, ktau, ktauc, its, ite, jts, jte, kts, kte, newnuc_method )
 !
 !   calculates new particle nucleation for grid points in
 !	the i=it, j=jt vertical column over timestep dtnuc_in
@@ -40,6 +40,15 @@
 !   when newnuc_method = 2 (internal parameter), uses
 !	h2so4-h2o binary nucleation from wexler et al., 1994
 !
+!       R. Lapere 2025
+!       newnuc_method is now a namelist option corresponding to 4 possible schemes:
+!       1 = Napari et al., 2002 - currently disabled because invalid
+!       2 = Wexler et al., 1994 
+!       NEW 2025
+!       3 = Kulmala et al., 1998
+!       4 = Vehkamaki et al., 2002
+!		
+		
 	use module_data_mosaic_asect
 	use module_data_mosaic_other
 	use module_state_description, only:  param_first_scalar
@@ -64,9 +73,7 @@
 !   rsub(ktemp,:,:), cairclm, relhumclm (in) - 
 !		air temperature, molar density, and relative humidity
 
-
-!   local variables
-	integer, parameter :: newnuc_method = 4
+	integer, intent(in) :: newnuc_method
 
 	integer :: k, l, ll, m
 	integer :: isize, itype, iphase
@@ -174,7 +181,7 @@
 
 	dens_nh4so4a = dens_so4_aer
 
-	isize = 1
+	isize = 0
 
 !   make call to nucleation routine
 	if (newnuc_method .eq. 1) then
@@ -1084,15 +1091,15 @@
            isize_nuc, maxd_asize, volumlo_sect, volumhi_sect,   &
            qnuma_del, qh2so4_del, qso4a_del, dens_so4_aer )
 !-----------------------------------------------------------------------
-!       RLA
-	   ! formulation from https://agupubs.onlinelibrary.wiley.com/doi/epdf/10.1029/97JD03718
-        implicit none
+! from Kulmala et al., 1998 - Parameterizations for sulfuric acid/water nucleation rates
+
+	implicit none
 
 	real, intent(in) :: dtnuc ! nucleation time step (s)
         real, intent(in) :: temp_in ! temperature, in k
         real, intent(in) :: rh_in ! relative humidity, as fraction
         real, intent(in) :: cair ! dry-air molar density (mole-air/cm3)
-	real, intent(in) :: qv_in ! specific humidity - RLA CHECK UNIT
+	real, intent(in) :: qv_in ! specific humidity
 	real, intent(in) :: dens_so4_aer
 	
         real, intent(in) :: qh2so4_avg, qh2so4_cur   ! gas h2so4 mixing ratios
@@ -1132,7 +1139,7 @@
 	te = max(min(te,298.0),233.0)
 	rh = max(min(rh,1.0),0.1)
 
-	! ??? from chimere for relative acidity calc - probably should figure this out
+	! relative acidity calculation
 	psat=exp(27.7849-10156.0/te)
 	zp=9.869*nav*R*te/avogad
 	ra=zp/psat
@@ -1149,8 +1156,6 @@
 	jsulf = max(min(jsulf,1.0e5),1.0e-5)
 
 	jloc = jsulf*dtnuc/cair ! #/mole-air per nucleation time step
-
-!	jloc = jloc*1e3 ! RLA arbitrary - remove after test
 	
 	isize_nuc = 1
 	vol_part = volumlo_sect(1)
@@ -1174,7 +1179,8 @@ subroutine vehkamaki2002(&
            isize_nuc, maxd_asize, volumlo_sect, volumhi_sect,   &
            qnuma_del, qh2so4_del, qso4a_del, dens_so4_aer )
 !----------------------------------------------------------------------- 
-! taken from chimere
+! from Vehkamaki et al., 2002 - An improved parameterization for sulfuric acid–water
+! nucleation rates for tropospheric and stratospheric conditions, 10.1029/2002JD002184
 	
   implicit none
 
@@ -1211,7 +1217,7 @@ subroutine vehkamaki2002(&
 	
 !       initial conditions
 	te=temp_in
-	RH=rh_in
+	rh=rh_in
 
 	ppm_to_num = cair*avogad ! conversion factor from mole/mole-air to #/cm3
 	so4vol=qh2so4_avg*ppm_to_num
