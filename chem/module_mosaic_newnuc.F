@@ -52,9 +52,10 @@
 		id, ktau, ktauc, its, ite, jts, jte, kts, kte
 	real, intent(in) :: dtchem, dtnuc_in
 	real, intent(in) :: rsub0(l2maxd,kmaxd,nsubareamaxd)
-	integer, intent(in) :: nuc_msa_opt
-	real, intent(in) :: nuc_msa_fac	
-!           rsub0 holds mixrat values before the aerchemistry calcs
+	integer, intent(in) :: nuc_msa_opt ! toggles MSA nucleation on/off - namelist option
+	real, intent(in) :: nuc_msa_fac	! tuning factor applied to nucleation rate if nuc_msa_opt = 1
+
+!       rsub0 holds mixrat values before the aerchemistry calcs
 
 !   NOTE - much information is passed via arrays in 
 !		module_data_mosaic_asect and module_data_mosaic_other
@@ -69,8 +70,6 @@
 
 !   local variables
 	integer, parameter :: newnuc_method = 2
-!        integer, parameter :: nucleate_msa = 1 ! needs to be a namelist input option
-!        real, parameter :: factor_msa_nuc = 1.0/15.0 ! needs to be a namelist input option 
 	
 	integer :: k, l, ll, m
 	integer :: isize, itype, iphase
@@ -203,19 +202,22 @@
                nsize, maxd_asize, volumlo_nuc, volumhi_nuc,   &
                isize, qnuma_del, qso4a_del, qnh4a_del,   &
                qh2so4_del, qnh3_del, dens_nh4so4a )
-            if (nuc_msa_opt .eq. 1) then
-                call riccobono_nuc_msa(   &
-                   dtnuc, temp_box, rh_box, cair_box, qh2so4_avg, qh2so4_cur, &
-                   qnh3_avg, maxd_asize, volumlo_nuc, volumhi_nuc, &
-                   qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, &
-                   j2_msa, nuc_msa_fac )
-            end if
-	else
+ 	else
 	    istat_newnuc = -1
 	    return
 	end if
 
 
+	if (nuc_msa_opt .eq. 1) then
+	   call riccobono_nuc_msa(   &
+	      dtnuc, temp_box, rh_box, cair_box, qh2so4_avg, qh2so4_cur, &
+	      qnh3_avg, maxd_asize, volumlo_nuc, volumhi_nuc, &
+	      qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, &
+	      j2_msa, nuc_msa_fac )
+	end if
+
+
+	
 
 !   temporary diagnostics
 	dumveca(1) = temp_box
@@ -233,7 +235,7 @@
 
 
 !   check for zero new particles
-! RLA	if (qnuma_del .le. 0.0) goto 2700
+	if (qnuma_del .le. 0.0) goto 2700
 
 !   check for valid isize
 	if (isize .ne. 1) ncount(3) = ncount(3) + 1
