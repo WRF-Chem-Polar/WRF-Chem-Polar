@@ -430,7 +430,7 @@
 	rsub0(:,:,:) = rsub(:,:,:)
 
 	idiagaa_dum = 0
-	idiagbb_dum = 0 !110
+	idiagbb_dum = 110
 !rce 29-apr-2004 - following is for debugging texas 16 km run
 !	if ((its.eq.38) .and. (jts.eq.38)   &
 !			.and. (ktau.eq.240)) idiagaa_dum = 1
