@@ -1086,6 +1086,7 @@
                               thompson_aerkappa, &
                               thompson_aeractfrac, &
                               naerbins, &
+                              precr, preci, precs, precg, &
 #endif
                               thompson_aer_from_chem, &
                               exch_h, &
@@ -1115,7 +1116,8 @@
       !TODO remove all hardcoded naerbins=4 values
       INTEGER, INTENT(IN) :: naerbins
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT):: &
-                          rainprod, evapprod, qlsink
+                          rainprod, evapprod, qlsink, precr, preci, &
+                          precs, precg
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme, naerbins), &
          INTENT(INOUT) :: thompson_aernum, &
                           thompson_aerra, &
@@ -1149,7 +1151,8 @@
       REAL, DIMENSION(kts:kte):: re_qc1d, re_qi1d, re_qs1d
 #if ( WRF_CHEM == 1 )
       REAL, DIMENSION(kts:kte):: &
-                          rainprod1d, evapprod1d, c2prec
+                          rainprod1d, evapprod1d, c2prec, precr1d, precs1d, &
+                          preci1d, precg1d
       REAL, DIMENSION(kts:kte, naerbins):: &
                           aernum1d,aerra1d,aerkappa1d,aeractfrac1d
 #endif
@@ -1242,6 +1245,12 @@
             GRAUPELNCV(i,j) = 0.
          ENDIF
          SR(i,j) = 0.
+#if ( WRF_CHEM == 1 )
+         precr1d(kts:kte) = 0.0
+         precs1d(kts:kte) = 0.0
+         preci1d(kts:kte) = 0.0
+         precg1d(kts:kte) = 0.0
+#endif
 
          do k = kts, kte
             t1d(k) = th(i,k,j)*pii(i,k,j)
@@ -1322,6 +1331,7 @@
                       pptrain, pptsnow, pptgraul, pptice, &
 #if ( WRF_CHEM == 1 )
                       wetscav_on, rainprod1d, evapprod1d, c2prec, &
+                      precr1d, precs1d, preci1d, precg1d, &
                       aernum1d,aerra1d,aerkappa1d,aeractfrac1d, &
                       naerbins, &
 #endif
@@ -1409,6 +1419,10 @@
           IF ( wetscav_on ) THEN
             rainprod(i,k,j) = rainprod1d(k)
             evapprod(i,k,j) = evapprod1d(k)
+            precr(i,k,j) = precr1d(k)
+            precs(i,k,j) = precs1d(k)
+            preci(i,k,j) = preci1d(k)
+            precg(i,k,j) = precg1d(k)
             IF(qc1d(k) .GT. 1.0E-10) THEN
               qlsink(i,k,j) = MIN(1.0, MAX(0.0, c2prec(k)/qc1d(k)))
             ELSE
@@ -1571,6 +1585,7 @@
                           pptrain, pptsnow, pptgraul, pptice, &
 #if ( WRF_CHEM == 1 )
                           wetscav_on, rainprod, evapprod, c2prec, &
+                          precr, precs, preci, precg, &
                           aernum1d,aerra1d,aerkappa1d,aeractfrac1d, &
                           naerbins, &
 #endif
@@ -1591,7 +1606,8 @@
       REAL, INTENT(IN):: dt
 #if ( WRF_CHEM == 1 )
       REAL, DIMENSION(kts:kte), INTENT(INOUT):: &
-                          rainprod, evapprod, c2prec
+                          rainprod, evapprod, c2prec, &
+                          precr, precs, preci, precg
       LOGICAL, INTENT(IN) :: wetscav_on
       REAL, DIMENSION(kts:kte, naerbins), INTENT(IN) :: &
                           aernum1d,aerra1d,aerkappa1d
@@ -4049,6 +4065,9 @@
          do k = kte, kts, -1
             sed_r(k) = vtrk(k)*rr(k)
             sed_n(k) = vtnrk(k)*nr(k)
+#if ( WRF_CHEM == 1 )
+            precr(k) = precr(k) + sed_r(k)*onstep(1)
+#endif
          enddo
          k = kte
          odzq = 1./dzq(k)
@@ -4100,6 +4119,9 @@
          do k = kte, kts, -1
             sed_i(k) = vtik(k)*ri(k)
             sed_n(k) = vtnik(k)*ni(k)
+#if ( WRF_CHEM == 1 )
+            preci(k) = preci(k) + sed_i(k)*onstep(2)
+#endif
          enddo
          k = kte
          odzq = 1./dzq(k)
@@ -4133,6 +4155,9 @@
       do n = 1, nstep
          do k = kte, kts, -1
             sed_s(k) = vtsk(k)*rs(k)
+#if ( WRF_CHEM == 1 )
+            precs(k) = precs(k) + sed_s(k)*onstep(3)
+#endif
          enddo
          k = kte
          odzq = 1./dzq(k)
@@ -4162,6 +4187,9 @@
             sed_g(k) = vtgk(k)*rg(k)
             sed_n(k) = vtngk(k)*ng(k)
             sed_b(k) = vtgk(k)*rb(k)
+#if ( WRF_CHEM == 1 )
+            precg(k) = precg(k) + sed_g(k)*onstep(4)
+#endif
          enddo
          k = kte
          odzq = 1./dzq(k)
