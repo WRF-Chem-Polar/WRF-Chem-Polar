@@ -576,9 +576,11 @@
       enddo
       lrw = lrw1                      ! dimension of double precision work vector
       liw = liw1                      ! dimension of integer work vector
-      iwork(5) = 5                    ! maximum order, 5 for method = 2 (mf > 20)
+      iwork(1) = -1 ! make sure this value is not used
+      iwork(2) = -1 ! make sure this value is not used
+      iwork(5) = 0  ! use default value
       iwork(6) = worki                ! steps allowed
-      iwork(7) = 10                   ! max nb of messages
+      iwork(7) = 0. ! use default value
       rwork(6) = workr                ! maximum step in seconds
 
 !
