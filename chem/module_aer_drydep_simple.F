@@ -46,7 +46,6 @@ MODULE module_aer_drydep_simple
   CHARACTER*256 :: mminlu_loc
   ! Radius (m) of surface collectors for interception
 
-  !TODO following parameters could be moved to a data module
   ! Interception efficiency land-dependent coefficient, from Zhang2001
   REAL, SAVE :: RAD_COLLECTOR_ZHANG(5,15)
   DATA RAD_COLLECTOR_ZHANG/ &
@@ -154,7 +153,6 @@ CONTAINS
    !    chem = advected chemical species (gases in ppm, aerosols in ug/kg)
 
    ! USE associations:
-   !TODO remove USE module_configure
    USE module_model_constants, ONLY: g,piconst
    USE module_state_description, ONLY: p_sulf, p_seas_1, p_seas_2, p_seas_3, &
      p_seas_4, p_dust_1, p_dust_2, p_dust_3, p_dust_4, p_dust_5, num_chem
@@ -456,7 +454,7 @@ CONTAINS
       aer_pointers(:) = (/ p_sulf, p_seas_1, p_seas_2, p_seas_3, p_seas_4, &
                            p_bc1, p_oc1, p_bc2, p_oc2, p_dust_1, &
                            p_dust_2, p_dust_3, p_dust_4, p_dust_5 /)
-      !TODO I used the effective diameter
+      ! Effective aerosol dry diameter
       aer_dry_diam(:) = (/ 0.312E-6, 0.6E-6, 2.0E-6, 6.5E-6, 15.0E-6, &
                            0.078E-6, 0.174E-6, 0.078E-6, 0.174E-6, 1.46E-6, &
                            2.8E-6, 4.8E-6, 9.0E-6, 16.0E-6 /)
