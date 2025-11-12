@@ -26,7 +26,6 @@ CONTAINS
                xice,                                                      &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
-               dustdrydep, seasdrydep, &
                depvelocity,                                               &
                dustgraset_1,dustgraset_2,dustgraset_3,                    &
                dustgraset_4,dustgraset_5,                                 &
@@ -163,8 +162,6 @@ CONTAINS
                 dustdrydep_1, dustdrydep_2, dustdrydep_3,       &
                 dustdrydep_4, dustdrydep_5, depvelocity
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
-                dustdrydep, seasdrydep
-   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
                dustgraset_1,dustgraset_2,dustgraset_3,          &
                dustgraset_4,dustgraset_5,                       &
                setvel_1,setvel_2,setvel_3,setvel_4,setvel_5   
@@ -299,8 +296,7 @@ CONTAINS
 !-----------------------------------------------------------------
           IF ( config_flags%chem_opt == MOZCART_KPP .or. &
                config_flags%chem_opt == T1_MOZCART_KPP ) then
-            CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
-                                   t_phy, rho_phy, ust, dz8w, rh,         &
+            CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
                                    xlat, snowh, xice, ivgtyp,             &
                                    aer_res_def, julday, dtstep,           &
                                    ids,ide, jds,jde, kds,kde,             &
@@ -400,8 +396,7 @@ CONTAINS
 !
 ! this does aerosol species (dust,seas, bc,oc) for gocart only
 !
-          CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
-                                 t_phy, rho_phy, ust, dz8w, rh,         &
+          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
                                  xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
@@ -411,8 +406,7 @@ CONTAINS
 !
 ! this does aerosol species (dust) for gocart only
 !
-          CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
-                                 t_phy, rho_phy, ust, dz8w, rh,         &
+          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
                                  xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
@@ -433,8 +427,7 @@ CONTAINS
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
-          CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
-                                 t_phy, rho_phy, ust, dz8w, rh,         &
+          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
                                  xlat, snowh, xice, ivgtyp,             &
                                  aer_res_def, julday, dtstep,           &
                                  ids,ide, jds,jde, kds,kde,             &
@@ -1209,7 +1202,7 @@ CONTAINS
           moist(ims,kms,jms,P_QV), moist(ims,kms,jms,P_QC), moist(ims,kms,jms,P_QI), &
           scalar(ims,kms,jms,P_QNDROP), f_qc, f_qi, chem,   &
           ccn1, ccn2, ccn3, ccn4, ccn5, ccn6, nsource,      &
-          qsrflx, dustdrydep, seasdrydep,                   &
+          qsrflx,                                           &
           ids,ide, jds,jde, kds,kde,                        &
           ims,ime, jms,jme, kms,kme,                        &
           its,ite, jts,jte, kts,kte                         )

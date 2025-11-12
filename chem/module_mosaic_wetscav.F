@@ -8,7 +8,6 @@ CONTAINS
                dtstepc,alt,t_phy,p8w,t8w,p_phy,chem,rho_phy,cldfra,        &
 	       qlsink,precr,preci,precs,precg,qsrflx,                      &
 	       gas_aqfrac, numgas_aqfrac,                                  &
-               dustwetdep, seaswetdep, &
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -39,9 +38,6 @@ CONTAINS
 !
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, num_chem ),          &
          INTENT(INOUT ) ::                                chem
-
-! Dust and sea salt wet deposition flux (kg/m2)
-   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT ) :: dustwetdep, seaswetdep
 
 ! fraction of gas species in cloud water
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, numgas_aqfrac ),     &
@@ -71,7 +67,6 @@ CONTAINS
         volumcen_sect, volumlo_sect, volumhi_sect,                       &
         waterptr_aer, dens_water_aer,                                    &
         scavimptblvol, scavimptblnum, nimptblgrow_mind, nimptblgrow_maxd, dlndg_nimptblgrow, &
-        dustwetdep, seaswetdep, &
         ids,ide, jds,jde, kds,kde,                                       &
         ims,ime, jms,jme, kms,kme,                                       &
         its,ite, jts,jte, kts,kte                                        )
@@ -85,7 +80,6 @@ CONTAINS
                dtstepc,alt,t_phy,p8w,t8w,p_phy,chem,rho_phy,cldfra,        &
          qlsink,precr,preci,precs,precg,qsrflx,                      &
          gas_aqfrac, numgas_aqfrac,                                  &
-        dustwetdep, seaswetdep, &
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -117,9 +111,6 @@ CONTAINS
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, num_chem ),          &
          INTENT(INOUT ) ::                                chem
 
-! Dust and sea salt wet deposition flux (kg/m2)
-   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT ) :: dustwetdep, seaswetdep
-
 ! fraction of gas species in cloud water
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, numgas_aqfrac ),     &
          INTENT(IN ) ::                                   gas_aqfrac
@@ -148,7 +139,6 @@ CONTAINS
         volumcen_sect, volumlo_sect, volumhi_sect,                       &
         waterptr_aer, dens_water_aer,                                    &
         scavimptblvol, scavimptblnum, nimptblgrow_mind, nimptblgrow_maxd, dlndg_nimptblgrow, &
-        dustwetdep, seaswetdep, &
         ids,ide, jds,jde, kds,kde,                                       &
         ims,ime, jms,jme, kms,kme,                                       &
         its,ite, jts,jte, kts,kte                                        )
@@ -167,7 +157,6 @@ CONTAINS
         volumcen_sect, volumlo_sect, volumhi_sect,                       &
         waterptr_aer, dens_water_aer,                                    &
         scavimptblvol, scavimptblnum, nimptblgrow_mind, nimptblgrow_maxd, dlndg_nimptblgrow, &
-        dustwetdep, seaswetdep, &
         ids,ide, jds,jde, kds,kde,                                       &
         ims,ime, jms,jme, kms,kme,                                       &
         its,ite, jts,jte, kts,kte                                        )
@@ -200,9 +189,6 @@ CONTAINS
 !
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, num_chem ),          &
          INTENT(INOUT ) ::                                chem
-
-! Dust and sea salt wet deposition flux (kg/m2)
-   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT ) :: dustwetdep, seaswetdep
 
 ! fraction of gas species in cloud water
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme, numgas_aqfrac ),     &
@@ -482,110 +468,6 @@ CONTAINS
  6000    continue
       end if
    end do
-
-
-! Output dust and seasalt deposition fluxes
-    do j=jts,jte
-    do i=its,ite
-         if(p_oin_a01 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_a01)*1.E-9
-         endif
-         if(p_oin_a02 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_a02)*1.E-9
-         endif
-         if(p_oin_a03 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_a03)*1.E-9
-         endif
-         if(p_oin_a04 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_a04)*1.E-9
-         endif
-         if(p_oin_a05 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_a05)*1.E-9
-         endif
-         if(p_oin_a06 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_a06)*1.E-9
-         endif
-         if(p_oin_a07 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_a07)*1.E-9
-         endif
-         if(p_oin_a08 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_a08)*1.E-9
-         endif
-         if(p_na_a01 > param_first_scalar .and. p_cl_a01 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_a01)+qsrflx(i,j,p_cl_a01))*1.E-9
-         endif
-         if(p_na_a02 > param_first_scalar .and. p_cl_a02 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_a02)+qsrflx(i,j,p_cl_a02))*1.E-9
-         endif
-         if(p_na_a03 > param_first_scalar .and. p_cl_a03 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_a03)+qsrflx(i,j,p_cl_a03))*1.E-9
-         endif
-         if(p_na_a04 > param_first_scalar .and. p_cl_a04 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_a04)+qsrflx(i,j,p_cl_a04))*1.E-9
-         endif
-         if(p_na_a05 > param_first_scalar .and. p_cl_a05 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_a05)+qsrflx(i,j,p_cl_a05))*1.E-9
-         endif
-         if(p_na_a06 > param_first_scalar .and. p_cl_a06 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_a06)+qsrflx(i,j,p_cl_a06))*1.E-9
-         endif
-         if(p_na_a07 > param_first_scalar .and. p_cl_a07 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_a07)+qsrflx(i,j,p_cl_a07))*1.E-9
-         endif
-         if(p_na_a08 > param_first_scalar .and. p_cl_a08 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_a08)+qsrflx(i,j,p_cl_a08))*1.E-9
-         endif
-         if(p_oin_cw01 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_cw01)*1.E-9
-         endif
-         if(p_oin_cw02 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_cw02)*1.E-9
-         endif
-         if(p_oin_cw03 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_cw03)*1.E-9
-         endif
-         if(p_oin_cw04 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_cw04)*1.E-9
-         endif
-         if(p_oin_cw05 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_cw05)*1.E-9
-         endif
-         if(p_oin_cw06 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_cw06)*1.E-9
-         endif
-         if(p_oin_cw07 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_cw07)*1.E-9
-         endif
-         if(p_oin_cw08 > param_first_scalar) then
-           dustwetdep(i,j) = dustwetdep(i,j) - qsrflx(i,j,p_oin_cw08)*1.E-9
-         endif
-         if(p_na_cw01 > param_first_scalar .and. p_cl_cw01 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_cw01)+qsrflx(i,j,p_cl_cw01))*1.E-9
-         endif
-         if(p_na_cw02 > param_first_scalar .and. p_cl_cw02 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_cw02)+qsrflx(i,j,p_cl_cw02))*1.E-9
-         endif
-         if(p_na_cw03 > param_first_scalar .and. p_cl_cw03 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_cw03)+qsrflx(i,j,p_cl_cw03))*1.E-9
-         endif
-         if(p_na_cw04 > param_first_scalar .and. p_cl_cw04 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_cw04)+qsrflx(i,j,p_cl_cw04))*1.E-9
-         endif
-         if(p_na_cw05 > param_first_scalar .and. p_cl_cw05 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_cw05)+qsrflx(i,j,p_cl_cw05))*1.E-9
-         endif
-         if(p_na_cw06 > param_first_scalar .and. p_cl_cw06 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_cw06)+qsrflx(i,j,p_cl_cw06))*1.E-9
-         endif
-         if(p_na_cw07 > param_first_scalar .and. p_cl_cw07 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_cw07)+qsrflx(i,j,p_cl_cw07))*1.E-9
-         endif
-         if(p_na_cw08 > param_first_scalar .and. p_cl_cw08 > param_first_scalar) then
-           seaswetdep(i,j) = seaswetdep(i,j) - (qsrflx(i,j,p_na_cw08)+qsrflx(i,j,p_cl_cw08))*1.E-9
-         endif
-   enddo
-   enddo
-
 
    end subroutine wetscav
 

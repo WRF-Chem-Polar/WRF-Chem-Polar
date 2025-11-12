@@ -61,7 +61,6 @@ CONTAINS
                               chem, rho_phy, cldfra, rainprod, evapprod,   &
                               precr, preci, precs, precg, dx, dy,          &
                               qv, qc, qi, qs, qr,                          &
-                              dustwetdep, seaswetdep, &
                               ids,ide, jds,jde, kds,kde,                   &
                               ims,ime, jms,jme, kms,kme,                   &
                               its,ite, jts,jte, kts,kte                    )
@@ -94,8 +93,6 @@ CONTAINS
    !   ids,ims,its etc. = domain, memory, and tile start and end indices
    ! Input/output:
    !   chem = advected chemical species (gases in ppm, aerosols in ug/kg)
-   !   dustwetdep = accumulated dust wet deposition flux (kg/m2)
-   !   seaswetdep = accumulated seasalt wet deposition flux (kg/m2)
 
    ! USE associations:
    !TODO Use ONLY:
@@ -126,7 +123,6 @@ CONTAINS
        INTENT(IN) :: precr, preci, precs, precg
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme)         ,        &
        INTENT(IN) :: cldfra
-   REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: dustwetdep,seaswetdep
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme, num_chem),          &
        INTENT(INOUT) :: chem
 
@@ -285,31 +281,6 @@ CONTAINS
 
          END DO ! nv
        END DO ! k
-
-       ! Output dust and sea salt wet deposition fluxes at the surface
-       DO nv=1,naerspecies
-         p_chem = aer_pointers(nv)
-         IF(p_chem == p_dust_1 .AND. deposition_flux(nv) > 0.) THEN
-           dustwetdep(i,j) = dustwetdep(i,j) + deposition_flux(nv)*1.E-9
-         ELSEIF(p_chem == p_dust_2 .AND. deposition_flux(nv) > 0.) THEN
-           dustwetdep(i,j) = dustwetdep(i,j) + deposition_flux(nv)*1.E-9
-         ELSEIF(p_chem == p_dust_3 .AND. deposition_flux(nv) > 0.) THEN
-           dustwetdep(i,j) = dustwetdep(i,j) + deposition_flux(nv)*1.E-9
-         ELSEIF(p_chem == p_dust_4 .AND. deposition_flux(nv) > 0.) THEN
-           dustwetdep(i,j) = dustwetdep(i,j) + deposition_flux(nv)*1.E-9
-         ELSEIF(p_chem == p_dust_5 .AND. deposition_flux(nv) > 0.) THEN
-           dustwetdep(i,j) = dustwetdep(i,j) + deposition_flux(nv)*1.E-9
-         ELSEIF(p_chem == p_seas_1 .AND. deposition_flux(nv) > 0.) THEN
-           seaswetdep(i,j) = seaswetdep(i,j) + deposition_flux(nv)*1.E-9
-         ELSEIF(p_chem == p_seas_2 .AND. deposition_flux(nv) > 0.) THEN
-           seaswetdep(i,j) = seaswetdep(i,j) + deposition_flux(nv)*1.E-9
-         ELSEIF(p_chem == p_seas_3 .AND. deposition_flux(nv) > 0.) THEN
-           seaswetdep(i,j) = seaswetdep(i,j) + deposition_flux(nv)*1.E-9
-         ELSEIF(p_chem == p_seas_4 .AND. deposition_flux(nv) > 0.) THEN
-           seaswetdep(i,j) = seaswetdep(i,j) + deposition_flux(nv)*1.E-9
-         ENDIF
-       ENDDO !nv
-
      END DO ! i
    END DO ! j
 

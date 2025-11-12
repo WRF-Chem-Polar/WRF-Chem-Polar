@@ -29,7 +29,6 @@ CONTAINS
                wd_no3,wd_so4,wd_nh4,wd_oa,                                 &
                wd_so2, wd_sulf, wd_hno3, wd_nh3,                           &
                wd_cvasoa, wd_cvbsoa, wd_asoa, wd_bsoa,                     &
-               dustwetdep, seaswetdep, &
                qv_b4mp, qc_b4mp, qi_b4mp, qs_b4mp,                         &
 !======================================================================================
 !Variables required for CAM_MAM_WETSCAV
@@ -223,8 +222,6 @@ CONTAINS
                                                           wd_hno3, wd_nh3
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT) :: &
                    wd_cvasoa, wd_cvbsoa, wd_asoa, wd_bsoa
-   REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT) :: &
-                   dustwetdep, seaswetdep
 !
 ! input from meteorology(3D)
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         ,        &
@@ -305,7 +302,6 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
                dtstepc,alt,t_phy,p8w,t8w,p_phy,chem,rho_phy,cldfra,        &
                qlsink,precr,preci,precs,precg, qsrflx,                     &
                gas_aqfrac, numgas_aqfrac,                                  &
-               dustwetdep, seaswetdep, &
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -328,7 +324,6 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
                dtstepc,alt,t_phy,p8w,t8w,p_phy,chem,rho_phy,cldfra,        &
                qlsink,precr,preci,precs,precg, qsrflx,                     &
                gas_aqfrac, numgas_aqfrac,                                  &
-               dustwetdep, seaswetdep, &
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -350,7 +345,6 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
                dtstepc,alt,t_phy,p8w,t8w,p_phy,chem,rho_phy,cldfra,        &
                qlsink,precr,preci,precs,precg, qsrflx,                     &
                gas_aqfrac, numgas_aqfrac,                                  &
-               dustwetdep, seaswetdep, &
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -376,7 +370,6 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
                dtstepc,alt,t_phy,p8w,t8w,p_phy,chem,rho_phy,cldfra_ls,     &
                qlsink,precr,preci,precs,precg, qsrflx,                     &
                gas_aqfrac, numgas_aqfrac,                                  &
-               dustwetdep, seaswetdep, &
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -422,7 +415,6 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
                                   moist(ims,kms,jms,p_qv), moist(ims,kms,jms,p_qc), &
                                   moist(ims,kms,jms,p_qi), moist(ims,kms,jms,p_qs), &
                                   moist(ims,kms,jms,p_qr),                          &
-                                  dustwetdep, seaswetdep, &
                                   ids,ide, jds,jde, kds,kde,                        &
                                   ims,ime, jms,jme, kms,kme,                        &
                                   its,ite, jts,jte, kts,kte                         )
@@ -454,7 +446,6 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
                dtstepc,alt,t_phy,p8w,t8w,p_phy,chem,rho_phy,cldfra_ls,     &
                qlsink,precr,preci,precs,precg, qsrflx,                     &
                gas_aqfrac, numgas_aqfrac,                                  &
-               dustwetdep, seaswetdep, &
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -518,7 +509,6 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
                               moist(ims,kms,jms,p_qv), moist(ims,kms,jms,p_qc), &
                               moist(ims,kms,jms,p_qi), moist(ims,kms,jms,p_qs), &
                               moist(ims,kms,jms,p_qr),                          &
-                              dustwetdep, seaswetdep, &
                               ids,ide, jds,jde, kds,kde,                        &
                               ims,ime, jms,jme, kms,kme,                        &
                               its,ite, jts,jte, kts,kte                         )

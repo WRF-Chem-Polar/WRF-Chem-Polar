@@ -25,19 +25,13 @@ CONTAINS
            ddvel, z, dz8w, p_at_w, t_at_w, exch_h,           &
            qv, qc, qi, qndrop3d, f_qc, f_qi, chem,           &
 	       ccn1, ccn2, ccn3, ccn4, ccn5, ccn6, nsource,      &
-	       qsrflx, dustdrydep, seasdrydep, &
+	       qsrflx, &
            ids,ide, jds,jde, kds,kde,                        &
            ims,ime, jms,jme, kms,kme,                        &
            its,ite, jts,jte, kts,kte                         )
 
     USE module_configure, only: grid_config_rec_type
-        use module_state_description, only: num_chem, param_first_scalar, &
-          p_oin_a01,p_oin_a02,p_oin_a03,p_oin_a04, &
-          p_oin_a05,p_oin_a06,p_oin_a07,p_oin_a08, &
-          p_na_a01,p_na_a02,p_na_a03,p_na_a04, &
-          p_na_a05,p_na_a06,p_na_a07,p_na_a08, &
-          p_cl_a01,p_cl_a02,p_cl_a03,p_cl_a04, &
-          p_cl_a05,p_cl_a06,p_cl_a07,p_cl_a08
+	use module_state_description, only:  num_chem
 	use module_data_mosaic_asect
 	use module_mixactivate, only: mixactivate
 
@@ -79,10 +73,6 @@ CONTAINS
 	real, intent(inout),   &
 		dimension( ims:ime, kms:kme, jms:jme, 1:num_chem ) :: &
 		chem
-
-	real, intent(inout),   &
-		dimension( ims:ime, jms:jme ) :: dustdrydep, seasdrydep
-
       real, intent(out), dimension(ims:ime,kms:kme,jms:jme) :: nsource,&
 	     ccn1,ccn2,ccn3,ccn4,ccn5,ccn6  ! number conc of aerosols activated at supersat
 
@@ -132,61 +122,6 @@ CONTAINS
 	       ccn1, ccn2, ccn3, ccn4, ccn5, ccn6, nsource,       &
 	       id, ktau, dtstep, &
            f_qc, f_qi               )
-
-! dry dep for dust and seasalt, in kg/m2
-      do j=jms,jme
-       do i=ims,ime
-         if(p_oin_a01 > param_first_scalar) then
-           dustdrydep(i,j) = dustdrydep(i,j) - dtstep*qsrflx(i,j,p_oin_a01)
-         endif
-         if(p_oin_a02 > param_first_scalar) then
-           dustdrydep(i,j) = dustdrydep(i,j) - dtstep*qsrflx(i,j,p_oin_a02)
-         endif
-         if(p_oin_a03 > param_first_scalar) then
-           dustdrydep(i,j) = dustdrydep(i,j) - dtstep*qsrflx(i,j,p_oin_a03)
-         endif
-         if(p_oin_a04 > param_first_scalar) then
-           dustdrydep(i,j) = dustdrydep(i,j) - dtstep*qsrflx(i,j,p_oin_a04)
-         endif
-         if(p_oin_a05 > param_first_scalar) then
-           dustdrydep(i,j) = dustdrydep(i,j) - dtstep*qsrflx(i,j,p_oin_a05)
-         endif
-         if(p_oin_a06 > param_first_scalar) then
-           dustdrydep(i,j) = dustdrydep(i,j) - dtstep*qsrflx(i,j,p_oin_a06)
-         endif
-         if(p_oin_a07 > param_first_scalar) then
-           dustdrydep(i,j) = dustdrydep(i,j) - dtstep*qsrflx(i,j,p_oin_a07)
-         endif
-         if(p_oin_a08 > param_first_scalar) then
-           dustdrydep(i,j) = dustdrydep(i,j) - dtstep*qsrflx(i,j,p_oin_a08)
-         endif
-         if(p_na_a01 > param_first_scalar .and. p_cl_a01 > param_first_scalar) then
-           seasdrydep(i,j) = seasdrydep(i,j) - dtstep*qsrflx(i,j,p_na_a01) - dtstep*qsrflx(i,j,p_cl_a01)
-         endif
-         if(p_na_a02 > param_first_scalar .and. p_cl_a02 > param_first_scalar) then
-           seasdrydep(i,j) = seasdrydep(i,j) - dtstep*qsrflx(i,j,p_na_a02) - dtstep*qsrflx(i,j,p_cl_a02)
-         endif
-         if(p_na_a03 > param_first_scalar .and. p_cl_a03 > param_first_scalar) then
-           seasdrydep(i,j) = seasdrydep(i,j) - dtstep*qsrflx(i,j,p_na_a03) - dtstep*qsrflx(i,j,p_cl_a03)
-         endif
-         if(p_na_a04 > param_first_scalar .and. p_cl_a04 > param_first_scalar) then
-           seasdrydep(i,j) = seasdrydep(i,j) - dtstep*qsrflx(i,j,p_na_a04) - dtstep*qsrflx(i,j,p_cl_a04)
-         endif
-         if(p_na_a05 > param_first_scalar .and. p_cl_a05 > param_first_scalar) then
-           seasdrydep(i,j) = seasdrydep(i,j) - dtstep*qsrflx(i,j,p_na_a05) - dtstep*qsrflx(i,j,p_cl_a05)
-         endif
-         if(p_na_a06 > param_first_scalar .and. p_cl_a06 > param_first_scalar) then
-           seasdrydep(i,j) = seasdrydep(i,j) - dtstep*qsrflx(i,j,p_na_a06) - dtstep*qsrflx(i,j,p_cl_a06)
-         endif
-         if(p_na_a07 > param_first_scalar .and. p_cl_a07 > param_first_scalar) then
-           seasdrydep(i,j) = seasdrydep(i,j) - dtstep*qsrflx(i,j,p_na_a07) - dtstep*qsrflx(i,j,p_cl_a07)
-         endif
-         if(p_na_a08 > param_first_scalar .and. p_cl_a08 > param_first_scalar) then
-           seasdrydep(i,j) = seasdrydep(i,j) - dtstep*qsrflx(i,j,p_na_a08) - dtstep*qsrflx(i,j,p_cl_a08)
-         endif
-       enddo
-      enddo
-
 
       end subroutine mosaic_mixactivate
 
