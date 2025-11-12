@@ -1,19 +1,28 @@
 ! 2025/06 Louis Marelle
 !
 ! Purpose:
-!  Perform dry deposition and sedimentation for aerosols
+!  Perform dry deposition and sedimentation for aerosols at the surface, with
+!  dry deposition velocities calculated following Emerson et al. (2020), a
+!  modified version of the Zhang et al. (2001) parameterization with updated
+!  parameters.
 !
 ! Remarks:
 !  - Only compatible with GOCART for now
-!  - Sedimentation above the first level is done in gocart_settling or mosaic_settling
+!  - Sedimentation above the first level is already done in gocart_settling or
+!    mosaic_settling
 !  - Hygroscopic growth is only taken into account for seasalt and sulfate
 !
 ! References:
-! ==============================================================================
-!  (1) Emerson et al., 2020 - https://doi.org/10.1073/pnas.2014761117
-!  (2) Zhang et al., 2001 - https://doi.org/10.1016/S1352-2310(00)00326-5
-!  (3) Gerber, 1985, https://apps.dtic.mil/sti/tr/pdf/ADA163209.pdf
-
+! ------------------------------------------------------------------------------
+!  (1) Emerson et al. (2020) -  Revisiting particle dry deposition and its
+!  role in radiative effect estimates, Proc. Natl. Acad. Sci. U.S.A.  117 (42)
+!  26076-26082, https://doi.org/10.1073/pnas.2014761117
+!  (2) Zhang et al., (2001) - A size-segregated particle dry deposition scheme
+!  for an atmospheric aerosol module. Atmospheric environment, 35(3), 549-560,
+!  https://doi.org/10.1016/S1352-2310(00)00326-5
+!  (3) Gerber (1985) - Relative humidity parameterization of the Navy aerosol
+!  model (NAM), NRL Rep. 8956. National Research Laboratory, Washington DC.
+!  https://apps.dtic.mil/sti/tr/pdf/ADA163209.pdf
 
 MODULE module_aer_drydep_simple
 
@@ -148,21 +157,17 @@ CONTAINS
    !    seasdrydep = accumulated seasalt dry deposition (kg/m2)
 
    ! USE associations:
-   !TODO Use ONLY:
-   USE module_configure
-   USE module_state_description
+   !TODO remove USE module_configure
+   USE module_model_constants, ONLY: g,piconst
+   USE module_state_description, ONLY: p_sulf, p_seas_1, p_seas_2, p_seas_3, &
+     p_seas_4, p_dust_1, p_dust_2, p_dust_3, p_dust_4, p_dust_5, num_chem
 
    IMPLICIT NONE
 
    !---- Arguments
-   REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: t_phy
-   REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: rho_phy
-   REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ust
-   REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: dz8w
-   REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: rh
-   REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: xlat
-   REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: snowh
-   REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: xice
+   REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: t_phy, rho_phy, &
+     dz8w, rh
+   REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ust, xlat, snowh, xice
    INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ivgtyp
    REAL, DIMENSION(its:ite, jts:jte), INTENT(IN) :: res_adyn
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme, num_chem),          &
@@ -225,18 +230,15 @@ CONTAINS
    LOGICAL :: is_vegetated
 
    !---- Parameters
-   !TODO move to data module?
-   !TODO use model constants when available?
    ! Surface resistance parameterization empirical coefficient
    REAL, PARAMETER :: EPSZ = 3.
    ! Parameters for the deposition efficiencies, from Emerson2020
    REAL, PARAMETER :: CBROWN = 0.2
    REAL, PARAMETER :: CIMPACT = 0.4, ALPHAIMPACT = 0.8, BETAIMPACT = 1.7
    REAL, PARAMETER :: CINTERCEPT = 2.5, NUINTERCEPT = 0.8
-   ! REAL, PARAMETER :: BOLTZMANN = 1.3807E-23 ! J/K = kg m-2 s-2 K-1
    REAL, PARAMETER :: BOLTZMANN = 1.3807E-16 ! erg/K = g cm2 s-2 K-1
-   REAL, PARAMETER :: PI = 3.1416
-   REAL, PARAMETER :: GRAVITY = 980.616 ! cm s-2
+   REAL, PARAMETER :: PI = piconst
+   REAL, PARAMETER :: GRAVITY = g*100.0 ! cm s-2
    ! Parameters for the wet diameter calculation of Gerber (1985)
    REAL, PARAMETER :: C1_WET_SEASALT = 0.7674
    REAL, PARAMETER :: C2_WET_SEASALT = 3.079
@@ -342,8 +344,8 @@ CONTAINS
          !-- Aerosol wet diameter (cm)
          aer_dry_d_cm = aer_dry_diam(nv) * 1.0E2
          ! Calculate wet diameter with eq. 10 in Zhang2001, also see Gerber1985
-         ! Ths should only be done for hydrophilic aerosols, sea salt, sulfate
-         !TODO maybe enable with oc2, bc2, using 'rural' parameters from Zhang2001
+         ! This should only be done for hydrophilic aerosols, sea salt, sulfate
+         ! This could be enabled with oc2, bc2, using 'rural' parameters from Zhang2001
          IF(p_chem == p_seas_1 .OR. p_chem == p_seas_2 .OR. p_chem == p_seas_3 .OR. p_chem == p_seas_4) THEN
            aer_wet_d_cm = ( C1_WET_SEASALT*aer_dry_d_cm**C2_WET_SEASALT &
                          / (C3_WET_SEASALT*aer_dry_d_cm**C4_WET_SEASALT - log(relhum)) &
@@ -357,7 +359,7 @@ CONTAINS
          ENDIF
 
          !-- Aerosol wet density (g/cm3)
-         !TODO using dry density for now
+         ! Using the dry density for now
          aer_dry_dens_gcm3 = aer_dry_dens(nv) * 1.E-3
 
          !---- Calculate the sedimentation velocity at the surface
@@ -441,7 +443,9 @@ CONTAINS
     !  (1) GOCART parameters: Chin et al. (2002) -
     !      https://doi.org/10.1175/1520-0469(2002)059%3C0461:TAOTFT%3E2.0.CO;2
 
-    USE module_state_description ! For chem_opt and p_ option values
+    USE module_state_description, ONLY:p_sulf, p_seas_1, p_seas_2, p_seas_3, &
+      p_seas_4, p_bc1, p_oc1, p_bc2, p_oc2, p_dust_1, p_dust_2, p_dust_3, &
+      p_dust_4, p_dust_5, MOZCART_KPP, GOCART_SIMPLE
 
     IMPLICIT NONE
 

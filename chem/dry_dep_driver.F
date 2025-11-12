@@ -133,8 +133,8 @@ CONTAINS
                                                      xlat,      &
                                                      xlong,     &
                                                      snowh,     &
-                                                     xice,      &
                                           xland,znt,raincv,ash_fall
+   REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: xice
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         ,        &
           INTENT(IN ) ::                                     &
                     cldfra        ! cloud fraction current timestep
@@ -299,17 +299,6 @@ CONTAINS
 !-----------------------------------------------------------------
           IF ( config_flags%chem_opt == MOZCART_KPP .or. &
                config_flags%chem_opt == T1_MOZCART_KPP ) then
-            ! call gocart_drydep_driver( dtstep,                            &
-            !       config_flags, numgas,                                   &
-            !       t_phy, moist, p8w, t8w, rmol,aer_res_def,               &
-            !       p_phy, chem, rho_phy, dz8w, ddvel, xland, hfx,          &
-            !       ivgtyp, tsk, vegfra, pbl, ust, znt, xlat, xlong,        &
-            !       dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
-            !       dustdrydep_4,dustdrydep_5,                              &
-            !       depvelocity,                                            &
-            !       ids,ide, jds,jde, kds,kde,                              &
-            !       ims,ime, jms,jme, kms,kme,                              &
-            !       its,ite, jts,jte, kts,kte )
             CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
                                    t_phy, rho_phy, ust, dz8w, rh,         &
                                    xlat, snowh, xice, ivgtyp,             &
@@ -411,17 +400,6 @@ CONTAINS
 !
 ! this does aerosol species (dust,seas, bc,oc) for gocart only
 !
-          ! call gocart_drydep_driver(dtstep,                                &
-          !       config_flags,numgas,                                       &
-          !       t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
-          !       p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
-          !       ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
-          !       dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
-          !       dustdrydep_4,dustdrydep_5,                                 &
-          !       depvelocity,                                               &
-          !       ids,ide, jds,jde, kds,kde,                                 &
-          !       ims,ime, jms,jme, kms,kme,                                 &
-          !       its,ite, jts,jte, kts,kte                                  )
           CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
                                  t_phy, rho_phy, ust, dz8w, rh,         &
                                  xlat, snowh, xice, ivgtyp,             &
@@ -433,17 +411,6 @@ CONTAINS
 !
 ! this does aerosol species (dust) for gocart only
 !
-          ! call gocart_drydep_driver(dtstep,                                &
-          !       config_flags,numgas,                                       &
-          !       t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
-          !       p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
-          !       ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
-          !       dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
-          !       dustdrydep_4,dustdrydep_5,                                 &
-          !       depvelocity,                                               &
-          !       ids,ide, jds,jde, kds,kde,                                 &
-          !       ims,ime, jms,jme, kms,kme,                                 &
-          !       its,ite, jts,jte, kts,kte                                  )
           CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
                                  t_phy, rho_phy, ust, dz8w, rh,         &
                                  xlat, snowh, xice, ivgtyp,             &
@@ -466,17 +433,6 @@ CONTAINS
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
-          ! call gocart_drydep_driver(dtstep,                                &
-          !       config_flags,numgas,                                       &
-          !       t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
-          !       p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
-          !       ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
-          !       dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
-          !       dustdrydep_4,dustdrydep_5,                                 &
-          !       depvelocity,                                               &
-          !       ids,ide, jds,jde, kds,kde,                                 &
-          !       ims,ime, jms,jme, kms,kme,                                 &
-          !       its,ite, jts,jte, kts,kte                                  )
           CALL aer_drydep_simple(chem, dustdrydep, seasdrydep,          &
                                  t_phy, rho_phy, ust, dz8w, rh,         &
                                  xlat, snowh, xice, ivgtyp,             &

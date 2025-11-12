@@ -430,7 +430,6 @@ call wrf_message("**************************************************************
 
    ! Simple aerosol dry deposition for GOCART aerosols
    ! - Can be enabled for any GOCART chem_opt
-   !TODO add MMINLU_LOC input to initialize Zhang2001 interception parameters
    IF(config_flags%aer_drydep_opt > 0 .AND. aer_is_gocart) THEN
       CALL wrf_debug( 15, 'Chemics_init: Calling aer_drydep_simple_init' )
       CALL aer_drydep_simple_init(config_flags%chem_opt)
