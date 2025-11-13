@@ -29,6 +29,12 @@ This option controls the sea-spray emissions from sea ice leads. Only compatible
 This option controls the treatment of dimethyl sulfide (DMS) emissions from the surface ocean in the model. This replaces the old option dmsemis_opt (deprecated but can still be used if needed).
   - 0 (default): No DMS emissions from the ocean surface.
   - 1 (recommended): DMS emissions from the surface ocean are activated for the open ocean grid cell fraction, using the Nightingale et al. (2000) air–sea flux parameterization. In sea ice, emissions are scaled by the open ocean fraction to the power of 0.4 (Loose et al., 2009). Requires oceanic DMS concentration input in the wrflowinp file in variable DMS_OCEAN. DMS_OCEAN can be taken from the climatologies of [Lana 2011](https://doi.org/10.1029/2010GB003850), [Hulswar 2021](https://doi.org/10.5194/essd-14-2963-2022) or the CSIB model [(Hayashida et al., 2019)](https://doi.org/10.5194/gmd-12-1965-2019).
+### nuc_msa_opt (0, 1)
+This option controls the activation of new particle formation from gas MSA
+  - 0 (default): No nucleation of MSA aerosols
+  - 1: Activation of NPF from MSA following [Riccobono et al. (2014)](https://doi.org/10.1126/science.1243527)
+### nuc_msa_fac (real)
+Tuning factor applied to the [Riccobono et al. (2014)](https://doi.org/10.1126/science.1243527) formula when nuc_msa_opt is activated. The default value is 1.0, i.e. the original formulation of the nucleatio rate is used. For Arctic studies, we have found that a value of 0.067 is more appropriate for reproducing observations of aerosol number concentration.
 ### blowing_snow_opt (0, 1): This option controls the emissions from blowing snow.
   - 0 (default): Disables emissions associated with blowing snow
   - 1: Includes sea salt aerosol emissions from blowing snow (on the main, halogen and mercury branches) and bromine emissions from blowing snow (halogens and mercury branches)
