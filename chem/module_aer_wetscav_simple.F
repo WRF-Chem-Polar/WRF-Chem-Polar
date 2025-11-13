@@ -178,7 +178,7 @@ CONTAINS
          precip_water = qr(i,k,j) + qs(i,k,j) + qg(i,k,j) &
                         + evapprod(i,k,j)*dtstep
          IF(condensed_water .GT. 1.0E-12) THEN
-           liquid_fraction = MIN(1.0, MAX(0.0, (qc(i,k,j)+qr(i,k,j)) / condensed_water))
+           liquid_fraction = MIN(1.0, MAX(0.0, qc(i,k,j)/condensed_water))
          ELSE
            liquid_fraction = 1.0
          ENDIF
