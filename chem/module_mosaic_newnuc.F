@@ -83,13 +83,13 @@
 	real, parameter :: smallmassbb = 1.0e-30
 
 ! nh4hso4 values for a_zsr and b_zsr
-        real, parameter :: a_zsr_xx1 =  1.15510
-        real, parameter :: a_zsr_xx2 = -3.20815
-        real, parameter :: a_zsr_xx3 =  2.71141
-        real, parameter :: a_zsr_xx4 =  2.01155
-        real, parameter :: a_zsr_xx5 = -4.71014
-        real, parameter :: a_zsr_xx6 =  2.04616
-        real, parameter :: b_zsr_xx  = 29.4779
+    real, parameter :: a_zsr_xx1 =  1.15510
+    real, parameter :: a_zsr_xx2 = -3.20815
+    real, parameter :: a_zsr_xx3 =  2.71141
+    real, parameter :: a_zsr_xx4 =  2.01155
+    real, parameter :: a_zsr_xx5 = -4.71014
+    real, parameter :: a_zsr_xx6 =  2.04616
+    real, parameter :: b_zsr_xx  = 29.4779
 
 	real :: aw
 	real :: cair_box
@@ -102,8 +102,8 @@
 	real :: temp_box
 	real :: xxdens, xxmass, xxnumb, xxvolu
 
-        ! mixing ratio of gas-phase msa - mole/mole_air
-        ! cur is current, avg is average between cur and rsub0, del is the variation due to nucleation
+    ! mixing ratio of gas-phase msa - mole/mole_air
+    ! cur is current, avg is average between cur and rsub0, del is the variation due to nucleation
 	real :: qmsa_avg, qmsa_cur, qmsa_del
 	real :: qmsaa_del ! change in aerosol msa mixing ratio - mole/mole_air
 	real, parameter :: dens_msaa = 1.48 ! density of msa aerosol - g/cm3
@@ -210,8 +210,8 @@
 	    return
 	end if
 
-        ! if namelist option for msa nucleation is activated
-        ! compute nucleation rate following Riccobono et al. 2014
+    ! if namelist option for msa nucleation is activated
+    ! compute nucleation rate following Riccobono et al. 2014
 	! and modify concentrations of MSA gas, MSA aerosol and aerosol number accordingly
 	if (nuc_msa_opt .eq. 1) then
 	   call riccobono_nuc_msa(   &
@@ -270,9 +270,9 @@
 	end if
 
 	l = lptr_msa_aer(isize,itype,iphase)
-        if (l .ge. p1st) then
-            rsub(l,k,m) = rsub(l,k,m) + qmsaa_del
-        end if
+    if (l .ge. p1st) then
+        rsub(l,k,m) = rsub(l,k,m) + qmsaa_del
+    end if
 
 	l = numptr_aer(isize,itype,iphase)
 	rsub(l,k,m) = rsub(l,k,m) + qnuma_del
