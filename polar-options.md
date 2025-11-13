@@ -35,6 +35,13 @@ This option controls the activation of new particle formation from gas MSA
   - 1: Activation of NPF from MSA following [Riccobono et al. (2014)](https://doi.org/10.1126/science.1243527)
 ### nuc_msa_fac (real)
 Tuning factor applied to the [Riccobono et al. (2014)](https://doi.org/10.1126/science.1243527) formula when nuc_msa_opt is activated. The default value is 1.0, i.e. the original formulation of the nucleation rate is used. For Arctic studies, we have found that a value of 0.067 is more appropriate for reproducing observations of aerosol number concentration.
+### nuc_sulf_opt (0, 1, 2, 3, 4)
+This option controls which scheme is used for the nucleation of sulfate aerosols from sulfuric acid.
+  - 0: no nucleation
+  - 1: [Napari et al (2002)](https://doi.org/10.1029/2002JD002132) (invalid, deactivates nucleation)
+  - 2: [Wexler et al (1994)](https://doi.org/10.1016/1352-2310(94)90129-5) (default)
+  - 3: [Kulmala et al (1998)](https://doi.org/10.1029/97JD03718)
+  - 4: [Vehkamaki et al. (2002)](https://doi.org/10.1029/2002JD002184)
 ### blowing_snow_opt (0, 1): This option controls the emissions from blowing snow.
   - 0 (default): Disables emissions associated with blowing snow
   - 1: Includes sea salt aerosol emissions from blowing snow (on the main, halogen and mercury branches) and bromine emissions from blowing snow (halogens and mercury branches)
