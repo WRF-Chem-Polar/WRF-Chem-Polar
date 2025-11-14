@@ -218,7 +218,7 @@ CONTAINS
                cloudborne_aer_liq = chem(i,k,j,p_chem) * aq_aer_ratio_nv &
                                 * cldfra(i,k,j)
                ! In mixed-phase clouds, correct by the liquid water fraction
-               IF(tk .LT. 258.0 .AND. liquid_fraction .GT. 0.0) THEN
+               IF(tk .LT. 273.0 .AND. liquid_fraction .GT. 0.0) THEN
                  cloudborne_aer_liq = MIN(cloudborne_aer_liq,  &
                                   chem(i,k,j,p_chem) * aq_aer_ratio_nv &
                                   * cldfra(i,k,j) * liquid_fraction)
@@ -227,21 +227,27 @@ CONTAINS
              ! Ice-phase cloudborne aerosols
              cloudborne_aer_ice = 0.0
              ice_aer_ratio_nv = ice_aer_ratio(nv)
-             IF(tk .LT. 258.0 .AND. ice_aer_ratio_nv .GT. 0.0) THEN
-               ! Reduce ice-phase scavenging efficiency at high temperatures
-               IF(tk .GT. 237.0) THEN
-                 ice_aer_ratio_nv = ice_aer_ratio_nv &
-                                    * EXP(0.46*(273.16-tk)-11.6)/153.5
-               ENDIF
-               cloudborne_aer_ice = chem(i,k,j,p_chem) * ice_aer_ratio_nv * cldfra(i,k,j)
-               ! Correct by the ice fraction (1.0-liquid_fraction) at high
-               ! temperatures
-               IF(tk .GT. 237.0) THEN
-                 cloudborne_aer_ice = MIN(cloudborne_aer_ice, chem(i,k,j,p_chem) &
-                                  * ice_aer_ratio_nv * cldfra(i,k,j) &
-                                  * (1.0 - liquid_fraction))
-               ENDIF
-             ENDIF ! ice_aer_ratio_nv .GT. 0.0
+             IF(tk .LE. 237.0) THEN
+               ! 50 % activation efficiency in cold clouds (homogeneous
+               ! nucleation)
+               ice_aer_ratio_nv = 0.5
+               cloudborne_aer_ice = chem(i,k,j,p_chem) * cldfra(i,k,j)
+             ELSEIF(tk .LT. 258.0 .AND. ice_aer_ratio_nv .GT. 0.0) THEN
+               ! Reduce ice-phase scavenging efficiency at warmer temperatures
+               ! To take into account the temperature dependence of
+               ! heterogeneous nucleation
+               ice_aer_ratio_nv = ice_aer_ratio_nv &
+                                  * EXP(0.46*(273.16-tk)-11.6)/153.5
+               cloudborne_aer_ice = chem(i,k,j,p_chem) * ice_aer_ratio_nv &
+                                    * cldfra(i,k,j)
+               ! Correct by the ice fraction (1.0-liquid_fraction)
+               cloudborne_aer_ice = MIN(cloudborne_aer_ice,  &
+                                cloudborne_aer_ice * (1.0-liquid_fraction))
+             ELSE
+               ! At high temperatures ice nucleation is improbable so
+               ! cloudborne aerosol is 0
+               cloudborne_aer_ice = 0.0
+             ENDIF ! tk .LE. 237.0
 
              !-- Appply rainout to chem
              cloudborne_aer = cloudborne_aer_liq + cloudborne_aer_ice
