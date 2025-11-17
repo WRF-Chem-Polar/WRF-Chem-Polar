@@ -198,13 +198,13 @@
                nsize, maxd_asize, volumlo_nuc, volumhi_nuc,   &
                isize, qnuma_del, qso4a_del, qnh4a_del,   &
                qh2so4_del, qnh3_del, dens_nh4so4a )
-        else if (newnuc_method .eq. 3) then
-	    call kulmala1998(   &
-	       dtnuc, temp_box, rh_box, cair_box, qv_box,  &
+    else if (newnuc_method .eq. 3) then
+	    	call kulmala1998(   &
+	       	   dtnuc, temp_box, rh_box, cair_box, qv_box,  &
                qh2so4_avg, qh2so4_cur, &
                isize, maxd_asize, volumlo_sect, volumhi_sect,   &
                qnuma_del, qh2so4_del, qso4a_del, dens_so4_aer)
-        else if (newnuc_method .eq. 4) then
+    else if (newnuc_method .eq. 4) then
             call vehkamaki2002(   &
                dtnuc, temp_box, rh_box, cair_box,  &
                qh2so4_avg, qh2so4_cur, &
@@ -1182,7 +1182,7 @@ subroutine vehkamaki2002(&
 ! from Vehkamaki et al., 2002 - An improved parameterization for sulfuric acid–water
 ! nucleation rates for tropospheric and stratospheric conditions, 10.1029/2002JD002184
 	
-  implicit none
+    implicit none
 
     real, intent(in) :: dtnuc ! nucleation time step (s)
     real, intent(in) :: temp_in ! temperature, in k
