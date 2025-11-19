@@ -139,9 +139,9 @@ CONTAINS
    ! Aerosol conc. lost to rainout, aerosols conc. resuspended from precip
    ! (ug/kg)
    REAL :: rainout_aer, resusp_aer
-   ! Condensed water mixing ratio (kg/kg dry air), precipitation mixing ratio
-   ! (kg/kg dry air), liquid fraction of condensed water (0-1)
-   REAL :: condensed_water, precip_water, liquid_fraction
+   ! Condensed cloud water mixing ratio (kg/kg dry air), precipitation mixing
+   ! ratio (kg/kg dry air), liquid fraction of condensed water (0-1)
+   REAL :: cloud_water, precip_water, liquid_fraction
    ! Rainout activation efficiency of species (0-1)
    REAL :: aq_aer_ratio_nv, ice_aer_ratio_nv
    ! Total 3D precipitation trough cell for rain/snow/ice (kg/m2/hr), rain
@@ -170,15 +170,15 @@ CONTAINS
        DO k=kte-1,kts,-1 ! Do not change, needs to loop in descending order
          !---- Calculate parameters for rainout and washout schemes
          tk = t_phy(i, k, j)
-         ! Add rainprod back to condensed_water because rainprod was already
+         ! Add rainprod back to cloud_water because rainprod was already
          ! applied in mp
-         condensed_water = qc(i,k,j) + qi(i,k,j) + rainprod(i,k,j)*dtstep
+         cloud_water = qc(i,k,j) + qi(i,k,j) + rainprod(i,k,j)*dtstep
          ! Add evapprod back to precip_water because evapprod was already
          ! applied to precip in mp
          precip_water = qr(i,k,j) + qs(i,k,j) + qg(i,k,j) &
                         + evapprod(i,k,j)*dtstep
-         IF(condensed_water .GT. 1.0E-12) THEN
-           liquid_fraction = MIN(1.0, MAX(0.0, qc(i,k,j)/condensed_water))
+         IF(cloud_water .GT. 1.0E-12) THEN
+           liquid_fraction = MIN(1.0, MAX(0.0, qc(i,k,j)/cloud_water))
          ELSE
            liquid_fraction = 1.0
          ENDIF
@@ -193,9 +193,9 @@ CONTAINS
          ! Calculate f, the precipitating fraction of the grid cell as defined
          ! in Luo et al. (2020)
          ! Also calculate rainfrac, the fraction of rained out aerosols
-         IF(cldfra(i, k, j) .GT. 0.001 .AND. condensed_water .GT. 1.0E-12 &
+         IF(cldfra(i, k, j) .GT. 0.001 .AND. cloud_water .GT. 1.0E-12 &
             .AND. rainrate .GT. 0.0) THEN
-           CALL rainfrac_aerosol(rainfrac, f, rainrate, dtstep, condensed_water)
+           CALL rainfrac_aerosol(rainfrac, f, rainrate, dtstep, cloud_water)
          ELSE
            rainfrac = 0.0
            f = 0.0
@@ -307,7 +307,7 @@ CONTAINS
 
 !----------------------------------------------------------------------------
 
-   SUBROUTINE rainfrac_aerosol(rainfrac, f, rainrate, dtstep, condensed_water)
+   SUBROUTINE rainfrac_aerosol(rainfrac, f, rainrate, dtstep, cloud_water)
 
      ! Purpose:
      ! Calculates rainfrac, the fraction of cloudborne aerosols lost to rainout.
@@ -316,7 +316,7 @@ CONTAINS
      ! Input:
      !   rainrate - precipitation formation rate (kg/kg/s)
      !   dtstep - time step (s)
-     !   condensed_water - condensed water mixing ratio (kg/kg)
+     !   cloud_water - condensed cloud water mixing ratio (kg/kg)
      ! Output:
      !   rainfrac - fraction of aerosols lost to rainout (unitless)
      !   f - rainout area fraction (unitless)
@@ -329,7 +329,7 @@ CONTAINS
      ! Arguments
      REAL, INTENT(IN) :: rainrate
      REAL, INTENT(IN) :: dtstep
-     REAL, INTENT(INOUT) :: condensed_water
+     REAL, INTENT(INOUT) :: cloud_water
      REAL, INTENT(OUT) :: rainfrac
      REAL, INTENT(OUT) :: f
      ! Local variables and parameters
@@ -337,10 +337,10 @@ CONTAINS
      REAL,  PARAMETER :: k_0 = 1.0E-4 ! s-1
 
      ! Do not allow more than 100% of the cloud water to precipitate
-     condensed_water = MAX(rainrate*dtstep, condensed_water)
-     k_rain = k_0 + rainrate / condensed_water
+     cloud_water = MAX(rainrate*dtstep, cloud_water)
+     k_rain = k_0 + rainrate / cloud_water
      ! Area of grid box undergoing precipitation
-     f = rainrate / (k_rain * condensed_water)
+     f = rainrate / (k_rain * cloud_water)
      f = MIN(f, 1.0)
      ! Fraction of aerosols lost to rainout
      rainfrac = f * (1.0 - EXP(-k_rain*dtstep))
