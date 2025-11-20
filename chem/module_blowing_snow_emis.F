@@ -203,21 +203,21 @@ MODULE module_blowing_snow_emis
 
         !---- Blowing snow: calculate the total NaCl emission flux from blowing snow
         nacl_emiss_tot = 0.0
-        ! Only valid over sea-ice and for snow that has not experienced recent melt
-        IF (xice(i, j) .GT. seaice_crit .AND. meltedsnow(i,j) .LT. 0.5 &
-            .AND. lakemask(i,j) .LT. 0.5) THEN
+        ! Only valid over sea-ice, excluding lake ice
+        IF (xice(i, j) .GT. seaice_crit .AND. lakemask(i,j) .LT. 0.5) THEN
           !SAhmed - if snow melts, turn off surface emissions there until
           ! temperatures are back below freezing AND fresh snow has been
           ! deposited (at least 1 cm).
-          IF(tsk(i, j) .GT. 273) THEN
+          IF(tsk(i, j) .GT. tskcrit) THEN
             snowh_melt(i,j) = snowh(i,j)
             meltedsnow(i,j) = 1.
           ELSEIF (snowh(i,j) .GT. snowh_melt(i,j)+0.01) THEN
             snowh_melt(i,j) = 0.0
             meltedsnow(i,j) = 0.0
           END IF
-          ! Only valid below freezing temperatures
-          IF (tsk(i, j) .LE. tskcrit) THEN
+          ! Only valid below freezing temperatures, and over snow that has not
+          ! experienced past melt
+          IF (tsk(i, j) .LE. tskcrit .AND. meltedsnow(i,j) .LT. 0.5) THEN
             !-- Calculate the critical 10m wind speed for blowing snow, from Yang
             ! et al. (2008)
             w10_crit = w10_0 + 0.0033 * (t2(i,j) - 273.15 + 27.27) ** 2.0
