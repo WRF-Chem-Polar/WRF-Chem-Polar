@@ -22,7 +22,7 @@ CONTAINS
 		t_phy, rho_phy, p_phy,                                     &
 		alt, p8w, t8w, dz8w, z, z_at_w,                            &
 		ust, aer_res, ivgtyp, vegfra, pbl, rmol, znt,              &
-                snowh, xice,                                               &
+		snowh, xice,                                               &
 		moist, chem, ddvel,                                        &
 		h2oai, h2oaj, numgas,                                      &
 		ids,ide, jds,jde, kds,kde,                                 &
@@ -134,7 +134,7 @@ CONTAINS
 	real :: tempbox
 	real :: tmpa, tmp_lnsg, tmp_num
 	real :: ustar
-        real :: snowdepth,seaiceconc
+	real :: snowdepth, seaiceconc
 	real :: vsettl_0, vsettl_3
 	real :: wetdgnum, wetdens, wstar
 	real :: wetdgnum_si, wetdens_si
@@ -228,13 +228,13 @@ main_i_loop:   &
 	    call wrf_error_fatal( txtaa )
 	end if
 
+	snowdepth = snowh(i,j)
+	seaiceconc = xice(i,j)
 
 !   calculate deposition velocities
 	do ibin = 1, nbin_add
 
 	ustar = ust(i,j)
-        snowdepth = snowh(i,j)
-        seaiceconc = xice(i,j)
 	depresist_a = aer_res(i,j)
 	tempbox = t_phy(i,kts,j)
 	presbox = p_phy(i,kts,j)
@@ -348,7 +348,7 @@ main_i_loop:   &
 		call zhang2001_aer_drydepvel_1(   &
 		    wetdgnum, tmp_lnsg, wetdens,   &
 		    tempbox, airdensbox, ustar, depresist_a,   &
-                    snowdepth, seaiceconc, &
+		    snowdepth, seaiceconc, &
 		    ioptaa, iseason, isurftype, 2, iwetsurf,   &
 		    airkinvisc, freepath,   &
 		    1, 1,   &
@@ -1679,8 +1679,8 @@ main_i_loop:   &
       real     :: dens_part_in ! density of particle material (kg/m3)
       real     :: airdens_in   ! air density (kg/m3)
       real     :: airtemp_in   ! air temperature (K)
-      real     :: snowdepth_in ! snow depth (m)
-      real     :: seaiceconc_in ! sea ice concentration (fraction)
+      REAL, INTENT(IN) :: snowdepth_in ! snow depth (m)
+      REAL, INTENT(IN) :: seaiceconc_in ! sea ice concentration (fraction)
       integer  :: zhang_optaa  ! 1=as published; 2=modified
       integer  :: iseason_in   ! seasonal category (same as wesely)
       integer  :: isurftype_in ! surface type id
@@ -1770,10 +1770,10 @@ main_i_loop:   &
       3, &! deciduous needle-leaf    3 'Deciduous Needleleaf Forest'
       4, &! deciduous broadleaf      4 'Deciduous Broadleaf Forest'
       5, &! mixed broad/needle-leaf  5 'Mixed Forests'
-      6, &! grass                    6 'Closed Shrublands'
-      6, &! grass                    7 'Open Shrublands'
-      6, &! grass                    8 'Woody Savannas'
-      6, &! grass                    9 'Savannas'
+     10, &! shrubs & woodland        6 'Closed Shrublands'
+     10, &! shrubs & woodland        7 'Open Shrublands'
+     10, &! shrubs & woodland        8 'Woody Savannas'
+     10, &! shrubs & woodland        9 'Savannas'
       6, &! grass                   10 'Grasslands'
      11, &! wetland w plants        11 'Permanent wetlands'
       7, &! crops, mixed farming    12 'Croplands'
@@ -1841,14 +1841,12 @@ main_i_loop:   &
          if ( trim(mminlu_loc) == 'USGS' ) then
            if ((isurftype_in >= 1) .and. (isurftype_in <= 25)) &
               isurftype = isurftype_zhang_from_usgs(isurftype_in)
-         endif
          ! map from MODIS to zhang surface type
-         if( trim(mminlu_loc) == 'MODIFIED_IGBP_MODIS_NOAH' ) then
+         else if( trim(mminlu_loc) == 'MODIFIED_IGBP_MODIS_NOAH' ) then
            if ((isurftype_in >= 1) .and. (isurftype_in <= 20)) &
               isurftype = isurftype_zhang_from_modis(isurftype_in)
-         endif
          ! map from MODIS+lakes to zhang surface type
-         if( trim(mminlu_loc) == 'MODIS' ) then
+         else if( trim(mminlu_loc) == 'MODIS' ) then
            if ((isurftype_in >= 1) .and. (isurftype_in <= 21)) &
               isurftype = isurftype_zhang_from_modis(isurftype_in)
               !  Force snow/ice surface if there is snow on ground or sea ice

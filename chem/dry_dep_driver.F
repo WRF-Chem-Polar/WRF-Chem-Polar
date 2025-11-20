@@ -22,8 +22,7 @@ CONTAINS
                cvalk1,cvole1,cvapi1,cvapi2,cvlim1,cvlim2,dep_vel_o3,      &
                ddlen,ddflx,                                               &
                emis_ant,ebu_in,                                           &
-               sf_urban_physics,numgas,current_month,dvel,snowh,          &
-               xice,                                                      &
+               sf_urban_physics,numgas,current_month,dvel,snowh,xice,     &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
                depvelocity,                                               &               
@@ -131,8 +130,8 @@ CONTAINS
                                                      xlat,      &
                                                      xlong,     &
                                                      snowh,     &
-                                                     xice,      &
                                           xland,znt,raincv,ash_fall
+   REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN) :: xice
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         ,        &
           INTENT(IN ) ::                                     &
                     cldfra        ! cloud fraction current timestep
