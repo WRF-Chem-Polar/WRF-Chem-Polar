@@ -88,3 +88,8 @@ io_form_auxinput18                   = 2
 This option controls aerosol sedimentation above the first vertical level for MOSAIC aerosols.
    - 0 (default): No aerosol sedimentation above the first level in MOSAIC. Settling velocities are calculated in the first level and taken into account in the dry deposition velocity.
    - 1: Includes aerosol sedimentation of MOSAIC aerosols at all vertical levels.
+
+###  wetscav_onoff (0,1)
+This option controls wet scavenging of aerosols by precipitation.
+  - 0 (default): Unchanged from upstream WRF-Chem
+  - 1 (recommended): For GOCART mechanisms, includes wet scavenging following Luo et al. (2019, 2020), whereas upstream WRF had no wet scavenging for GOCART aerosols. For other aerosol mechanisms, the behavior of this option is unchanged from upstream WRF.
