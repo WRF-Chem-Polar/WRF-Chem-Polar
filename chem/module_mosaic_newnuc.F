@@ -1100,7 +1100,8 @@
            qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, j2_msa, nuc_msa_fac )
 
            ! PURPOSE: Compute new particle formation rates for the nucleation of MSA with sulfuric acid, following Riccobono et al. 2014 (2)
-	   
+           ! the size of new particles is the lower-bound size of the smallest size bin, i.e. all newly nucleated particles coagulate into the first bin
+           
            ! REFERENCES
            ! (1) Riccobono et al. (2014) - doi: 10.1126/science.1243527
            ! (2) Hodshire et al. (2019) - doi: 10.5194/acp-19-3137-2019
