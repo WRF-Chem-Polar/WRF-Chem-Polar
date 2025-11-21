@@ -172,10 +172,10 @@ CONTAINS
          !---- Calculate parameters for rainout and washout schemes
          tk = t_phy(i, k, j)
          ! Add rainprod back to cloud_water because rainprod was already
-         ! removed from cloud water mp
+         ! removed from cloud water in microphysics
          cloud_water = qc(i,k,j) + qi(i,k,j) + rainprod(i,k,j)*dtstep
          ! Add evapprod back to precip_water because evapprod was already
-         ! removed from precip in mp
+         ! removed from precip in microphysics
          precip_water = qr(i,k,j) + qs(i,k,j) + qg(i,k,j) &
                         + evapprod(i,k,j)*dtstep
          IF(cloud_water .GT. 1.0E-12) THEN
