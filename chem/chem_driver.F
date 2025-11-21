@@ -1098,6 +1098,7 @@
                  grid%ddlen,grid%ddflx, &
                  emis_ant,ebu_in,                                                     &
                  config_flags%sf_urban_physics,numgas,current_month,dvel,grid%snowh,  &
+                 grid%xice,                                                           &
                  grid%dustdrydep_1,grid%dustdrydep_2,grid%dustdrydep_3,               &
                  grid%dustdrydep_4,grid%dustdrydep_5,                                 &      
                  grid%depvelocity,                                                    &      
