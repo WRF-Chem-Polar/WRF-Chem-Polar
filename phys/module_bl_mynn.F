@@ -727,19 +727,19 @@ CONTAINS
 
        DO i=ITS,ITF
           if (FLAG_QI ) then
-             sqi(:)=sqi3D(i,:)
+             sqi(kts:kte)=sqi3D(i,kts:kte)
           else
              sqi = 0.0
           endif
           if (FLAG_QS ) then
-             sqs(:)=sqs3D(i,:)
+             sqs(kts:kte)=sqs3D(i,kts:kte)
           else
              sqs = 0.0
           endif
           if (icloud_bl > 0) then
-             cldfra_bl1d(:)=cldfra_bl(i,:)
-             qc_bl1d(:)=qc_bl(i,:)
-             qi_bl1d(:)=qi_bl(i,:)
+             cldfra_bl1d(kts:kte)=cldfra_bl(i,kts:kte)
+             qc_bl1d(kts:kte)=qc_bl(i,kts:kte)
+             qi_bl1d(kts:kte)=qi_bl(i,kts:kte)
           endif
 
           do k=KTS,KTE !KTF
@@ -866,25 +866,25 @@ CONTAINS
     DO i=ITS,ITF
        !Initialize some arrays
        if (tke_budget .eq. 1) then
-          dqke(i,:)=qke(i,:)
+          dqke(i,kts:kte)=qke(i,kts:kte)
        endif
        if (FLAG_QI ) then
-          sqi(:)=sqi3D(i,:)
+          sqi(kts:kte)=sqi3D(i,kts:kte)
        else
           sqi = 0.0
        endif
        if (FLAG_QS ) then
-          sqs(:)=sqs3D(i,:)
+          sqs(kts:kte)=sqs3D(i,kts:kte)
        else
           sqs = 0.0
        endif
        if (icloud_bl > 0) then
-          CLDFRA_BL1D(:)=CLDFRA_BL(i,:)
-          QC_BL1D(:)   =QC_BL(i,:)
-          QI_BL1D(:)   =QI_BL(i,:)
-          cldfra_bl1D_old(:)=cldfra_bl(i,:)
-          qc_bl1D_old(:)=qc_bl(i,:)
-          qi_bl1D_old(:)=qi_bl(i,:)
+          CLDFRA_BL1D(kts:kte)=CLDFRA_BL(i,kts:kte)
+          QC_BL1D(kts:kte)   =QC_BL(i,kts:kte)
+          QI_BL1D(kts:kte)   =QI_BL(i,kts:kte)
+          cldfra_bl1D_old(kts:kte)=cldfra_bl(i,kts:kte)
+          qc_bl1D_old(kts:kte)=qc_bl(i,kts:kte)
+          qi_bl1D_old(kts:kte)=qi_bl(i,kts:kte)
        else
           CLDFRA_BL1D  =0.0
           QC_BL1D      =0.0
