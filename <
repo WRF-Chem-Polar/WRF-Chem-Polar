@@ -134,14 +134,13 @@ CONTAINS
    REAL :: f, fr
    ! Vertical dimension of cldfra for cloud fraction calculation
    INTEGER :: dimz
-   ! Aerosol conc. in cloud phase: total cloud, ice-phase only, liquid-phase
-   ! only (µg/kg)
+   ! Aerosol conc. in cloud phase: total, ice-phase only, liquid-phase only (µg/kg)
    REAL :: cloudborne_aer, cloudborne_aer_ice, cloudborne_aer_liq
    ! Aerosol conc. lost to rainout, aerosols conc. resuspended from precip
    ! (µg/kg)
    REAL :: rainout_aer, resusp_aer
    ! Condensed cloud water mixing ratio (kg/kg dry air), precipitation mixing
-   ! ratio (kg/kg dry air), liquid fraction of cloud water (0-1)
+   ! ratio (kg/kg dry air), liquid fraction of condensed water (0-1)
    REAL :: cloud_water, precip_water, liquid_fraction
    ! Rainout activation efficiency of species (0-1)
    REAL :: aq_aer_ratio_nv, ice_aer_ratio_nv
@@ -172,10 +171,10 @@ CONTAINS
          !---- Calculate parameters for rainout and washout schemes
          tk = t_phy(i, k, j)
          ! Add rainprod back to cloud_water because rainprod was already
-         ! removed from cloud water mp
+         ! applied in mp
          cloud_water = qc(i,k,j) + qi(i,k,j) + rainprod(i,k,j)*dtstep
          ! Add evapprod back to precip_water because evapprod was already
-         ! removed from precip in mp
+         ! applied to precip in mp
          precip_water = qr(i,k,j) + qs(i,k,j) + qg(i,k,j) &
                         + evapprod(i,k,j)*dtstep
          IF(cloud_water .GT. 1.0E-12) THEN
