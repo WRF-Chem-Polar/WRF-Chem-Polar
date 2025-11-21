@@ -152,6 +152,11 @@ CONTAINS
    REAL :: k_rain
    ! Value of chem(i,k,j,p) before deposition step (ug/kg)
    REAL :: chem_spec_before
+   ! Flags for disabling in-cloud or below-cloud scavenging
+   LOGICAL :: DO_RAINOUT, DO_WASHOUT
+
+   DO_RAINOUT = .true.
+   DO_WASHOUT = .true.
 
    !-------- Perform wet scavenging for aerosol species -------
    DO j=jts,jte
@@ -197,7 +202,7 @@ CONTAINS
            p_chem = aer_pointers(nv)
 
            !---- Perform rainout ("in-cloud scavenging")
-           IF(f .GT. 0 .AND. cldfra(i,k,j) .GT. 0.001) THEN
+           IF(DO_RAINOUT .AND. f .GT. 0 .AND. cldfra(i,k,j) .GT. 0.001) THEN
 
              !-- Calculate the mass concentration of cloudborne aerosols
              cloudborne_aer = 0.0
@@ -243,7 +248,7 @@ CONTAINS
 
 
            !---- Perform washout ("below-cloud scavenging")
-           IF(ppr+pps+ppi .GT. 0.0 .AND. fr .GT. 0.001) THEN
+           IF(DO_WASHOUT .AND. ppr+pps+ppi .GT. 0.0 .AND. fr .GT. 0.001) THEN
              !-- Calculate washfrac, the fraction of washed out aerosols
              ! Fine aerosol washout (r<=1 micrometer)
              IF(aer_is_fine(nv)) THEN
@@ -457,7 +462,7 @@ CONTAINS
     ! This could be recovered from the aerosol scheme data directly
     IF(chem_opt == MOZCART_KPP .OR. chem_opt == GOCART_SIMPLE) THEN
       ! MOZCART
-      naerspecies = 12
+      naerspecies = 13
     ELSE
       CALL wrf_error_fatal ('wetscav_simple_init: chem_opt not supported')
     ENDIF
@@ -488,27 +493,34 @@ CONTAINS
       !-- GOCART
       ! Species that experience wet scavenging (sulfate deposition needs to
       ! be disabled in mozcart_wetscav)
-      aer_pointers = (/ p_sulf, p_seas_1, p_seas_2, p_seas_3, p_seas_4, &
-                        p_bc2, p_oc2, p_dust_1, p_dust_2, p_dust_3, &
-                        p_dust_4, p_dust_5, p_bc1 /)
-      ! Fraction of activated aerosols for aer_pointers species, values from
-      ! Luo et al. (2020)
-      aq_aer_ratio = (/ 1., 1., 1., 1., 1., &
-                        0.5, 0.5, 0., 0., 0., &
-                        0., 0., 0. /)
-      ice_aer_ratio = (/ 0., 0., 0., 0., 0., &
-                         0., 0., 1., 1., 1., &
-                         1., 1., 0. /)
+      aer_pointers(:) = (/ p_sulf, p_seas_1, p_seas_2, p_seas_3, p_seas_4, &
+                           p_bc2, p_oc2, p_dust_1, p_dust_2, p_dust_3, &
+                           p_dust_4, p_dust_5, p_bc1 /)
+      ! Fraction of activated aerosols for aer_pointers species
+      ! We do not use the values from Luo et al. (2020) because they are
+      ! mostly sensitive to hygroscopicity, even though size is more important
+      ! for CCN activation
+      ! Instead we assume that only small hygrophobic aerosols (e.g. BC1, OC1)
+      ! are inefficient CCN
+      aq_aer_ratio(:) = (/ 0.5, 0.5, 0.5, 0.5, 0.5, &
+                           0.5, 0.5, 0.5, 0.5, 0.5, &
+                           0.5, 0.5, 0. /)
+      ! Activated fraction in ice clouds is usually very low except at very low
+      ! temperatures, even for efficient INP - pick 0.5 for now but it could
+      ! be lower
+      ice_aer_ratio(:) = (/ 0., 0., 0., 0., 0., &
+                            0., 0., 0.5, 0.5, 0.5, &
+                            0.5, 0.5, 0. /)
       ! List of washed out fine aerosol for aer_pointers species (r<=1
       ! micrometer)
-      aer_is_fine = (/ .true., .true., .true., .false., .false., &
-                       .true., .true. , .true., .false., .false., &
-                       .false., .false., .false. /)
+      aer_is_fine(:) = (/ .true., .true., .true., .false., .false., &
+                          .true., .true. , .true., .false., .false., &
+                          .false., .false., .false. /)
       ! List of washed out coarse aerosol for aer_pointers species (r>1
       ! micrometer)
-      aer_is_coarse = (/ .false., .false., .false., .true., .true., &
-                         .false., .false., .false., .true., .true., &
-                         .true., .true., .false. /)
+      aer_is_coarse(:) = (/ .false., .false., .false., .true., .true., &
+                            .false., .false., .false., .true., .true., &
+                            .true., .true., .false. /)
     ELSE
       CALL wrf_error_fatal ('wetscav_simple_init: chem_opt not supported')
     ENDIF

@@ -373,16 +373,30 @@ call wrf_message("**************************************************************
        else
          call wrf_error_fatal("ERROR: wet scavenging option requires chem_opt = 8 through 13 or 31 to 36 or 41 to 42 or 109 or 503 or 504 or 601 or 611 to function.")
        endif
-       if ( config_flags%mp_physics /= 2 .and. config_flags%mp_physics /= 10 .and. config_flags%mp_physics /= 11  &
-            .and. config_flags%mp_physics /= 22 .and. config_flags%mp_physics /= THOMPSONAERO &
-            .and. .not. ( config_flags%mp_physics == 18 .and. config_flags%nssl_2moment_on == 1 ) ) then
-         call wrf_error_fatal("ERROR: wet scavenging option requires mp_phys = 2 (Lin et al.) or 8,28 (Thompson) or 10 (Morrison) or 11 (CAMMGMP) or 18 NSSL_2mom to function.")
+       if ( config_flags%mp_physics /= LINSCHEME &
+            .and. config_flags%mp_physics /= THOMPSON &
+            .and. config_flags%mp_physics /= THOMPSONAERO &
+            .and. config_flags%mp_physics /= MORR_TWO_MOMENT &
+            .and. config_flags%mp_physics /= CAMMGMPSCHEME  &
+            .and. .not. ( config_flags%mp_physics == NSSL_2MOM &
+                          .and. config_flags%nssl_2moment_on == 1 ) ) then
+         call wrf_error_fatal("ERROR: wet scavenging option requires &
+                & mp_physics = 2 (Lin et al.) or 8,28 (Thompson) or &
+                & 10 (Morrison) or 11 (CAMMGMP) or 18 (NSSL_2mom) to &
+                & function.")
        endif
      ! MOZART options and domain id = 1
      elseif( id == 1 ) then
-       if ( config_flags%mp_physics /= 6 .and. config_flags%mp_physics /= 8 .and. config_flags%mp_physics /= 10 .and. config_flags%mp_physics /= 17  &
-            .and. config_flags%mp_physics /= 18 .and. config_flags%mp_physics /= 22 .and. config_flags%mp_physics /= THOMPSONAERO) then
-         call wrf_error_fatal("ERROR: wet scavenging option for MOZART,MOZCART requires mp_phys = 6 (WSM6) or 8,28 (Thompson) or 10 (Morrison) .or 17/18/22 (NSSL 2-moment) to function.")
+       if ( config_flags%mp_physics /= WSM6SCHEME &
+            .and. config_flags%mp_physics /= THOMPSON &
+            .and. config_flags%mp_physics /= THOMPSONAERO &
+            .and. config_flags%mp_physics /= MORR_TWO_MOMENT &
+            .and. .not. ( config_flags%mp_physics == NSSL_2MOM &
+                          .and. config_flags%nssl_2moment_on == 1 ) ) then
+         call wrf_error_fatal("ERROR: wet scavenging option for &
+                & MOZART,MOZCART requires mp_physics = 6 (WSM6) or 8,28 &
+                & (Thompson) or 10 (Morrison) .or 18 (NSSL 2-moment) &
+                & to function.")
        else
          ! MOZART (trace gas) wet scavenging
          write(message_txt,*) 'chem_init: calling wetscav_mozcart_init for domain ',id
@@ -516,28 +530,28 @@ call wrf_message("**************************************************************
       call wrf_error_fatal( trim(message_txt) )
    endif
 
-   ! Checks for sea spray aerosol emissions option seas_opt = SEASMONAHAN,
-   ! SEASIOANNIDIS, SEASGONG, SEASSALTER
-   IF ( config_flags%seas_opt == SEASMONAHAN .OR. config_flags%seas_opt == SEASIOANNIDIS &
-        .OR. config_flags%seas_opt == SEASGONG .OR. config_flags%seas_opt == SEASSALTER) THEN
+   !-- Checks for sea spray aerosol emissions option
+   SELECT CASE(config_flags%seas_opt)
+   CASE(SEASMONAHAN, SEASIOANNIDIS, SEASGONG, SEASSALTER)
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
-       ! Initialize seaspray emissions for valid chem_opt
+       ! Initialize seaspray emissions
        CALL seaspray_emis_init(config_flags%chem_opt, config_flags%seas_opt)
      ELSE
-       CALL wrf_error_fatal ('chemics_init: error, sea salt emissions seas_opt &
-         == SEASMONAHAN,SEASIOANNIDIS,SEASGONG,SEASSALTER, are only compatible &
-         with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
+       CALL wrf_error_fatal ('chemics_init: error, selected sea spray emissions &
+        option seas_opt is only compatible with GOCART, MOSAIC_4BIN and &
+        MOSAIC_8BIN.')
      ENDIF
-   ENDIF
-   ! Checks for blowing snow aerosol emissions option
+   END SELECT ! seas_opt
+   !-- Checks for blowing snow aerosol emissions option
    IF ( config_flags%blowing_snow_opt == 1 ) THEN
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
-       ! Initialize blowing snow emissions for valid chem_opt
+       ! Initialize blowing snow emissions
        CALL wrf_debug( 15, 'Calling blowing_snow_emis_init')
        CALL blowing_snow_emis_init(config_flags%chem_opt)
      ELSE
-       CALL wrf_error_fatal ('chemics_init: error, blowing snow emissions are &
-           only compatible with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
+       CALL wrf_error_fatal ('chemics_init: error, blowing snow emission &
+           blowing_snow_opt is only compatible with GOCART, MOSAIC_4BIN &
+           and MOSAIC_8BIN.')
      ENDIF
    ENDIF
 

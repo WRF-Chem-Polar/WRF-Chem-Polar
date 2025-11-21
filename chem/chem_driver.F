@@ -863,7 +863,8 @@
               grid%mean_fct_aggr,grid%firesize_agtf, &
               grid%firesize_agef,grid%firesize_agsv,grid%firesize_aggr,                    &
               grid%u10,grid%v10,grid%ivgtyp,grid%isltyp,grid%gsw,grid%vegfra,grid%rmol,    &
-              grid%ust,grid%znt,grid%dms_0,grid%dms_ocean,grid%erup_beg,grid%erup_end,     &
+              grid%ust,grid%znt,grid%dms_0,grid%dms_ocean,grid%leadfrac,grid%erup_beg,     &
+              grid%erup_end,     &
               grid%xland,grid%xlat,grid%xlong,                                             &
               grid%xice,grid%chloroa,grid%meltedsnow,grid%snowh_melt,                      &
               z_at_w,zmid,grid%smois,dustin,seasin,                                        &
@@ -904,7 +905,7 @@
               grid%mebio_isop,grid%mebio_apin,grid%mebio_bpin, grid%mebio_bcar,            &
               grid%mebio_acet,grid%mebio_mbo,grid%mebio_no,                                &
               current_month,                                                               &
-              grid%lakemask,grid%e_nacl_ocean,grid%e_nacl_blow,                            &
+              grid%lakemask,grid%e_nacl_ocean,grid%e_nacl_blow,grid%e_nacl_leads,          &
          ! stuff for LNOx emissions
              grid%ht, grid%refl_10cm, grid%ic_flashrate, grid%cg_flashrate,                 &
          ! stuff for aircraft emissions

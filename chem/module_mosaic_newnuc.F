@@ -27,7 +27,7 @@
 		it, jt, kclm_calcbgn, kclm_calcend,   &
 		idiagbb_in,   &
 		dtchem, dtnuc_in, rsub0,   &
-		id, ktau, ktauc, its, ite, jts, jte, kts, kte )
+		id, ktau, ktauc, its, ite, jts, jte, kts, kte, nuc_msa_opt, nuc_msa_fac)
 !
 !   calculates new particle nucleation for grid points in
 !	the i=it, j=jt vertical column over timestep dtnuc_in
@@ -52,7 +52,10 @@
 		id, ktau, ktauc, its, ite, jts, jte, kts, kte
 	real, intent(in) :: dtchem, dtnuc_in
 	real, intent(in) :: rsub0(l2maxd,kmaxd,nsubareamaxd)
-!           rsub0 holds mixrat values before the aerchemistry calcs
+	integer, intent(in) :: nuc_msa_opt ! toggles MSA nucleation on/off - namelist option
+	real, intent(in) :: nuc_msa_fac	! tuning factor applied to nucleation rate if nuc_msa_opt = 1
+
+!       rsub0 holds mixrat values before the aerchemistry calcs
 
 !   NOTE - much information is passed via arrays in 
 !		module_data_mosaic_asect and module_data_mosaic_other
@@ -67,7 +70,7 @@
 
 !   local variables
 	integer, parameter :: newnuc_method = 2
-
+	
 	integer :: k, l, ll, m
 	integer :: isize, itype, iphase
 	integer :: iconform_numb
@@ -80,24 +83,31 @@
 	real, parameter :: smallmassbb = 1.0e-30
 
 ! nh4hso4 values for a_zsr and b_zsr
-        real, parameter :: a_zsr_xx1 =  1.15510
-        real, parameter :: a_zsr_xx2 = -3.20815
-        real, parameter :: a_zsr_xx3 =  2.71141
-        real, parameter :: a_zsr_xx4 =  2.01155
-        real, parameter :: a_zsr_xx5 = -4.71014
-        real, parameter :: a_zsr_xx6 =  2.04616
-        real, parameter :: b_zsr_xx  = 29.4779
+    real, parameter :: a_zsr_xx1 =  1.15510
+    real, parameter :: a_zsr_xx2 = -3.20815
+    real, parameter :: a_zsr_xx3 =  2.71141
+    real, parameter :: a_zsr_xx4 =  2.01155
+    real, parameter :: a_zsr_xx5 = -4.71014
+    real, parameter :: a_zsr_xx6 =  2.04616
+    real, parameter :: b_zsr_xx  = 29.4779
 
 	real :: aw
 	real :: cair_box
 	real :: dens_nh4so4a, dtnuc
-	real :: duma, dumb, dumc
+	real :: duma, dumb, dumc, duma_msa ! dummy variables for intermediate computations
 	real :: rh_box
 	real :: qh2so4_avg, qh2so4_cur, qh2so4_del 
 	real :: qnh3_avg, qnh3_cur, qnh3_del 
 	real :: qnuma_del, qso4a_del, qnh4a_del
 	real :: temp_box
 	real :: xxdens, xxmass, xxnumb, xxvolu
+
+    ! mixing ratio of gas-phase msa - mole/mole_air
+    ! cur is current, avg is average between cur and rsub0, del is the variation due to nucleation
+	real :: qmsa_avg, qmsa_cur, qmsa_del
+	real :: qmsaa_del ! change in aerosol msa mixing ratio - mole/mole_air
+	real, parameter :: dens_msaa = 1.48 ! density of msa aerosol - g/cm3
+	real :: j2_msa ! msa nucleation rate - #/cm3
 
 	real,save :: dumveca(10), dumvecb(10), dumvecc(10), dumvecd(10), dumvece(10)
 	real :: volumlo_nuc(maxd_asize), volumhi_nuc(maxd_asize)
@@ -171,6 +181,11 @@
 	qso4a_del = 0.0
 	qnh4a_del = 0.0
 
+	qmsa_cur = max(0.0,rsub(kmsa,k,m))
+	qmsa_avg   = 0.5*( qmsa_cur   + max(0.0,rsub0(kmsa,k,m)) )
+	qmsa_del = 0.0
+	j2_msa = 0.0
+
 	dens_nh4so4a = dens_so4_aer
 
 	isize = 0
@@ -190,11 +205,24 @@
                nsize, maxd_asize, volumlo_nuc, volumhi_nuc,   &
                isize, qnuma_del, qso4a_del, qnh4a_del,   &
                qh2so4_del, qnh3_del, dens_nh4so4a )
-	else
+ 	else
 	    istat_newnuc = -1
 	    return
 	end if
 
+    ! if namelist option for msa nucleation is activated
+    ! compute nucleation rate following Riccobono et al. 2014
+	! and modify concentrations of MSA gas, MSA aerosol and aerosol number accordingly
+	if (nuc_msa_opt .eq. 1) then
+	   call riccobono_nuc_msa(   &
+	      dtnuc, temp_box, rh_box, cair_box, qh2so4_avg, qh2so4_cur, &
+	      qnh3_avg, maxd_asize, volumlo_nuc, volumhi_nuc, &
+	      qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, &
+	      j2_msa, nuc_msa_fac )
+	end if
+
+
+	
 
 !   temporary diagnostics
 	dumveca(1) = temp_box
@@ -227,10 +255,11 @@
 
 	ncount(2) = ncount(2) + 1
 
-!   update gas and aerosol so4 and nh3/nh4 mixing ratios
+!   update gas and aerosol so4, nh3/nh4 and msa mixing ratios
 	rsub(kh2so4,k,m) = max( 0.0, rsub(kh2so4,k,m) + qh2so4_del )
 	rsub(knh3,  k,m) = max( 0.0, rsub(knh3,  k,m) + qnh3_del )
-
+	rsub(kmsa,  k,m) = max( 0.0, rsub(kmsa,  k,m) + qmsa_del )
+	
 	l = lptr_so4_aer(isize,itype,iphase)
 	if (l .ge. p1st) then
 	    rsub(l,k,m) = rsub(l,k,m) + qso4a_del
@@ -239,6 +268,12 @@
 	if (l .ge. p1st) then
 	    rsub(l,k,m) = rsub(l,k,m) + qnh4a_del
 	end if
+
+	l = lptr_msa_aer(isize,itype,iphase)
+    if (l .ge. p1st) then
+        rsub(l,k,m) = rsub(l,k,m) + qmsaa_del
+    end if
+
 	l = numptr_aer(isize,itype,iphase)
 	rsub(l,k,m) = rsub(l,k,m) + qnuma_del
 	xxnumb = rsub(l,k,m)
@@ -281,11 +316,12 @@
 	    continue
 	else
 !   (normal) case of drydensity valid (which means drymass is valid also)
-!   so increment mass and volume with the so4 & nh4 deltas, then calc density
+!   so increment mass and volume with the so4, nh4 and msa deltas, then calc density
 	    xxvolu = xxmass/xxdens
 	    duma = qso4a_del*mw_so4_aer + qnh4a_del*mw_nh4_aer
-	    xxmass = xxmass + duma
-	    xxvolu  = xxvolu  + duma/dens_nh4so4a
+	    duma_msa = qmsaa_del*mw_msa_aer
+	    xxmass = xxmass + duma + duma_msa
+	    xxvolu  = xxvolu  + duma/dens_nh4so4a + duma_msa/dens_msaa
 	    if (xxmass .le. smallmassbb) then
 !   do this to force calc of dry mass, volume from rsub
 		xxdens = 0.001
@@ -308,7 +344,7 @@
 		l = massptr_aer(ll,isize,itype,iphase)
 		if (l .ge. p1st) then
 		    duma = max( 0.0, rsub(l,k,m) )*mw_aer(ll,itype)
-		    xxmass = xxmass + duma
+		    xxmass = xxmass + duma + duma_msa
 		    xxvolu = xxvolu + duma/dens_aer(ll,itype)
 		end if
 	    end do
@@ -1057,6 +1093,119 @@
         end subroutine wexler_nuc_mosaic_1box
 
 
+!-----------------------------------------------------------------------
+        subroutine riccobono_nuc_msa(   &
+           dtnuc, temp_in, rh_in, cair, qh2so4_avg, qh2so4_cur, qnh3_avg, &
+           maxd_asize, volumlo_sect, volumhi_sect,   &
+           qnuma_del, qh2so4_del, qmsa_avg, qmsa_cur, qmsa_del, qmsaa_del, j2_msa, nuc_msa_fac )
+
+           ! PURPOSE: Compute new particle formation rates for the nucleation of MSA with sulfuric acid, following Riccobono et al. 2014 (2)
+           ! the size of new particles is the lower-bound size of the smallest size bin, i.e. all newly nucleated particles coagulate into the first bin
+           
+           ! REFERENCES
+           ! (1) Riccobono et al. (2014) - doi: 10.1126/science.1243527
+           ! (2) Hodshire et al. (2019) - doi: 10.5194/acp-19-3137-2019
+
+           implicit none
+
+           real, intent(in) :: dtnuc ! nucleation time step (s)
+           real, intent(in) :: temp_in ! temperature, in k
+           real, intent(in) :: rh_in ! relative humidity, as fraction
+           real, intent(in) :: cair ! dry-air molar density (mole-air/cm3)
+
+           real, intent(in) :: qh2so4_avg, qh2so4_cur, qnh3_avg
+           real, intent(in) :: qmsa_avg, qmsa_cur
+
+           integer, intent(in) :: maxd_asize ! dimension for volumlo_sect
+           real, intent(in) :: volumlo_sect(maxd_asize) ! dry volume at lower bnd of bin (cm3)
+           real, intent(in) :: volumhi_sect(maxd_asize) ! dry volume at upper bnd of bin (m3)
+
+           real, intent(inout) :: qnuma_del ! change to aerosol number mixing ratio (#/mole-air)
+           real, intent(out) :: qh2so4_del ! change to gas h2so4 mixing ratio (mole/mole-air)
+           real, intent(out) :: qmsa_del ! change to gas msa mixing ratio (mole/mole-air)
+           real, intent(out) :: qmsaa_del ! change to msa aerosol mixing ratio (mole/mole-air) 
+           real, intent(in) :: nuc_msa_fac ! correction factor to nucleation rate - unitless
+
+           real, parameter :: dens_msaa = 1.48 ! g/cm3
+
+           real, parameter :: pi = 3.1415926536
+           real, parameter :: avogad = 6.022e23 ! avogadro number (molecules/mole)
+           real, parameter :: mw_air = 28.966 ! dry-air mean molecular weight (g/mole)
+           real, parameter :: mw_msaa = 96.0 ! msa aerosol molecular weight (g/mole)
+
+           real, parameter :: k_sa1 = 1.1e-14 ! cm3/s
+           real, parameter :: k_sa2 = 3.2e-14 ! cm3/s
+           real, parameter :: k_m = 3.27e-21 ! cm6/s
+
+           real, parameter :: qnh3_crit_h2019 = 10.0 ! threshold nh3 concentration from (2)
+           ! parameters for critical temperature formula from (2) - K
+           real, parameter :: a_h = 252.0
+           real, parameter :: b_h = 0.619
+           real, parameter :: c_h = 0.0349
+           real, parameter :: d_h = 0.00056
+           real, parameter :: e_h = 0.00000332
+	   
+           real vol_part  ! "grown" single-particle volume (cm3)
+
+           real, intent(out) :: j2_msa ! nucleation rate - #/cm3
+           real ppm_to_num ! conversion factor mole/mole_air to #/cm3
+           real qh2so4_avg_num ! number mixing ratio of h2so4 - #/cm3
+           real qmsa_avg_num ! number mixing ratio of msa gas - #/cm3
+           real t_trans ! transition temperature - K
+           real rh100 ! relative humidity as percentage
+           real qnh3_avg_ppt ! mixing ratio of nh3 - ppt
+
+           qmsa_del = 0.0
+           qmsaa_del = 0.0
+           rh100 = rh_in*100.0
+           qnh3_avg_ppt = qnh3_avg*1e9
+	   
+           j2_msa = 0.0
+
+           ! input gas mixing ratios are in ppm
+           ppm_to_num = cair*avogad ! conversion from mole/mole-air to #/cm3
+           qh2so4_avg_num = qh2so4_avg*ppm_to_num
+           qmsa_avg_num = qmsa_avg*ppm_to_num
+
+           ! nucleation rate from Riccobono et al. (2014) - ref (1)
+           j2_msa = k_m*qh2so4_avg_num*qh2so4_avg_num*qmsa_avg_num
+           ! apply tuning factor
+           j2_msa = j2_msa*nuc_msa_fac
+
+           ! convert nucleation rate to wrf-chem expected units
+           j2_msa = max(0.0, j2_msa*dtnuc) ! # particles per cm3 per nucleation time step
+           j2_msa = j2_msa/cair ! # per mole-air per nucleation time step
+
+
+           ! temperature threshold from Hodshire et al. (2019) - ref (2)
+           t_trans = a_h-b_h*rh100+c_h*rh100*rh100-d_h*rh100*rh100*rh100+e_h*rh100*rh100*rh100*rh100
+
+
+           ! New particle formation is only possible in specific temperature, RH conditions,
+           ! and depends on the availability of bases, represented here by NH3 (Hodshire et al. (2019) - ref (2))
+
+           ! In low base conditions, MSA acts as a Volatile or semivolatile organic compound, and does not contribute to new particle formation
+           if (qnh3_avg_ppt .le. qnh3_crit_h2019) then
+              j2_msa = 0.0
+           else
+           ! In excess-base conditions, MSA volatility depends on T and RH
+           ! If t>t_trans, then MSA is treated as a semivolatile species that undergoes condensation but not nucleation 
+              if (temp_in .ge. t_trans) then
+                 j2_msa = 0.0
+              endif
+           endif
+
+           vol_part = volumlo_sect(1)
+
+           qmsaa_del = j2_msa*vol_part*dens_msaa/mw_msaa/(mw_air) ! # particles per kg to mole msa per mole-air
+           qmsa_del = -qmsaa_del
+           qnuma_del = qnuma_del+j2_msa
+
+           j2_msa = j2_msa/(mw_air)*1.0e3 ! # per kg air per nucleation time step for output
+
+        return
+        end subroutine riccobono_nuc_msa
+!.......................................................................
 
 
 !-----------------------------------------------------------------------

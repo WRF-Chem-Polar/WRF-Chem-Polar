@@ -25,7 +25,7 @@ CONTAINS
          mean_fct_agsv,mean_fct_aggr,firesize_agtf,firesize_agef,          &
          firesize_agsv,firesize_aggr,                                      &
          u10,v10,ivgtyp,isltyp,gsw,vegfra,rmol,ust,znt,dms_0,dms_ocean,    &
-         erup_beg,erup_end,                                                &
+         leadfrac, erup_beg,erup_end,                                      &
          xland,xlat,xlong,                                                 &
          xice, chloroa, meltedsnow, snowh_melt,                            &
          z_at_w,z,smois,dustin,seasin,                                     &
@@ -64,7 +64,7 @@ CONTAINS
          mebio_isop, mebio_apin, mebio_bpin, mebio_bcar,                   &
          mebio_acet, mebio_mbo, mebio_no,                                  &
          current_month,                                                    &
-         lakemask, e_nacl_ocean, e_nacl_blow,                              &
+         lakemask, e_nacl_ocean, e_nacl_blow, e_nacl_leads,                &
          ! end stuff for MEGAN v2.04
          ! stuff for LNOx emissions
          ht, refl_10cm,                                                    &
@@ -149,7 +149,7 @@ CONTAINS
          emis_vol
    REAL, DIMENSION( ims:ime, jms:jme),&
          INTENT(IN ) ::                                                 &
-         dms_0,dms_ocean,tsk,erup_beg,erup_end
+         dms_0,dms_ocean,leadfrac, tsk,erup_beg,erup_end
    REAL, DIMENSION( ims:ime, jms:jme,3),&
          INTENT(IN ) ::                                                 &
          erod, erod_dri
@@ -330,7 +330,7 @@ CONTAINS
            adapt_step_flag
 
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: lakemask
-      REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_ocean, e_nacl_blow
+      REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_ocean, e_nacl_blow, e_nacl_leads
 
 !     stuff for aircraft emissions
 
@@ -782,10 +782,11 @@ real, save :: freq_industry(24)    = &
         CALL wrf_debug(15, 'seaspray_emis sea-spray emissions')
         CALL seaspray_emis( id, dtstep, dz8w, config_flags%chem_opt, &
          config_flags%seas_opt,                                     &
+         config_flags%seas_leads_opt,                               &
          config_flags%seas_so4_opt,                                 &
          config_flags%seas_oa_opt,                                  &
-         rho_phy, chem, e_nacl_ocean,                               &
-         u10, v10, xland, tsk, xice, lakemask, chloroa,             &
+         rho_phy, chem, e_nacl_ocean, e_nacl_leads,                 &
+         u10, v10, xland, tsk, xice, lakemask, leadfrac, chloroa,   &
          ids,ide, jds,jde, kds,kde,                                 &
          ims,ime, jms,jme, kms,kme,                                 &
          its,ite, jts,jte, kts,kte                                  )
