@@ -306,7 +306,7 @@ CONTAINS
                                    ims=ims,ime=ime, jms=jms,jme=jme,        &
                                    kms=kms,kme=kme,                         &
                                    its=its,ite=ite, jts=jts,jte=jte,        &
-                                   kts=kts,kte=kte,                         )
+                                   kts=kts,kte=kte                          )
 
           ENDIF
 
@@ -411,7 +411,7 @@ CONTAINS
                                  ims=ims,ime=ime, jms=jms,jme=jme,        &
                                  kms=kms,kme=kme,                         &
                                  its=its,ite=ite, jts=jts,jte=jte,        &
-                                 kts=kts,kte=kte,                         )
+                                 kts=kts,kte=kte                          )
        ELSEIF ( config_flags%chem_opt == DUST) then
 !
 ! this does aerosol species (dust) for gocart only
@@ -426,7 +426,7 @@ CONTAINS
                                  ims=ims,ime=ime, jms=jms,jme=jme,        &
                                  kms=kms,kme=kme,                         &
                                  its=its,ite=ite, jts=jts,jte=jte,        &
-                                 kts=kts,kte=kte,                         )
+                                 kts=kts,kte=kte                          )
 
 
        ELSEIF ( config_flags%chem_opt == GOCARTRACM_KPP) then
@@ -452,7 +452,7 @@ CONTAINS
                                  ims=ims,ime=ime, jms=jms,jme=jme,        &
                                  kms=kms,kme=kme,                         &
                                  its=its,ite=ite, jts=jts,jte=jte,        &
-                                 kts=kts,kte=kte,                         )
+                                 kts=kts,kte=kte                          )
 
        ELSE
           !Set dry deposition velocity to zero when using the
