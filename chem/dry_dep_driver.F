@@ -296,12 +296,17 @@ CONTAINS
 !-----------------------------------------------------------------
           IF ( config_flags%chem_opt == MOZCART_KPP .or. &
                config_flags%chem_opt == T1_MOZCART_KPP ) then
-            CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
-                                   xlat, snowh, xice, ivgtyp,             &
-                                   aer_res_def, julday, dtstep,           &
-                                   ids,ide, jds,jde, kds,kde,             &
-                                   ims,ime, jms,jme, kms,kme,             &
-                                   its,ite, jts,jte, kts,kte              )
+            CALL aer_drydep_simple(chem=chem, t_phy=t_phy, rho_phy=rho_phy, &
+                                   ust=ust, dz8w=dz8w, rh=rh, xlat=xlat,    &
+                                   snowh=snowh, xice=xice, ivgtyp=ivgtyp,   &
+                                   res_adyn=aer_res_def, julday=julday,     &
+                                   dtstep=dtstep,                           &
+                                   ids=ids,ide=ide, jds=jds,jde=jde,        &
+                                   kds=kds,kde=kde,                         &
+                                   ims=ims,ime=ime, jms=jms,jme=jme,        &
+                                   kms=kms,kme=kme,                         &
+                                   its=its,ite=ite, jts=jts,jte=jte,        &
+                                   kts=kts,kte=kte,                         )
 
           ENDIF
 
@@ -396,22 +401,32 @@ CONTAINS
 !
 ! this does aerosol species (dust,seas, bc,oc) for gocart only
 !
-          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
-                                 xlat, snowh, xice, ivgtyp,             &
-                                 aer_res_def, julday, dtstep,           &
-                                 ids,ide, jds,jde, kds,kde,             &
-                                 ims,ime, jms,jme, kms,kme,             &
-                                 its,ite, jts,jte, kts,kte              )
+          CALL aer_drydep_simple(chem=chem, t_phy=t_phy, rho_phy=rho_phy, &
+                                 ust=ust, dz8w=dz8w, rh=rh, xlat=xlat,    &
+                                 snowh=snowh, xice=xice, ivgtyp=ivgtyp,   &
+                                 res_adyn=aer_res_def, julday=julday,     &
+                                 dtstep=dtstep,                           &
+                                 ids=ids,ide=ide, jds=jds,jde=jde,        &
+                                 kds=kds,kde=kde,                         &
+                                 ims=ims,ime=ime, jms=jms,jme=jme,        &
+                                 kms=kms,kme=kme,                         &
+                                 its=its,ite=ite, jts=jts,jte=jte,        &
+                                 kts=kts,kte=kte,                         )
        ELSEIF ( config_flags%chem_opt == DUST) then
 !
 ! this does aerosol species (dust) for gocart only
 !
-          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
-                                 xlat, snowh, xice, ivgtyp,             &
-                                 aer_res_def, julday, dtstep,           &
-                                 ids,ide, jds,jde, kds,kde,             &
-                                 ims,ime, jms,jme, kms,kme,             &
-                                 its,ite, jts,jte, kts,kte              )
+          CALL aer_drydep_simple(chem=chem, t_phy=t_phy, rho_phy=rho_phy, &
+                                 ust=ust, dz8w=dz8w, rh=rh, xlat=xlat,    &
+                                 snowh=snowh, xice=xice, ivgtyp=ivgtyp,   &
+                                 res_adyn=aer_res_def, julday=julday,     &
+                                 dtstep=dtstep,                           &
+                                 ids=ids,ide=ide, jds=jds,jde=jde,        &
+                                 kds=kds,kde=kde,                         &
+                                 ims=ims,ime=ime, jms=jms,jme=jme,        &
+                                 kms=kms,kme=kme,                         &
+                                 its=its,ite=ite, jts=jts,jte=jte,        &
+                                 kts=kts,kte=kte,                         )
 
 
        ELSEIF ( config_flags%chem_opt == GOCARTRACM_KPP) then
@@ -427,12 +442,17 @@ CONTAINS
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
-          CALL aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh,   &
-                                 xlat, snowh, xice, ivgtyp,             &
-                                 aer_res_def, julday, dtstep,           &
-                                 ids,ide, jds,jde, kds,kde,             &
-                                 ims,ime, jms,jme, kms,kme,             &
-                                 its,ite, jts,jte, kts,kte              )
+          CALL aer_drydep_simple(chem=chem, t_phy=t_phy, rho_phy=rho_phy, &
+                                 ust=ust, dz8w=dz8w, rh=rh, xlat=xlat,    &
+                                 snowh=snowh, xice=xice, ivgtyp=ivgtyp,   &
+                                 res_adyn=aer_res_def, julday=julday,     &
+                                 dtstep=dtstep,                           &
+                                 ids=ids,ide=ide, jds=jds,jde=jde,        &
+                                 kds=kds,kde=kde,                         &
+                                 ims=ims,ime=ime, jms=jms,jme=jme,        &
+                                 kms=kms,kme=kme,                         &
+                                 its=its,ite=ite, jts=jts,jte=jte,        &
+                                 kts=kts,kte=kte,                         )
 
        ELSE
           !Set dry deposition velocity to zero when using the
