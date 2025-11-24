@@ -48,7 +48,13 @@
 !       3 = Kulmala et al., 1998
 !       4 = Vehkamaki et al., 2002
 !		
-		
+!	Note: the size of new particles is the lower-bound size of the smallest size bin, 
+!	i.e. the mass of the new particles is calculated assuming they have the size of the smallest bin, 
+!	leading to overestimations in depletion of H2SO4, which will feedback to calculated rates. 
+!	Loss of particles to coagulation between cluster and smallest bin is also not accounted for, 
+!	leading to overestimates of particle number in the smallest bin.
+
+
 	use module_data_mosaic_asect
 	use module_data_mosaic_other
 	use module_state_description, only:  param_first_scalar
