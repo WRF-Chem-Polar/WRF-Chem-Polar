@@ -1881,7 +1881,6 @@ ENDIF ghg_block
 ! this is done since background values are only available as average/month. It will not be necessary if other
 ! chemistry packages are used that provide oh,no3,h2o2
 !
-         endif
            ndystep=86400/ifix(dt)
            do j=jts,jte
                  do i=its,ite
