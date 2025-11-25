@@ -15,14 +15,14 @@
 ! References:
 ! ------------------------------------------------------------------------------
 !  (1) Emerson et al. (2020) -  Revisiting particle dry deposition and its
-!  role in radiative effect estimates, Proc. Natl. Acad. Sci. U.S.A.  117 (42)
-!  26076-26082, https://doi.org/10.1073/pnas.2014761117
+!      role in radiative effect estimates, Proc. Natl. Acad. Sci. U.S.A.  117
+!      (42) 26076-26082, https://doi.org/10.1073/pnas.2014761117
 !  (2) Zhang et al., (2001) - A size-segregated particle dry deposition scheme
-!  for an atmospheric aerosol module. Atmospheric environment, 35(3), 549-560,
-!  https://doi.org/10.1016/S1352-2310(00)00326-5
+!      for an atmospheric aerosol module. Atmospheric environment, 35(3),
+!      549-560, https://doi.org/10.1016/S1352-2310(00)00326-5
 !  (3) Gerber (1985) - Relative humidity parameterization of the Navy aerosol
-!  model (NAM), NRL Rep. 8956. National Research Laboratory, Washington DC.
-!  https://apps.dtic.mil/sti/tr/pdf/ADA163209.pdf
+!      model (NAM), NRL Rep. 8956. National Research Laboratory, Washington
+!      DC.  https://apps.dtic.mil/sti/tr/pdf/ADA163209.pdf
 
 MODULE module_aer_drydep_simple
 
@@ -43,9 +43,8 @@ MODULE module_aer_drydep_simple
   ! Aerosol densities for aerosol species in aer_pointers (kg/m3)
   REAL, DIMENSION(:), ALLOCATABLE :: aer_dry_dens
   ! Land cover type name 
-  CHARACTER*256 :: mminlu_loc
+  CHARACTER(LEN=256) :: mminlu_loc
   ! Radius (m) of surface collectors for interception
-
   ! Interception efficiency land-dependent coefficient, from Zhang2001
   REAL, SAVE :: RAD_COLLECTOR_ZHANG(5,15)
   DATA RAD_COLLECTOR_ZHANG/ &
@@ -121,6 +120,9 @@ MODULE module_aer_drydep_simple
    12, &  ! ice cap & glacier       24: snow or ice
     8/    !                         25: no data
 
+  ! chem_opt aerosol model type
+  LOGICAL :: aer_is_gocart
+
 CONTAINS
 
 !----------------------------------------------------------------------------
@@ -155,7 +157,8 @@ CONTAINS
    ! USE associations:
    USE module_model_constants, ONLY: g,piconst
    USE module_state_description, ONLY: p_sulf, p_seas_1, p_seas_2, p_seas_3, &
-     p_seas_4, p_dust_1, p_dust_2, p_dust_3, p_dust_4, p_dust_5, num_chem
+     p_seas_4, p_dust_1, p_dust_2, p_dust_3, p_dust_4, p_dust_5, num_chem, &
+     param_first_scalar
 
    IMPLICIT NONE
 
@@ -303,13 +306,11 @@ CONTAINS
          ! Map from usgs to zhang surface category
          IF ((wrfsurfcat >= 1) .and. (wrfsurfcat <= 25)) &
             zhangsurfcat = ZHANGSURF_FROM_USGS(wrfsurfcat)
-       ENDIF
-       IF( trim(mminlu_loc) == 'MODIFIED_IGBP_MODIS_NOAH' ) THEN
+       ELSEIF( trim(mminlu_loc) == 'MODIFIED_IGBP_MODIS_NOAH' ) THEN
          ! Map from MODIS to zhang surface category
          IF ((wrfsurfcat >= 1) .and. (wrfsurfcat <= 20)) &
             zhangsurfcat = ZHANG_SURF_FROM_MODIS(wrfsurfcat)
-       ENDIF
-       IF( trim(mminlu_loc) == 'MODIS' ) THEN
+       ELSEIF( trim(mminlu_loc) == 'MODIS' ) THEN
          ! Map from MODIS+lakes to zhang surface category
          IF ((wrfsurfcat >= 1) .and. (wrfsurfcat <= 21)) &
             zhangsurfcat = ZHANG_SURF_FROM_MODIS(wrfsurfcat)
@@ -337,8 +338,10 @@ CONTAINS
          aer_dry_d_cm = aer_dry_diam(nv) * 1.0E2
          ! Calculate wet diameter with eq. 10 in Zhang2001, also see Gerber1985
          ! This should only be done for hydrophilic aerosols, sea salt, sulfate
-         ! This could be enabled with oc2, bc2, using 'rural' parameters from Zhang2001
-         IF(p_chem == p_seas_1 .OR. p_chem == p_seas_2 .OR. p_chem == p_seas_3 .OR. p_chem == p_seas_4) THEN
+         ! This could be enabled with oc2, bc2, using 'rural' parameters from
+         ! Zhang2001
+         IF(p_chem == p_seas_1 .OR. p_chem == p_seas_2 .OR. p_chem == p_seas_3 &
+            .OR. p_chem == p_seas_4) THEN
            aer_wet_d_cm = ( C1_WET_SEASALT*aer_dry_d_cm**C2_WET_SEASALT &
                          / (C3_WET_SEASALT*aer_dry_d_cm**C4_WET_SEASALT - log(relhum)) &
                          + aer_dry_d_cm**3.0 ) ** (1./3.)
@@ -348,6 +351,8 @@ CONTAINS
                          / (C3_WET_SULFATE*aer_dry_d_cm**C4_WET_SULFATE - log(relhum)) &
                          + aer_dry_d_cm**3.0 ) ** (1./3.)
            ! WRITE(*,*) 'i,j,nv,rh,aer_diam_dry,aer_diam_wet: ', i,j,nv,relhum,aer_dry_diam(nv),aer_wet_d_cm
+         ELSE
+           aer_wet_d_cm = aer_dry_d_cm
          ENDIF
 
          !-- Aerosol wet density (g/cm3)
@@ -388,9 +393,11 @@ CONTAINS
          !---- Perform dry deposition
          ! WRITE(*,*) 'i,j,nv,aerd,aerdens,vdep,vsettl,res_sfc,res_adyn',i,j,nv,aer_wet_d_cm,aer_dry_dens_gcm3,vdep,vsettl,res_sfc,res_adyn(i,j)
          drydeprate = vdep/dz8w(i,kts,j) ! s -1
-         aer_mmr_old = chem(i,kts,j,p_chem)
-         aer_mmr = aer_mmr_old * EXP(-dtstep*drydeprate)
-         chem(i,kts,j,p_chem) = MAX(0.0, aer_mmr)
+         IF(p_chem > param_first_scalar) THEN
+           aer_mmr_old = chem(i,kts,j,p_chem)
+           aer_mmr = aer_mmr_old * EXP(-dtstep*drydeprate)
+           chem(i,kts,j,p_chem) = MAX(0.0, aer_mmr)
+         ENDIF
 
        END DO !nv
        ! WRITE(*,*) 'i,j,nv,vdep,vsettl,res_sfc,res_adyn',i,j,nv,aer_wet_d_cm,aer_dry_dens_gcm3,vdep,vsettl,res_sfc,res_adyn(i,j)
@@ -414,13 +421,22 @@ CONTAINS
 
     USE module_state_description, ONLY:p_sulf, p_seas_1, p_seas_2, p_seas_3, &
       p_seas_4, p_bc1, p_oc1, p_bc2, p_oc2, p_dust_1, p_dust_2, p_dust_3, &
-      p_dust_4, p_dust_5, MOZCART_KPP, GOCART_SIMPLE
+      p_dust_4, p_dust_5, MOZCART_KPP, GOCART_SIMPLE, T1_MOZCART_KPP, &
+      GOCARTRADM2, GOCARTRACM_KPP
 
     IMPLICIT NONE
 
     ! Arguments:
     !  Input
     INTEGER, INTENT(IN) :: chem_opt
+
+
+    !---- Initialize chem mechanism type
+    aer_is_gocart = chem_opt == MOZCART_KPP .OR. &
+                    chem_opt == T1_MOZCART_KPP .OR. &
+                    chem_opt == GOCART_SIMPLE .OR. &
+                    chem_opt == GOCARTRADM2 .OR. &
+                    chem_opt == GOCARTRACM_KPP
 
     !-------- Initialize land cover type --------
     CALL nl_get_mminlu( 1, mminlu_loc )
@@ -429,7 +445,7 @@ CONTAINS
 
     !-------- Initialize aerosol tracer number for chem_opt --------
     ! This could be recovered from the aerosol scheme data directly
-    IF(chem_opt == MOZCART_KPP .OR. chem_opt == GOCART_SIMPLE) THEN
+    IF(aer_is_gocart) THEN
       ! MOZCART
       naerspecies = 14
     ELSE
@@ -448,7 +464,7 @@ CONTAINS
     ENDIF
 
     !---- Initialize aerosol mappings and parameters for dry deposition
-    IF(chem_opt == MOZCART_KPP .OR. chem_opt == GOCART_SIMPLE) THEN
+    IF(aer_is_gocart) THEN
       !-- GOCART
       ! Species that experience dry deposition
       aer_pointers(:) = (/ p_sulf, p_seas_1, p_seas_2, p_seas_3, p_seas_4, &
