@@ -518,20 +518,20 @@ MODULE module_seaspray_emis
     IF(aer_is_gocart) THEN
       ! GOCART sea salt bin center diameters (micrometer)
       ! These should be log-averaged but I follow the GOCART definition instead
-      bin_diameters_cen = (/ 0.60, 2.00, 6.5, 15.0 /)
+      bin_diameters_cen(:) = (/ 0.60, 2.00, 6.5, 15.0 /)
       ! Size-resolved volume emission scaling factors for GOCART
       IF(seas_opt == SEASMONAHAN) THEN
         ! Monahan et al. (1986) SSA source function
-        vol_emiss_dist = (/ 367221., 3534527., 2057189., 3732253. /)
+        vol_emiss_dist(:) = (/ 367221., 3534527., 2057189., 3732253. /)
       ELSEIF(seas_opt == SEASIOANNIDIS .OR. seas_opt == SEASGONG) THEN
         ! Gong et al. (1997) + O'Dowd et al. (1997) SSA source function
         ! Same as Monahan above 100 nm
-        vol_emiss_dist = (/ 367221., 3534527., 2057189., 3732253. /)
+        vol_emiss_dist(:) = (/ 367221., 3534527., 2057189., 3732253. /)
       ELSEIF(seas_opt == SEASSALTER) THEN
         ! Salter et al. (2015) SSA source function (3 lognormal modes)
-        vol_emiss_dist_mode1 = (/ 3.83446671e-03, 8.78064403e-04, 4.04923045e-05, 1.35064728e-07 /)
-        vol_emiss_dist_mode2 = (/ 1.04739718e-01, 2.81827227e-01, 3.81633973e-02, 7.82888780e-05 /)
-        vol_emiss_dist_mode3 = (/ 0.05502078, 2.45584876, 2.24370337, 0.02050615 /)
+        vol_emiss_dist_mode1(:) = (/ 3.83446671e-03, 8.78064403e-04, 4.04923045e-05, 1.35064728e-07 /)
+        vol_emiss_dist_mode2(:) = (/ 1.04739718e-01, 2.81827227e-01, 3.81633973e-02, 7.82888780e-05 /)
+        vol_emiss_dist_mode3(:) = (/ 0.05502078, 2.45584876, 2.24370337, 0.02050615 /)
       ELSE
         CALL wrf_error_fatal ('seaspray_emis_init: seas_opt not supported')
       ENDIF
@@ -539,24 +539,24 @@ MODULE module_seaspray_emis
     !-- Initialize SSA source functions for MOSAIC-8bin aerosols
     ELSEIF(aer_is_mosaic8bin) THEN
       ! MOSAIC-8bin bin center diameters (micrometer)
-      bin_diameters_cen = (/ 0.0552, 0.1105, 0.2210, 0.4419, &
+      bin_diameters_cen(:) = (/ 0.0552, 0.1105, 0.2210, 0.4419, &
                              0.8839, 1.7678, 3.5355, 7.0711 /)
       ! Size-resolved volume emission scaling factors for MOSAIC-8bin
       IF(seas_opt == SEASMONAHAN) THEN
         ! Monahan et al. (1986) SSA source function
-        vol_emiss_dist = (/ 0., 10673., 29885., 72482., &
+        vol_emiss_dist(:) = (/ 0., 10673., 29885., 72482., &
                             786274., 2695160., 977044., 1406417. /)
       ELSEIF(seas_opt == SEASIOANNIDIS .OR. seas_opt == SEASGONG) THEN
         ! Gong et al. (1997) + O'Dowd et al. (1997) SSA source function
-        vol_emiss_dist = (/ 5037., 14721., 29885., 72482., &
+        vol_emiss_dist(:) = (/ 5037., 14721., 29885., 72482., &
                             786274., 2695160., 977044., 1406417. /)
       ELSEIF(seas_opt == SEASSALTER) THEN
         ! Salter et al. (2015) SSA source function (3 lognormal modes)
-        vol_emiss_dist_mode1 = (/ 3.25430278e-05, 2.86242430e-04, 1.10845502e-03, 1.90106720e-03, &
+        vol_emiss_dist_mode1(:) = (/ 3.25430278e-05, 2.86242430e-04, 1.10845502e-03, 1.90106720e-03, &
                                   1.44815452e-03, 4.89275363e-04, 7.29402899e-05, 4.76220834e-06 /)
-        vol_emiss_dist_mode2 = (/ 1.52923262e-08, 8.46400525e-06, 9.80949397e-04, 2.46583115e-02, &
+        vol_emiss_dist_mode2(:) = (/ 1.52923262e-08, 8.46400525e-06, 9.80949397e-04, 2.46583115e-02, &
                                   1.40982898e-01, 1.91288946e-01, 6.21746746e-02, 4.69120329e-03 /)
-        vol_emiss_dist_mode3 = (/ 3.32393538e-14, 1.16966419e-09, 4.91681378e-06, 2.53850868e-03, &
+        vol_emiss_dist_mode3(:) = (/ 3.32393538e-14, 1.16966419e-09, 4.91681378e-06, 2.53850868e-03, &
                                   1.69813539e-01, 1.61016157e+00, 2.39700335e+00, 5.75051048e-01 /)
       ELSE
         CALL wrf_error_fatal ('seaspray_emis_init: seas_opt not supported')
@@ -565,19 +565,19 @@ MODULE module_seaspray_emis
     !-- Initialize SSA source functions for MOSAIC-4bin aerosols
     ELSEIF(aer_is_mosaic4bin) THEN
       ! MOSAIC-4bin bin center diameters (micrometer)
-      bin_diameters_cen = (/ 0.0781, 0.3125, 1.2500, 5.0000 /)
+      bin_diameters_cen(:) = (/ 0.0781, 0.3125, 1.2500, 5.0000 /)
       ! Size-resolved volume emission scaling factors for MOSAIC-4bin
       IF(seas_opt == SEASMONAHAN) THEN
         ! Monahan et al. (1986) SSA source function
-        vol_emiss_dist = (/ 10673., 102367., 3481434., 2383461. /)
+        vol_emiss_dist(:) = (/ 10673., 102367., 3481434., 2383461. /)
       ELSEIF(seas_opt == SEASIOANNIDIS .OR. seas_opt == SEASGONG) THEN
         ! Gong et al. (1997) + O'Dowd et al. (1997) SSA source function
-        vol_emiss_dist = (/ 19757., 102367., 3481434., 2383461./)
+        vol_emiss_dist(:) = (/ 19757., 102367., 3481434., 2383461./)
       ELSEIF(seas_opt == SEASSALTER) THEN
         ! Salter et al. (2015) SSA source function (3 lognormal modes)
-        vol_emiss_dist_mode1 = (/ 3.18830776e-04, 3.00952222e-03, 1.93742988e-03, 7.77024982e-05 /)
-        vol_emiss_dist_mode2 = (/ 8.48255180e-06, 2.56392609e-02, 3.32271843e-01, 6.68658779e-02 /)
-        vol_emiss_dist_mode3 = (/ 1.17045932e-09, 2.54342549e-03, 1.77997511e+00, 2.97205440e+00 /)
+        vol_emiss_dist_mode1(:) = (/ 3.18830776e-04, 3.00952222e-03, 1.93742988e-03, 7.77024982e-05 /)
+        vol_emiss_dist_mode2(:) = (/ 8.48255180e-06, 2.56392609e-02, 3.32271843e-01, 6.68658779e-02 /)
+        vol_emiss_dist_mode3(:) = (/ 1.17045932e-09, 2.54342549e-03, 1.77997511e+00, 2.97205440e+00 /)
       ELSE
         CALL wrf_error_fatal ('seaspray_emis_init: seas_opt not supported')
       ENDIF

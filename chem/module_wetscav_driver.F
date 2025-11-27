@@ -408,16 +408,19 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
        ! gases
        IF(config_flags%chem_opt == MOZCART_KPP .OR. config_flags%chem_opt == T1_MOZCART_KPP) THEN
          CALL wrf_debug(15,'wetscav_driver calling aer_wetscav_simple')
-         CALL aer_wetscav_simple( id, dtstep, config_flags,                         &
-                                  t_phy, p_phy, dz8w,                               &
-                                  chem, rho_phy, cldfra_ls, rainrate, evaprate,     &
-                                  precr, preci, precs, precg, dx, dy,               &
-                                  moist(ims,kms,jms,p_qv), moist(ims,kms,jms,p_qc), &
-                                  moist(ims,kms,jms,p_qi), moist(ims,kms,jms,p_qs), &
-                                  moist(ims,kms,jms,p_qr),                          &
-                                  ids,ide, jds,jde, kds,kde,                        &
-                                  ims,ime, jms,jme, kms,kme,                        &
-                                  its,ite, jts,jte, kts,kte                         )
+         CALL aer_wetscav_simple( id, dtstep, config_flags,                     &
+                                  t_phy, p_phy, dz8w,                           &
+                                  chem, rho_phy, cldfra_ls, rainrate, evaprate, &
+                                  precr, preci, precs, precg, dx, dy,           &
+                                  moist(ims:ime,kms:kme,jms:jme,p_qv),          &
+                                  moist(ims:ime,kms:kme,jms:jme,p_qc),          &
+                                  moist(ims:ime,kms:kme,jms:jme,p_qi),          &
+                                  moist(ims:ime,kms:kme,jms:jme,p_qs),          &
+                                  moist(ims:ime,kms:kme,jms:jme,p_qr),          &
+                                  moist(ims:ime,kms:kme,jms:jme,p_qg),          &
+                                  ids,ide, jds,jde, kds,kde,                    &
+                                  ims,ime, jms,jme, kms,kme,                    &
+                                  its,ite, jts,jte, kts,kte                     )
        ENDIF
 
         hno3_col_mdel = delta_mass_col(:,:,p_hno3)
@@ -502,16 +505,19 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
        evaprate(:,:,:) = 0.
      endif
      CALL wrf_debug(15,'wetscav_driver calling aer_wetscav_simple')
-     CALL aer_wetscav_simple( id, dtstep, config_flags,                         &
-                              t_phy, p_phy, dz8w,                               &
-                              chem, rho_phy, cldfra_ls, rainrate, evaprate,     &
-                              precr, preci, precs, precg, dx, dy,               &
-                              moist(ims,kms,jms,p_qv), moist(ims,kms,jms,p_qc), &
-                              moist(ims,kms,jms,p_qi), moist(ims,kms,jms,p_qs), &
-                              moist(ims,kms,jms,p_qr),                          &
-                              ids,ide, jds,jde, kds,kde,                        &
-                              ims,ime, jms,jme, kms,kme,                        &
-                              its,ite, jts,jte, kts,kte                         )
+     CALL aer_wetscav_simple( id, dtstep, config_flags,                     &
+                              t_phy, p_phy, dz8w,                           &
+                              chem, rho_phy, cldfra_ls, rainrate, evaprate, &
+                              precr, preci, precs, precg, dx, dy,           &
+                              moist(ims:ime,kms:kme,jms:jme,p_qv),          &
+                              moist(ims:ime,kms:kme,jms:jme,p_qc),          &
+                              moist(ims:ime,kms:kme,jms:jme,p_qi),          &
+                              moist(ims:ime,kms:kme,jms:jme,p_qs),          &
+                              moist(ims:ime,kms:kme,jms:jme,p_qr),          &
+                              moist(ims:ime,kms:kme,jms:jme,p_qg),          &
+                              ids,ide, jds,jde, kds,kde,                    &
+                              ims,ime, jms,jme, kms,kme,                    &
+                              its,ite, jts,jte, kts,kte                     )
    CASE DEFAULT
 
    END SELECT cps_select

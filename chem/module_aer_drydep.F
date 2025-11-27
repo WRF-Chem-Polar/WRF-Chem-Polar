@@ -22,6 +22,7 @@ CONTAINS
 		t_phy, rho_phy, p_phy,                                     &
 		alt, p8w, t8w, dz8w, z, z_at_w,                            &
 		ust, aer_res, ivgtyp, vegfra, pbl, rmol, znt,              &
+		snowh, xice,                                               &
 		moist, chem, ddvel,                                        &
 		h2oai, h2oaj, numgas,                                      &
 		ids,ide, jds,jde, kds,kde,                                 &
@@ -93,7 +94,7 @@ CONTAINS
 
 	real, intent(in),   &
 		dimension( ims:ime, jms:jme ) :: &
-		ust, vegfra, pbl, rmol, znt
+		ust, vegfra, pbl, rmol, znt, snowh, xice
 
 	real, intent(in),   &
 		dimension( its:ite, jts:jte ) :: &
@@ -133,6 +134,7 @@ CONTAINS
 	real :: tempbox
 	real :: tmpa, tmp_lnsg, tmp_num
 	real :: ustar
+	real :: snowdepth, seaiceconc
 	real :: vsettl_0, vsettl_3
 	real :: wetdgnum, wetdens, wstar
 	real :: wetdgnum_si, wetdens_si
@@ -226,6 +228,8 @@ main_i_loop:   &
 	    call wrf_error_fatal( txtaa )
 	end if
 
+	snowdepth = snowh(i,j)
+	seaiceconc = xice(i,j)
 
 !   calculate deposition velocities
 	do ibin = 1, nbin_add
@@ -344,6 +348,7 @@ main_i_loop:   &
 		call zhang2001_aer_drydepvel_1(   &
 		    wetdgnum, tmp_lnsg, wetdens,   &
 		    tempbox, airdensbox, ustar, depresist_a,   &
+		    snowdepth, seaiceconc, &
 		    ioptaa, iseason, isurftype, 2, iwetsurf,   &
 		    airkinvisc, freepath,   &
 		    1, 1,   &
@@ -1650,6 +1655,7 @@ main_i_loop:   &
      subroutine zhang2001_aer_drydepvel_1( &
          dg_num_in, lnsig_in, dens_part_in, &
          airtemp_in, airdens_in, ustar_in, resist_a_in, &
+         snowdepth_in, seaiceconc_in, &
          zhang_optaa, iseason_in, &
          isurftype_in, modesurftype, iwetsurf, &
          airkinvisc, freepath,   &
@@ -1667,11 +1673,14 @@ main_i_loop:   &
       implicit none
 
 !     in
+      CHARACTER*256 :: mminlu_loc ! Name of the land cover type
       real     :: dg_num_in    ! geometric mean diameter of number distribution (m)
       real     :: lnsig_in     ! nat. log. of geometric standard deviation of particles
       real     :: dens_part_in ! density of particle material (kg/m3)
       real     :: airdens_in   ! air density (kg/m3)
       real     :: airtemp_in   ! air temperature (K)
+      REAL, INTENT(IN) :: snowdepth_in ! snow depth (m)
+      REAL, INTENT(IN) :: seaiceconc_in ! sea ice concentration (fraction)
       integer  :: zhang_optaa  ! 1=as published; 2=modified
       integer  :: iseason_in   ! seasonal category (same as wesely)
       integer  :: isurftype_in ! surface type id
@@ -1685,7 +1694,7 @@ main_i_loop:   &
       integer  :: ido_mom0, ido_mom3 ! flag for do/skip moment 0 & 3 calculations
 
 !     out
-      real     :: depvel_0, depvel_3    ! surface deposition velocity for 
+      real     :: depvel_0, depvel_3    ! surface deposition velocity for
                                         ! 0th (number) and 3rd (mass) moments (m/s)
       real     :: resist_s0, resist_s3  ! surface resistances (s/m)
       real     :: vsettl_0, vsettl_3    ! gravitational settling velocities (m/s)
@@ -1753,8 +1762,33 @@ main_i_loop:   &
            9.999, 9.999, 9.999, 9.999, 9.999, &  ! luc 14
            0.010, 0.010, 0.010, 0.010, 0.010  /  ! luc 15
 
+      integer, save  :: isurftype_zhang_from_modis(21) ! maps modis surface type to zhang type
+      data isurftype_zhang_from_modis / &
+      !   ! zhang type            <---- modis type
+      1, &! evergreen needle-leaf    1 'Evergreen Needleleaf Forest'
+      2, &! evergreen broadleaf      2 'Evergreen Broadleaf Forest'
+      3, &! deciduous needle-leaf    3 'Deciduous Needleleaf Forest'
+      4, &! deciduous broadleaf      4 'Deciduous Broadleaf Forest'
+      5, &! mixed broad/needle-leaf  5 'Mixed Forests'
+     10, &! shrubs & woodland        6 'Closed Shrublands'
+     10, &! shrubs & woodland        7 'Open Shrublands'
+     10, &! shrubs & woodland        8 'Woody Savannas'
+     10, &! shrubs & woodland        9 'Savannas'
+      6, &! grass                   10 'Grasslands'
+     11, &! wetland w plants        11 'Permanent wetlands'
+      7, &! crops, mixed farming    12 'Croplands'
+     15, &! urban                   13 'Urban and Built-Up'
+      7, &! crops, mixed farming    14 'cropland/natural vegetation mosaic'
+     12, &! ice cap & glacier       15 'Snow and Ice'
+      8, &! desert                  16 'Barren or Sparsely Vegetated'
+     14, &! ocean                   17 'Water'
+     10, &! shrubs & woodland       18 'Wooded Tundra'
+      9, &! tundra                  19 'Mixed Tundra'
+      8, &! desert                  20 'Barren Tundra'
+      13/ ! inland water            21 'Lakes'
+
       integer, save  :: isurftype_zhang_from_usgs(25) ! maps usgs surface type to zhang type
-      data isurftype_zhang_from_usgs / &  
+      data isurftype_zhang_from_usgs / &
                ! zhang type         <---  usgs type                    --->  wesely type
         15, &  ! urban                    1: urban and built-up land         1  urban
          7, &  ! crops, mixed farming     2: dryland cropland & pasture      2  agricultural land
@@ -1782,12 +1816,12 @@ main_i_loop:   &
         12, &  ! ice cap & glacier       24: snow or ice                     -,    (always winter)
          8  /  !                         25: no data                         8
                !
-               ! zhang 13 (inland water) not used                                wesley 10 (mixed agric/range) 
+               ! zhang 13 (inland water) not used                                wesley 10 (mixed agric/range)
                !                                                                      & 11 (rocky w low shrubs) not used
                !                         (the usgs ---> wesely mapping is used in module_dep_simple
                !                                        and is shown here for reference only)
-           
- 
+
+
 !  reality checks
       airtemp   = max( 50.0,   min( 350.0,  airtemp_in ) )
       airdens   = max( 0.01,   min( 5.0,    airdens_in ) )
@@ -1797,14 +1831,29 @@ main_i_loop:   &
       resist_a  = max( 1.0e-2, min( 1.0e6,  resist_a_in ) )
       ustar     = max( 1.0e-6, min( 1.0e2,  ustar_in ) )
 
+      CALL nl_get_mminlu( 1, mminlu_loc )
       isurftype = 8
       if (modesurftype <= 1) then
          if ((isurftype_in >= 1) .and. (isurftype_in <= 15)) &
             isurftype = isurftype_in
       else
          ! map from usgs to zhang surface type
-         if ((isurftype_in >= 1) .and. (isurftype_in <= 25)) &
-            isurftype = isurftype_zhang_from_usgs(isurftype_in)
+         if ( trim(mminlu_loc) == 'USGS' ) then
+           if ((isurftype_in >= 1) .and. (isurftype_in <= 25)) &
+              isurftype = isurftype_zhang_from_usgs(isurftype_in)
+         ! map from MODIS to zhang surface type
+         else if( trim(mminlu_loc) == 'MODIFIED_IGBP_MODIS_NOAH' ) then
+           if ((isurftype_in >= 1) .and. (isurftype_in <= 20)) &
+              isurftype = isurftype_zhang_from_modis(isurftype_in)
+         ! map from MODIS+lakes to zhang surface type
+         else if( trim(mminlu_loc) == 'MODIS' ) then
+           if ((isurftype_in >= 1) .and. (isurftype_in <= 21)) &
+              isurftype = isurftype_zhang_from_modis(isurftype_in)
+              !  Force snow/ice surface if there is snow on ground or sea ice
+              if(seaiceconc_in > 0.15 .OR. snowdepth_in > 0.1) then
+                isurftype = 12
+              endif
+         endif
       end if
 
       iseason = 1
@@ -1821,7 +1870,7 @@ main_i_loop:   &
 !     note 2 -- e0_intcept=4.0 is equivalent to using e0_intcept=1.0
 !        and dividing the radius_collector by 4.0.  this change plus the
 !        first-order form for interceptions gives much more interception in
-!        the accumulation-mode size range.  the interception in the original 
+!        the accumulation-mode size range.  the interception in the original
 !        zhang et al formulation is (surprisingly) almost negligible!
       if (zhang_optaa == 2) then
          e0_brown   = 1.0

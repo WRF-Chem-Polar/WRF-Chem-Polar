@@ -538,28 +538,28 @@ call wrf_message("**************************************************************
       call wrf_error_fatal( trim(message_txt) )
    endif
 
-   ! Checks for sea spray aerosol emissions option seas_opt = SEASMONAHAN,
-   ! SEASIOANNIDIS, SEASGONG, SEASSALTER
-   IF ( config_flags%seas_opt == SEASMONAHAN .OR. config_flags%seas_opt == SEASIOANNIDIS &
-        .OR. config_flags%seas_opt == SEASGONG .OR. config_flags%seas_opt == SEASSALTER) THEN
+   !-- Checks for sea spray aerosol emissions option
+   SELECT CASE(config_flags%seas_opt)
+   CASE(SEASMONAHAN, SEASIOANNIDIS, SEASGONG, SEASSALTER)
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
-       ! Initialize seaspray emissions for valid chem_opt
+       ! Initialize seaspray emissions
        CALL seaspray_emis_init(config_flags%chem_opt, config_flags%seas_opt)
      ELSE
-       CALL wrf_error_fatal ('chemics_init: error, sea salt emissions seas_opt &
-         == SEASMONAHAN,SEASIOANNIDIS,SEASGONG,SEASSALTER, are only compatible &
-         with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
+       CALL wrf_error_fatal ('chemics_init: error, selected sea spray emissions &
+        option seas_opt is only compatible with GOCART, MOSAIC_4BIN and &
+        MOSAIC_8BIN.')
      ENDIF
-   ENDIF
-   ! Checks for blowing snow aerosol emissions option
+   END SELECT ! seas_opt
+   !-- Checks for blowing snow aerosol emissions option
    IF ( config_flags%blowing_snow_opt == 1 ) THEN
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
-       ! Initialize blowing snow emissions for valid chem_opt
+       ! Initialize blowing snow emissions
        CALL wrf_debug( 15, 'Calling blowing_snow_emis_init')
        CALL blowing_snow_emis_init(config_flags%chem_opt)
      ELSE
-       CALL wrf_error_fatal ('chemics_init: error, blowing snow emissions are &
-           only compatible with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
+       CALL wrf_error_fatal ('chemics_init: error, blowing snow emission &
+           blowing_snow_opt is only compatible with GOCART, MOSAIC_4BIN &
+           and MOSAIC_8BIN.')
      ENDIF
    ENDIF
 
@@ -1882,35 +1882,13 @@ ENDIF ghg_block
          call wrf_error_fatal("GOCART simple initialization, phot_opt  MUST BE ZERO")
        endif
        CALL wrf_debug(15,'call GOCART chem/aerosols initialization')
-        ch_dust(:,:)=0.8D-9
-        ch_ss(:,:)=1.
-        if( .NOT. config_flags%restart )then
-        if(config_flags%chem_in_opt == 0 )then
-           do j=jts,jte
-              do k=kts,kte
-                 do i=its,ite
-                   do n=1,num_chem
-                     chem(i,k,j,n)=1.e-12
-                   enddo
-                   chem(i,k,j,p_dms)=0.1e-6
-                   chem(i,k,j,p_so2)=5.e-6
-                   chem(i,k,j,p_sulf)=3.e-6
-                   chem(i,k,j,p_msa)=0.1e-6
-                   chem(i,k,j,p_bc1)=0.1e-3
-                   chem(i,k,j,p_bc2)=0.1e-3
-                   chem(i,k,j,p_oc1)=0.1e-3
-                   chem(i,k,j,p_oc2)=0.1e-3
-                   chem(i,k,j,p_p25)=1.
-                 enddo
-              enddo
-           enddo
-         endif
+       ch_dust(:,:)=0.8D-9
+       ch_ss(:,:)=1.
 !
 ! next is done to scale background oh and no3 in dependence on average zenith angle and day/night for no3
 ! this is done since background values are only available as average/month. It will not be necessary if other
 ! chemistry packages are used that provide oh,no3,h2o2
 !
-         endif
            ndystep=86400/ifix(dt)
            do j=jts,jte
                  do i=its,ite

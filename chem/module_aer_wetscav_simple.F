@@ -60,7 +60,7 @@ CONTAINS
                               t_phy, p_phy, dz8w,                          &
                               chem, rho_phy, cldfra, rainprod, evapprod,   &
                               precr, preci, precs, precg, dx, dy,          &
-                              qv, qc, qi, qs, qr,                          &
+                              qv, qc, qi, qs, qr, qg,                      &
                               ids,ide, jds,jde, kds,kde,                   &
                               ims,ime, jms,jme, kms,kme,                   &
                               its,ite, jts,jte, kts,kte                    )
@@ -90,6 +90,7 @@ CONTAINS
    !   qi = cloud ice mixing ratio (kg/kg dry air)
    !   qs = snow water mixing ratio (kg/kg dry air)
    !   qr = rain water mixing ratio (kg/kg dry air)
+   !   qg = graupel water mixing ratio (kg/kg dry air)
    !   ids,ims,its etc. = domain, memory, and tile start and end indices
    ! Input/output:
    !   chem = advected chemical species (gases in ppm, aerosols in ug/kg)
@@ -116,7 +117,7 @@ CONTAINS
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme)         ,        &
        INTENT(IN) :: t_phy, p_phy, rho_phy, dz8w
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), &
-       INTENT(IN) :: QV, QI, QC, QS, QR
+       INTENT(IN) :: qv, qi, qc, qs, qr, qg
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), &
        INTENT(IN) :: rainprod, evapprod
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), &
@@ -133,12 +134,15 @@ CONTAINS
    REAL :: f, fr
    ! Vertical dimension of cldfra for cloud fraction calculation
    INTEGER :: dimz
-   ! Aerosol conc. in cloud phase, aerosol conc. lost to rainout, aerosols
-   ! conc. resuspended from precip (ug/kg)
-   REAL :: cloudborne_aer, rainout_aer, resusp_aer
-   ! Condensed water mixing ratio (kg/kg dry air), precipitation mixing ratio
-   ! (kg/kg dry air), liquid fraction of condensed water (0-1)
-   REAL :: condensed_water, precip_water, liquid_fraction
+   ! Aerosol conc. in cloud phase: total cloud, ice-phase only, liquid-phase
+   ! only (µg/kg)
+   REAL :: cloudborne_aer, cloudborne_aer_ice, cloudborne_aer_liq
+   ! Aerosol conc. lost to rainout, aerosols conc. resuspended from precip
+   ! (µg/kg)
+   REAL :: rainout_aer, resusp_aer
+   ! Condensed cloud water mixing ratio (kg/kg dry air), precipitation mixing
+   ! ratio (kg/kg dry air), liquid fraction of cloud water (0-1)
+   REAL :: cloud_water, precip_water, liquid_fraction
    ! Rainout activation efficiency of species (0-1)
    REAL :: aq_aer_ratio_nv, ice_aer_ratio_nv
    ! Total 3D precipitation trough cell for rain/snow/ice (kg/m2/hr), rain
@@ -152,6 +156,11 @@ CONTAINS
    REAL :: k_rain
    ! Value of chem(i,k,j,p) before deposition step (ug/kg)
    REAL :: chem_spec_before
+   ! Flags for disabling in-cloud or below-cloud scavenging
+   LOGICAL :: DO_RAINOUT, DO_WASHOUT
+
+   DO_RAINOUT = .true.
+   DO_WASHOUT = .true.
 
    !-------- Perform wet scavenging for aerosol species -------
    DO j=jts,jte
@@ -162,12 +171,15 @@ CONTAINS
        DO k=kte-1,kts,-1 ! Do not change, needs to loop in descending order
          !---- Calculate parameters for rainout and washout schemes
          tk = t_phy(i, k, j)
-         condensed_water = qc(i,k,j) + qi(i,k,j) + qr(i,k,j) + qs(i,k,j)
+         ! Add rainprod back to cloud_water because rainprod was already
+         ! removed from cloud water in microphysics
+         cloud_water = qc(i,k,j) + qi(i,k,j) + rainprod(i,k,j)*dtstep
          ! Add evapprod back to precip_water because evapprod was already
-         ! applied to precip in mp
-         precip_water = qr(i,k,j) + qs(i,k,j) + evapprod(i,k,j)*dtstep
-         IF(condensed_water .GT. 1.0E-12) THEN
-           liquid_fraction = MIN(1.0, MAX(0.0, (qc(i,k,j)+qr(i,k,j)) / condensed_water))
+         ! removed from precip in microphysics
+         precip_water = qr(i,k,j) + qs(i,k,j) + qg(i,k,j) &
+                        + evapprod(i,k,j)*dtstep
+         IF(cloud_water .GT. 1.0E-12) THEN
+           liquid_fraction = MIN(1.0, MAX(0.0, qc(i,k,j)/cloud_water))
          ELSE
            liquid_fraction = 1.0
          ENDIF
@@ -175,16 +187,16 @@ CONTAINS
          ! Total precipitation through grid cell in kg/m2/hr
          ppr = precr(i,k,j) * 3600.
          pps = precs(i,k,j) * 3600.
-         ppi = preci(i,k,j) * 3600.
+         ppi = (preci(i,k,j) + precg(i,k,j)) * 3600.
          ppr = MAX(ppr, 0.)
          pps = MAX(pps, 0.)
          ppi = MAX(ppi, 0.)
          ! Calculate f, the precipitating fraction of the grid cell as defined
          ! in Luo et al. (2020)
          ! Also calculate rainfrac, the fraction of rained out aerosols
-         IF(cldfra(i, k, j) .GT. 0.001 .AND. condensed_water .GT. 1.0E-12 &
+         IF(cldfra(i, k, j) .GT. 0.001 .AND. cloud_water .GT. 1.0E-12 &
             .AND. rainrate .GT. 0.0) THEN
-           CALL rainfrac_aerosol(rainfrac, f, rainrate, dtstep, condensed_water)
+           CALL rainfrac_aerosol(rainfrac, f, rainrate, dtstep, cloud_water)
          ELSE
            rainfrac = 0.0
            f = 0.0
@@ -197,41 +209,49 @@ CONTAINS
            p_chem = aer_pointers(nv)
 
            !---- Perform rainout ("in-cloud scavenging")
-           IF(f .GT. 0 .AND. cldfra(i,k,j) .GT. 0.001) THEN
+           IF(DO_RAINOUT .AND. f .GT. 0 .AND. cldfra(i,k,j) .GT. 0.001) THEN
 
              !-- Calculate the mass concentration of cloudborne aerosols
-             cloudborne_aer = 0.0
              ! Liquid-phase cloudborne aerosols
+             cloudborne_aer_liq = 0.0
              aq_aer_ratio_nv = aq_aer_ratio(nv)
              IF(tk .GT. 237.0 .AND. aq_aer_ratio_nv .GT. 0.0) THEN
-               cloudborne_aer = chem(i,k,j,p_chem) * aq_aer_ratio_nv &
+               cloudborne_aer_liq = chem(i,k,j,p_chem) * aq_aer_ratio_nv &
                                 * cldfra(i,k,j)
                ! In mixed-phase clouds, correct by the liquid water fraction
-               IF(tk .LT. 258.0 .AND. liquid_fraction .GT. 0.0) THEN
-                 cloudborne_aer = MIN(cloudborne_aer,  &
+               IF(tk .LT. 273.0 .AND. liquid_fraction .GT. 0.0) THEN
+                 cloudborne_aer_liq = MIN(cloudborne_aer_liq,  &
                                   chem(i,k,j,p_chem) * aq_aer_ratio_nv &
                                   * cldfra(i,k,j) * liquid_fraction)
                ENDIF
              ENDIF ! aq_aer_ratio_nv .GT. 0.0 .AND. tk .GT. 237.0
              ! Ice-phase cloudborne aerosols
+             cloudborne_aer_ice = 0.0
              ice_aer_ratio_nv = ice_aer_ratio(nv)
-             IF(tk .LT. 258.0 .AND. ice_aer_ratio_nv .GT. 0.0) THEN
-               ! Reduce ice-phase scavenging efficiency at high temperatures
-               IF(tk .GT. 237.0) THEN
-                 ice_aer_ratio_nv = ice_aer_ratio_nv &
-                                    * EXP(0.46*(273.16-tk)-11.6)/153.5
-               ENDIF
-               cloudborne_aer = chem(i,k,j,p_chem) * ice_aer_ratio_nv * cldfra(i,k,j)
-               ! Correct by the ice fraction (1.0-liquid_fraction) at high
-               ! temperatures
-               IF(tk .GT. 237.0) THEN
-                 cloudborne_aer = MIN(cloudborne_aer, chem(i,k,j,p_chem) &
-                                  * ice_aer_ratio_nv * cldfra(i,k,j) &
-                                  * (1.0 - liquid_fraction))
-               ENDIF
-             ENDIF ! ice_aer_ratio_nv .GT. 0.0
+             IF(tk .LE. 237.0) THEN
+               ! 50 % activation efficiency in cold clouds (homogeneous
+               ! nucleation)
+               ice_aer_ratio_nv = 0.5
+               cloudborne_aer_ice = chem(i,k,j,p_chem) * cldfra(i,k,j)
+             ELSEIF(tk .LT. 258.0 .AND. ice_aer_ratio_nv .GT. 0.0) THEN
+               ! Reduce ice-phase scavenging efficiency at warmer temperatures
+               ! To take into account the temperature dependence of
+               ! heterogeneous nucleation
+               ice_aer_ratio_nv = ice_aer_ratio_nv &
+                                  * EXP(0.46*(273.16-tk)-11.6)/153.5
+               cloudborne_aer_ice = chem(i,k,j,p_chem) * ice_aer_ratio_nv &
+                                    * cldfra(i,k,j)
+               ! Correct by the ice fraction (1.0-liquid_fraction)
+               cloudborne_aer_ice = MIN(cloudborne_aer_ice,  &
+                                cloudborne_aer_ice * (1.0-liquid_fraction))
+             ELSE
+               ! At high temperatures ice nucleation is improbable so
+               ! cloudborne aerosol is 0
+               cloudborne_aer_ice = 0.0
+             ENDIF ! tk .LE. 237.0
 
              !-- Appply rainout to chem
+             cloudborne_aer = cloudborne_aer_liq + cloudborne_aer_ice
              IF(cloudborne_aer .GT. 0.0) THEN
                rainout_aer = rainfrac * cloudborne_aer
                chem_spec_before = chem(i,k,j,p_chem)
@@ -243,7 +263,7 @@ CONTAINS
 
 
            !---- Perform washout ("below-cloud scavenging")
-           IF(ppr+pps+ppi .GT. 0.0 .AND. fr .GT. 0.001) THEN
+           IF(DO_WASHOUT .AND. ppr+pps+ppi .GT. 0.0 .AND. fr .GT. 0.001) THEN
              !-- Calculate washfrac, the fraction of washed out aerosols
              ! Fine aerosol washout (r<=1 micrometer)
              IF(aer_is_fine(nv)) THEN
@@ -288,7 +308,7 @@ CONTAINS
 
 !----------------------------------------------------------------------------
 
-   SUBROUTINE rainfrac_aerosol(rainfrac, f, rainrate, dtstep, condensed_water)
+   SUBROUTINE rainfrac_aerosol(rainfrac, f, rainrate, dtstep, cloud_water)
 
      ! Purpose:
      ! Calculates rainfrac, the fraction of cloudborne aerosols lost to rainout.
@@ -297,7 +317,7 @@ CONTAINS
      ! Input:
      !   rainrate - precipitation formation rate (kg/kg/s)
      !   dtstep - time step (s)
-     !   condensed_water - condensed water mixing ratio (kg/kg)
+     !   cloud_water - condensed cloud water mixing ratio (kg/kg)
      ! Output:
      !   rainfrac - fraction of aerosols lost to rainout (unitless)
      !   f - rainout area fraction (unitless)
@@ -310,7 +330,7 @@ CONTAINS
      ! Arguments
      REAL, INTENT(IN) :: rainrate
      REAL, INTENT(IN) :: dtstep
-     REAL, INTENT(INOUT) :: condensed_water
+     REAL, INTENT(INOUT) :: cloud_water
      REAL, INTENT(OUT) :: rainfrac
      REAL, INTENT(OUT) :: f
      ! Local variables and parameters
@@ -318,10 +338,10 @@ CONTAINS
      REAL,  PARAMETER :: k_0 = 1.0E-4 ! s-1
 
      ! Do not allow more than 100% of the cloud water to precipitate
-     condensed_water = MAX(rainrate*dtstep, condensed_water)
-     k_rain = k_0 + rainrate / condensed_water
+     cloud_water = MAX(rainrate*dtstep, cloud_water)
+     k_rain = k_0 + rainrate / cloud_water
      ! Area of grid box undergoing precipitation
-     f = rainrate / (k_rain * condensed_water)
+     f = rainrate / (k_rain * cloud_water)
      f = MIN(f, 1.0)
      ! Fraction of aerosols lost to rainout
      rainfrac = f * (1.0 - EXP(-k_rain*dtstep))
@@ -361,22 +381,17 @@ CONTAINS
      REAL, INTENT(IN) :: dtstep
      REAL, INTENT(OUT) :: washfrac
 
-     ! Use the parameteters from the dominant precipitation type
-     washfrac = 0.0
-     !TODO could be rewritten as a function, changing only parameters
-     IF(ppr >= (pps+ppi)) THEN
-     ! Mostly rain
-       washfrac = fr * (1.0 - EXP(-4.3E-6 * ((ppr+pps+ppi)/fr)**0.61 * dtstep))
-     ELSEIF(pps >= (ppr+ppi)) THEN
-     ! Mostly snow
-       washfrac = fr * (1.0 - EXP(-8.8E-6 * ((ppr+pps+ppi)/fr)**0.96 * dtstep))
-     ELSEIF(ppi >= (ppr+pps)) THEN
-     ! Mostly ice
-       washfrac = fr * (1.0 - EXP(-8.8E-6/5.0 * ((ppr+pps+ppi)/fr)**0.96 * dtstep))
-     ELSE
-     ! If mixed-phase precip with no clear main phase, default to ice
-       washfrac = fr * (1.0 - EXP(-8.8E-6/5.0 * ((ppr+pps+ppi)/fr)**0.96 * dtstep))
-     END IF
+     ! Local variables
+     REAL :: lossrate_rain,lossrate_snow,lossrate_ice,lossrate
+
+     ! Calculate wet removal rate from each precip type
+     lossrate_rain = 4.3E-6 * (ppr/fr)**0.61
+     lossrate_snow = 8.8E-6 * (pps/fr)**0.96
+     lossrate_ice = 8.8E-6/5.0 * (ppi/fr)**0.96
+
+     ! Calculate total wet removal rate and washout fraction
+     lossrate = lossrate_rain+lossrate_snow+lossrate_ice
+     washfrac = fr * (1.0 - EXP(-lossrate*dtstep))
 
    END SUBROUTINE washfrac_fine_aerosol
 
@@ -413,22 +428,17 @@ CONTAINS
      REAL, INTENT(IN) :: dtstep
      REAL, INTENT(OUT) :: washfrac
 
-     ! Use the parameteters from the dominant precipitation type
-     washfrac = 0.0
-     !TODO could be rewritten as a function, changing only parameters
-     IF(ppr >= (pps+ppi)) THEN
-     ! Mostly rain
-       washfrac = fr * (1.0 - EXP(-2.6E-4 * ((ppr+pps+ppi)/fr)**0.79 * dtstep))
-     ELSEIF(pps >= (ppr+ppi)) THEN
-     ! Mostly snow
-       washfrac = fr * (1.0 - EXP(-4.2E-4 * ((ppr+pps+ppi)/fr)**0.96 * dtstep))
-     ELSEIF(ppi >= (ppr+pps)) THEN
-     ! Mostly ice
-       washfrac = fr * (1.0 - EXP(-4.2E-4/5.0 * ((ppr+pps+ppi)/fr)**0.96 * dtstep))
-     ELSE
-     ! If mixed-phase precip with no clear main phase, default to ice
-       washfrac = fr * (1.0 - EXP(-4.2E-4/5.0 * ((ppr+pps+ppi)/fr)**0.96 * dtstep))
-     END IF
+     ! Local variables
+     REAL :: lossrate_rain,lossrate_snow,lossrate_ice,lossrate
+
+     ! Calculate wet removal rate from each precip type
+     lossrate_rain = 2.6E-4 * (ppr/fr)**0.79
+     lossrate_snow = 4.2E-4 * (pps/fr)**0.96
+     lossrate_ice = 4.2E-4/5.0 * (ppi/fr)**0.96
+
+     ! Calculate total wet removal rate and washout fraction
+     lossrate = lossrate_rain+lossrate_snow+lossrate_ice
+     washfrac = fr * (1.0 - EXP(-lossrate*dtstep))
 
    END SUBROUTINE washfrac_coarse_aerosol
 
@@ -488,26 +498,34 @@ CONTAINS
       !-- GOCART
       ! Species that experience wet scavenging (sulfate deposition needs to
       ! be disabled in mozcart_wetscav)
-      aer_pointers(:) = (/ p_sulf, p_seas_1, p_seas_2, p_seas_3, &
-                        p_seas_4, p_bc2, p_oc2, p_dust_1, &
-                        p_dust_2, p_dust_3, p_dust_4, p_dust_5, &
-                        p_bc1 /)
-      ! Fraction of activated aerosols for aer_pointers species, values from
-      ! Luo et al. (2020)
-      aq_aer_ratio(:) = (/ 1., 1., 1., 1., 1., 0.5, 0.5, 0., 0., 0., 0., 0., 0. /)
-      ice_aer_ratio(:) = (/ 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 0. /)
+      aer_pointers(:) = (/ p_sulf, p_seas_1, p_seas_2, p_seas_3, p_seas_4, &
+                           p_bc2, p_oc2, p_dust_1, p_dust_2, p_dust_3, &
+                           p_dust_4, p_dust_5, p_bc1 /)
+      ! Fraction of activated aerosols for aer_pointers species
+      ! We do not use the values from Luo et al. (2020) because they are
+      ! mostly sensitive to hygroscopicity, even though size is more important
+      ! for CCN activation
+      ! Instead we assume that only small hygrophobic aerosols (e.g. BC1, OC1)
+      ! are inefficient CCN
+      aq_aer_ratio(:) = (/ 0.5, 0.5, 0.5, 0.5, 0.5, &
+                           0.5, 0.5, 0.5, 0.5, 0.5, &
+                           0.5, 0.5, 0. /)
+      ! Activated fraction in ice clouds is usually very low except at very low
+      ! temperatures, even for efficient INP - pick 0.5 for now but it could
+      ! be lower
+      ice_aer_ratio(:) = (/ 0., 0., 0., 0., 0., &
+                            0., 0., 0.5, 0.5, 0.5, &
+                            0.5, 0.5, 0. /)
       ! List of washed out fine aerosol for aer_pointers species (r<=1
       ! micrometer)
-      aer_is_fine(:) = (/ .true., .true., .true., .false., &
-                       .false., .true., .true. , .true., &
-                       .false., .false., .false., .false., &
-                       .false. /)
+      aer_is_fine(:) = (/ .true., .true., .true., .false., .false., &
+                          .true., .true. , .true., .false., .false., &
+                          .false., .false., .false. /)
       ! List of washed out coarse aerosol for aer_pointers species (r>1
       ! micrometer)
-      aer_is_coarse(:) = (/ .false., .false., .false., .true., &
-                       .true., .false., .false. , .false., &
-                       .true., .true., .true., .true., &
-                       .false. /)
+      aer_is_coarse(:) = (/ .false., .false., .false., .true., .true., &
+                            .false., .false., .false., .true., .true., &
+                            .true., .true., .false. /)
     ELSE
       CALL wrf_error_fatal ('wetscav_simple_init: chem_opt not supported')
     ENDIF
