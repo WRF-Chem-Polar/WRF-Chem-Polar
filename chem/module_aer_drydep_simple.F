@@ -339,7 +339,7 @@ CONTAINS
        sfc_is_vegetated = zhangsurfcat /= 8 &
                      .AND. zhangsurfcat /= 9 &
                      .AND. zhangsurfcat /= 12 &
-                     .AND. zhangsurfcat / 13 &
+                     .AND. zhangsurfcat /= 13 &
                      .AND. zhangsurfcat /= 14
 
        !---- Land-surface dependent interception parameter converted to cm
