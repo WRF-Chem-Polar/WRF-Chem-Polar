@@ -283,7 +283,8 @@ CONTAINS
            iseason = 1 ! Midsummer with lush vegetation.
          ELSEIF(julday >= 245 .and. julday <= 305) THEN
            iseason = 2 ! Autumn with cropland that has not been harvested.
-         ELSEIF (julday < 60 .or. julday > 305) THEN
+         ELSEIF((julday >=1 .and. julday < 60) &
+                .or. (julday > 305 .and. julday <= 366)) THEN
            iseason = 3 ! Late autumn after frost, no snow.
          ELSE
            CALL wrf_error_fatal('aer_drydep_simple: Invalid julday')
@@ -296,7 +297,8 @@ CONTAINS
          iseason = 2 ! Default: autumn with cropland that has not been harvested.
          IF(julday >= 240 .and. julday <= 330) THEN
            iseason = 5 ! Transitional spring with partially green short annuals.
-         ELSEIF(julday > 330 .or. julday < 65) THEN
+         ELSEIF((julday >= 1 .and.  julday < 65) &
+                .or. (julday > 330 .and. julday <= 366)) THEN
            iseason = 1 ! Midsummer with lush vegetation.
          ELSEIF(julday >= 65 .and. julday <= 125) THEN
            iseason = 2 ! Autumn with cropland that has not been harvested.
