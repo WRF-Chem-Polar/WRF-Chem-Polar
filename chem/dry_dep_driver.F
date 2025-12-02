@@ -25,7 +25,7 @@ CONTAINS
                sf_urban_physics,numgas,current_month,dvel,snowh,xice,     &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
-               depvelocity,                                               &               
+               depvelocity,                                               &
                dustgraset_1,dustgraset_2,dustgraset_3,                    &
                dustgraset_4,dustgraset_5,                                 &
                setvel_1,setvel_2,setvel_3,setvel_4,setvel_5, imod,        &         
@@ -47,6 +47,7 @@ CONTAINS
   USE module_vash_settling
 !LMarelle Add a module for aerosol sedimentation aloft in MOSAIC
   USE module_mosaic_settling
+  USE module_aer_drydep_simple, only: aer_drydep_simple
   USE module_gocart_drydep
   USE module_mosaic_drydep, only:  mosaic_drydep_driver
   USE module_mixactivate_wrappers, only: mosaic_mixactivate, sorgam_mixactivate, &
@@ -131,6 +132,7 @@ CONTAINS
                                                      xlong,     &
                                                      snowh,     &
                                           xland,znt,raincv,ash_fall
+
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN) :: xice
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         ,        &
           INTENT(IN ) ::                                     &
@@ -277,9 +279,7 @@ CONTAINS
            config_flags%chem_opt /= GHG_TRACER     .and.                  &
            config_flags%chem_opt /= CHEM_VASH      .and.                  &
            config_flags%chem_opt /= CHEM_VOLC_4BIN .and.                  &
-           config_flags%chem_opt /= DUST           .and.                  &
-           config_flags%chem_opt /= GOCART_SIMPLE  .and.                  &
-           config_flags%chem_opt /= GOCARTRACM_KPP )THEN
+           config_flags%chem_opt /= DUST) THEN
           call wesely_driver(id,ktau,dtstep,                              &
                config_flags,current_month,                                &
                gmt,julday,t_phy,moist,p8w,t8w,raincv,                     &
@@ -292,19 +292,23 @@ CONTAINS
 !-----------------------------------------------------------------
 ! this does aerosol species (dust,seas, bc,oc) for gocart only
 !-----------------------------------------------------------------
-          IF ( config_flags%chem_opt == MOZCART_KPP .or. &
-               config_flags%chem_opt == T1_MOZCART_KPP ) then
-            call gocart_drydep_driver( dtstep,                            &
-                  config_flags, numgas,                                   &
-                  t_phy, moist, p8w, t8w, rmol,aer_res_def,               &
-                  p_phy, chem, rho_phy, dz8w, ddvel, xland, hfx,          &
-                  ivgtyp, tsk, vegfra, pbl, ust, znt, xlat, xlong,        &
-                  dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
-                  dustdrydep_4,dustdrydep_5,                              &
-                  depvelocity,                                            &                       
-                  ids,ide, jds,jde, kds,kde,                              &
-                  ims,ime, jms,jme, kms,kme,                              &
-                  its,ite, jts,jte, kts,kte )
+          IF ( config_flags%chem_opt == MOZCART_KPP .OR. &
+               config_flags%chem_opt == T1_MOZCART_KPP .OR. &
+               config_flags%chem_opt == GOCART_SIMPLE .OR. &
+               config_flags%chem_opt == GOCARTRACM_KPP .OR. &
+               config_flags%chem_opt == GOCARTRADM2) THEN
+            CALL aer_drydep_simple(chem=chem, t_phy=t_phy, rho_phy=rho_phy, &
+                                   ust=ust, dz8w=dz8w, rh=rh, xlat=xlat,    &
+                                   snowh=snowh, xice=xice, ivgtyp=ivgtyp,   &
+                                   res_adyn=aer_res_def, julday=julday,     &
+                                   dtstep=dtstep,                           &
+                                   ids=ids,ide=ide, jds=jds,jde=jde,        &
+                                   kds=kds,kde=kde,                         &
+                                   ims=ims,ime=ime, jms=jms,jme=jme,        &
+                                   kms=kms,kme=kme,                         &
+                                   its=its,ite=ite, jts=jts,jte=jte,        &
+                                   kts=kts,kte=kte                          )
+
           ENDIF
 
          if( config_flags%diagnostic_chem == DEPVEL1 .and. &
@@ -385,30 +389,6 @@ CONTAINS
                 enddo
            endif
 
-       ELSEIF ( config_flags%chem_opt == GOCART_SIMPLE ) then
-          call wesely_driver(id,ktau,dtstep,                              &
-               config_flags,current_month,                                &
-               gmt,julday,t_phy,moist,p8w,t8w,raincv,                     &
-               p_phy,chem,rho_phy,dz8w,ddvel,aer_res_def,aer_res_zcen,    & 
-               ivgtyp,tsk,gsw,vegfra,pbl,rmol,ust,znt,xlat,xlong,z,z_at_w,&
-               snowh, numgas,                                             &
-               ids,ide, jds,jde, kds,kde,                                 &
-               ims,ime, jms,jme, kms,kme,                                 &
-               its,ite, jts,jte, kts,kte                                  )
-!
-! this does aerosol species (dust,seas, bc,oc) for gocart only
-!
-         call gocart_drydep_driver(dtstep,                                &
-               config_flags,numgas,                                       &
-               t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
-               p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
-               ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
-               dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
-               dustdrydep_4,dustdrydep_5,                                 &
-               depvelocity,                                               &                    
-               ids,ide, jds,jde, kds,kde,                                 &
-               ims,ime, jms,jme, kms,kme,                                 &
-               its,ite, jts,jte, kts,kte                                  )
        ELSEIF ( config_flags%chem_opt == DUST) then
 !
 ! this does aerosol species (dust) for gocart only
@@ -420,36 +400,11 @@ CONTAINS
                ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
-               depvelocity,                                               &                    
+               depvelocity,                                               &
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
 
-
-       ELSEIF ( config_flags%chem_opt == GOCARTRACM_KPP) then
-!
-! this does aerosol species (dust,seas, bc,oc) for gocart only
-!
-          call wesely_driver(id,ktau,dtstep,                              &
-               config_flags,current_month,                                &
-               gmt,julday,t_phy,moist,p8w,t8w,raincv,                     &
-               p_phy,chem,rho_phy,dz8w,ddvel,aer_res_def,aer_res_zcen,    &
-               ivgtyp,tsk,gsw,vegfra,pbl,rmol,ust,znt,xlat,xlong,z,z_at_w,&
-               snowh, numgas,                                             &
-               ids,ide, jds,jde, kds,kde,                                 &
-               ims,ime, jms,jme, kms,kme,                                 &
-               its,ite, jts,jte, kts,kte                                  )
-         call gocart_drydep_driver(dtstep,                                &
-               config_flags,numgas,                                       &
-               t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
-               p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
-               ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
-               dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
-               dustdrydep_4,dustdrydep_5,                                 &
-               depvelocity,                                               &                    
-               ids,ide, jds,jde, kds,kde,                                 &
-               ims,ime, jms,jme, kms,kme,                                 &
-               its,ite, jts,jte, kts,kte                                  )
 
        ELSE
           !Set dry deposition velocity to zero when using the

@@ -341,10 +341,11 @@ module_cam_mam_wetdep.o: ../phys/module_cam_shr_kind_mod.o  ../phys/module_cam_s
 
 module_aer_drydep.o: module_data_sorgam.o module_aerosols_sorgam.o module_aerosols_soa_vbs.o  module_aerosols_soa_vbs_het.o module_mosaic_drydep.o module_mosaic_driver.o module_cam_mam_aerchem_driver.o
 
+module_aer_drydep_simple.o:
 
 module_interpolate.o:
 
-chemics_init.o: module_cbm4_initmixrats.o module_cbmz_initmixrats.o module_gocart_aerosols.o ../phys/module_data_gocart_dust.o module_data_gocart_seas.o module_data_gocartchem.o module_gocart_chem.o module_dep_simple.o module_ftuv_driver.o module_phot_mad.o module_gocart_chem.o module_aerosols_sorgam.o module_aerosols_soa_vbs.o module_aerosols_soa_vbs_het.o module_mixactivate_wrappers.o module_mosaic_driver.o module_input_chem_data.o module_cam_mam_init.o module_cam_mam_wetscav.o module_prep_wetscav_sorgam.o module_aerosols_sorgam_vbs.o module_phot_tuv.o ../share/module_HLaw.o module_ctrans_grell.o module_mozcart_wetscav.o ../share/module_chem_share.o module_seaspray_emis.o module_blowing_snow_emis.o
+chemics_init.o: module_cbm4_initmixrats.o module_cbmz_initmixrats.o module_gocart_aerosols.o ../phys/module_data_gocart_dust.o module_data_gocart_seas.o module_data_gocartchem.o module_gocart_chem.o module_dep_simple.o module_ftuv_driver.o module_phot_mad.o module_gocart_chem.o module_aerosols_sorgam.o module_aerosols_soa_vbs.o module_aerosols_soa_vbs_het.o module_mixactivate_wrappers.o module_mosaic_driver.o module_input_chem_data.o module_cam_mam_init.o module_cam_mam_wetscav.o module_prep_wetscav_sorgam.o module_aerosols_sorgam_vbs.o module_phot_tuv.o ../share/module_HLaw.o module_ctrans_grell.o module_mozcart_wetscav.o ../share/module_chem_share.o module_seaspray_emis.o module_blowing_snow_emis.o module_aer_drydep_simple.o
 
 module_tropopause.o: module_interpolate.o
 
@@ -368,7 +369,7 @@ optical_driver.o: module_optical_averaging.o module_peg_util.o module_data_mosai
 
 emissions_driver.o: module_add_emiss_burn.o module_data_radm2.o module_radm.o module_bioemi_simple.o module_bioemi_beis314.o module_bioemi_megan2.o module_emissions_anthropogenics.o module_cbmz_addemiss.o module_cb05_addemiss.o module_mosaic_addemiss.o module_aerosols_sorgam.o module_aerosols_soa_vbs.o module_aerosols_soa_vbs_het.o module_aerosols_sorgam_vbs.o module_plumerise1.o module_gocart_dust.o module_gocart_dust_afwa.o module_uoc_dust.o module_gocart_seasalt.o module_ghg_fluxes.o module_lightning_nox_driver.o module_cam_mam_addemiss.o module_dms_emis.o module_seaspray_emis.o module_blowing_snow_emis.o
 
-dry_dep_driver.o: module_data_radm2.o module_aer_drydep.o module_dep_simple.o module_aerosols_sorgam.o module_aerosols_soa_vbs.o module_aerosols_soa_vbs.o module_aerosols_sorgam_vbs.o module_mosaic_drydep.o module_mixactivate_wrappers.o ../phys/module_mixactivate.o module_cam_mam_drydep.o ../phys/module_data_cam_mam_asect.o ../phys/module_data_cam_mam_aero.o ../phys/module_cam_support.o module_data_mosaic_asect.o
+dry_dep_driver.o: module_data_radm2.o module_aer_drydep.o module_dep_simple.o module_aerosols_sorgam.o module_aerosols_soa_vbs.o module_aerosols_soa_vbs.o module_aerosols_sorgam_vbs.o module_mosaic_drydep.o module_mixactivate_wrappers.o ../phys/module_mixactivate.o module_cam_mam_drydep.o ../phys/module_data_cam_mam_asect.o ../phys/module_data_cam_mam_aero.o ../phys/module_cam_support.o module_data_mosaic_asect.o module_aer_drydep_simple.o
 
 module_wetscav_driver.o: module_mosaic_wetscav.o module_aerosols_sorgam.o module_aerosols_sorgam_vbs.o module_mozcart_wetscav.o ../phys/module_data_cam_mam_aero.o module_cam_mam_wetscav.o module_aerosols_soa_vbs.o module_prep_wetscav_sorgam.o module_aer_wetscav_simple.o
 
