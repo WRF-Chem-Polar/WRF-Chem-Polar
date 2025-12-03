@@ -277,14 +277,14 @@ CONTAINS
           iseason = 4 ! winter, snow on ground
        ELSEIF(xlat(i,j) > 25.0) THEN
          !-- Northern midlatitudes and the Arctic
-         IF(julday >= 60 .and. julday <= 150) THEN
+         IF(julday >= 59 .and. julday <= 149) THEN
            iseason = 5 ! Transitional spring with partially green short annuals.
-         ELSEIF(julday > 150 .and. julday < 245) THEN
+         ELSEIF(julday > 149 .and. julday < 244) THEN
            iseason = 1 ! Midsummer with lush vegetation.
-         ELSEIF(julday >= 245 .and. julday <= 305) THEN
+         ELSEIF(julday >= 244 .and. julday <= 304) THEN
            iseason = 2 ! Autumn with cropland that has not been harvested.
-         ELSEIF((julday >=1 .and. julday < 60) &
-                .or. (julday > 305 .and. julday <= 366)) THEN
+         ELSEIF((julday >=0 .and. julday < 59) &
+                .or. (julday > 304 .and. julday <= 365)) THEN
            iseason = 3 ! Late autumn after frost, no snow.
          ELSE
            CALL wrf_error_fatal('aer_drydep_simple: Invalid julday')
@@ -295,14 +295,14 @@ CONTAINS
        ELSE ! xlat(i,j) <= -25.0
          !-- Southern midlatitudes and Antarctica
          iseason = 2 ! Default: autumn with cropland that has not been harvested.
-         IF(julday >= 240 .and. julday <= 330) THEN
+         IF(julday >= 239 .and. julday <= 329) THEN
            iseason = 5 ! Transitional spring with partially green short annuals.
-         ELSEIF((julday >= 1 .and.  julday < 65) &
-                .or. (julday > 330 .and. julday <= 366)) THEN
+         ELSEIF((julday >= 0 .and.  julday < 64) &
+                .or. (julday > 329 .and. julday <= 365)) THEN
            iseason = 1 ! Midsummer with lush vegetation.
-         ELSEIF(julday >= 65 .and. julday <= 125) THEN
+         ELSEIF(julday >= 64 .and. julday <= 124) THEN
            iseason = 2 ! Autumn with cropland that has not been harvested.
-         ELSEIF (julday > 125 .and. julday < 240) THEN
+         ELSEIF (julday > 124 .and. julday < 239) THEN
            iseason = 3 ! Late autumn after frost, no snow.
          ELSE
            CALL wrf_error_fatal('aer_drydep_simple: Invalid julday')
