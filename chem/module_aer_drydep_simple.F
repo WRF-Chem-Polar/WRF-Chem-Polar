@@ -1,10 +1,9 @@
 ! 2025/06 Louis Marelle
 !
 ! Purpose:
-!  Perform dry deposition and sedimentation for aerosols at the surface, with
-!  dry deposition velocities calculated following Emerson et al. (2020), a
-!  modified version of the Zhang et al. (2001) parameterization with updated
-!  parameters.
+!  Calculate dry deposition and sedimentation velocities for aerosols at the
+!  surface, following Emerson et al. (2020), a modified version of the Zhang
+!  et al. (2001) parameterization with updated parameters.
 !
 ! Remarks:
 !  - Only compatible with GOCART for now
@@ -134,7 +133,7 @@ CONTAINS
                                ims,ime, jms,jme, kms,kme,           &
                                its,ite, jts,jte, kts,kte            )
    ! Purpose:
-   !  Calculates and applies dry deposition tendencies for aerosols
+   !  Calculates dry deposition velocities for aerosols
    !  
    ! Arguments:
    !  Input:
@@ -244,7 +243,7 @@ CONTAINS
    REAL, PARAMETER :: C3_WET_SULFATE = 3.110E-11
    REAL, PARAMETER :: C4_WET_SULFATE = -1.428
 
-   !-------- Perform dry deposition for aerosol species -------
+   !-------- Calculate dry deposition velocities for aerosol species -------
    DO j=jts,jte
      DO i=its,ite
        !---- Initialize physical parameters and convert units
