@@ -152,7 +152,7 @@ CONTAINS
    !    dtstep = model time step (s)
    !    ids,ims,its etc. = domain, memory, and tile start and end indices
    !  Input/output:
-   !    ddvel = dry deposition veloicities (ms/s)
+   !    ddvel = dry deposition velocities (ms/s)
 
    ! USE associations:
    USE module_model_constants, ONLY: g,piconst
@@ -168,7 +168,7 @@ CONTAINS
    REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ust, xlat, snowh, xice
    INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ivgtyp
    REAL, DIMENSION(its:ite, jts:jte), INTENT(IN) :: res_adyn
-   REAL, DIMENSION(ims:ime, jms:jme, num_chem),          &
+   REAL, DIMENSION(its:ite, jts:jte, num_chem),          &
        INTENT(INOUT) :: ddvel
    REAL, INTENT(IN) :: dtstep
    INTEGER, INTENT(IN) :: julday
