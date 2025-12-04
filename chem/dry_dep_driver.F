@@ -25,6 +25,7 @@ CONTAINS
                sf_urban_physics,numgas,current_month,dvel,snowh,xice,     &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
+               dd_dust, dd_seasalt,                                       &
                depvelocity,                                               &
                dustgraset_1,dustgraset_2,dustgraset_3,                    &
                dustgraset_4,dustgraset_5,                                 &
@@ -161,6 +162,8 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
                 dustdrydep_1, dustdrydep_2, dustdrydep_3,       &
                 dustdrydep_4, dustdrydep_5, depvelocity
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
+                dd_dust, dd_seasalt
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
                dustgraset_1,dustgraset_2,dustgraset_3,          &
                dustgraset_4,dustgraset_5,                       &
@@ -853,6 +856,62 @@ CONTAINS
         ENDDO ! isize
       ENDIF !THOMPSONAERO and aci_wrfchem_opt and MOSAIC
 
+      ! Add total dust and seasalt deposition output
+      ! This is for the case where dry deposition is calculated in vertmx, if
+      ! it is calculated in mixactivate see the case further down
+      if(config_flags%aci_wrfchem_opt /= 0 .and. &
+         (config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .or. &
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+          config_flags%chem_opt == CRI_MOSAIC_4BIN_AQ_KPP)) then
+        dd_dust(i,j) = dd_dust(i,j) &
+                  + 1.E-9 * ( &
+                  + ddmassn(p_oin_a01) &
+                  + ddmassn(p_oin_a02) &
+                  + ddmassn(p_oin_a03) &
+                  + ddmassn(p_oin_a04) &
+                  + ddmassn(p_oin_cw01) &
+                  + ddmassn(p_oin_cw02) &
+                  + ddmassn(p_oin_cw03) &
+                  + ddmassn(p_oin_cw04))
+        dd_seasalt(i,j) = dd_seasalt(i,j) &
+                  + 1.E-9 * ( &
+                  + ddmassn(p_na_a01) &
+                  + ddmassn(p_na_a02) &
+                  + ddmassn(p_na_a03) &
+                  + ddmassn(p_na_a04) &
+                  + ddmassn(p_na_cw01) &
+                  + ddmassn(p_na_cw02) &
+                  + ddmassn(p_na_cw03) &
+                  + ddmassn(p_na_cw04) &
+                  + ddmassn(p_cl_a01) &
+                  + ddmassn(p_cl_a02) &
+                  + ddmassn(p_cl_a03) &
+                  + ddmassn(p_cl_a04) &
+                  + ddmassn(p_cl_cw01) &
+                  + ddmassn(p_cl_cw02) &
+                  + ddmassn(p_cl_cw03) &
+                  + ddmassn(p_cl_cw04))
+      elseif(config_flags%chem_opt == MOZCART_KPP .or. &
+             config_flags%chem_opt == T1_MOZCART_KPP .or. &
+             config_flags%chem_opt == GOCART_SIMPLE .or. &
+             config_flags%chem_opt == GOCARTRACM_KPP .or. &
+             config_flags%chem_opt == GOCARTRADM2) then
+        dd_dust(i,j) = dd_dust(i,j) &
+                  + 1.E-9 * ( &
+                  + ddmassn(p_dust_1) &
+                  + ddmassn(p_dust_2) &
+                  + ddmassn(p_dust_3) &
+                  + ddmassn(p_dust_4) &
+                  + ddmassn(p_dust_4) &
+                  + ddmassn(p_dust_5))
+        dd_seasalt(i,j) = dd_seasalt(i,j) &
+                  + 1.E-9 * ( &
+                  + ddmassn(p_seas_1) &
+                  + ddmassn(p_seas_2) &
+                  + ddmassn(p_seas_3) &
+                  + ddmassn(p_seas_4))
+      endif
+
       if( config_flags%diagnostic_chem == DEPVEL1 .and. &
           (config_flags%chem_opt == CB05_SORG_VBS_AQ_KPP) ) then
         dvel(i,1,j,p_ddmass_o3) = dvel(i,1,j,p_ddmass_o3) + ddmassn(p_o3)
@@ -1180,6 +1239,42 @@ CONTAINS
           ims,ime, jms,jme, kms,kme,                        &
           its,ite, jts,jte, kts,kte                         )
       ENDIF
+
+      ! Add total dust and seasalt deposition output
+      ! This case is for when dry deposition is calculated in mixactivate
+      if(config_flags%aci_wrfchem_opt == 0 .and. &
+            (config_flags%chem_opt == CBMZ_MOSAIC_4BIN_AQ .or. &
+             config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .or. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP)) then
+        dd_dust(ims:ime,jms:jme) = dd_dust(ims:ime,jms:jme) &
+                  - dtstep * ( &
+                  qsrflx(ims:ime,jms:jme,p_oin_a01) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_a02) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_a03) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_a04) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_cw01) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_cw02) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_cw03) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_cw04))
+        dd_seasalt(ims:ime,jms:jme) = dd_seasalt(ims:ime,jms:jme) &
+                  - dtstep * ( &
+                  + qsrflx(ims:ime,jms:jme,p_na_a01) &
+                  + qsrflx(ims:ime,jms:jme,p_na_a02) &
+                  + qsrflx(ims:ime,jms:jme,p_na_a03) &
+                  + qsrflx(ims:ime,jms:jme,p_na_a04) &
+                  + qsrflx(ims:ime,jms:jme,p_na_cw01) &
+                  + qsrflx(ims:ime,jms:jme,p_na_cw02) &
+                  + qsrflx(ims:ime,jms:jme,p_na_cw03) &
+                  + qsrflx(ims:ime,jms:jme,p_na_cw04) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_a01) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_a02) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_a03) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_a04) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_cw01) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_cw02) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_cw03) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_cw04))
+      endif
 
       if( config_flags%diagnostic_chem == DEPVEL1 .and. &
           config_flags%chem_opt == CB05_SORG_VBS_AQ_KPP ) then

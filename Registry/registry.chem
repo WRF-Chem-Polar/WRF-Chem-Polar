@@ -1149,6 +1149,8 @@ state    real  ddmass_co3_cw01      i%jf      dvel          1         -      rdu
 state    real  ddmass_co3_cw02      i%jf      dvel          1         -      rdu    "ddmass_co3_cw02"    "co3_cw02 dry deposition, accumulated"  "ug/m2"
 state    real  ddmass_co3_cw03      i%jf      dvel          1         -      rdu    "ddmass_co3_cw03"    "co3_cw03 dry deposition, accumulated"  "ug/m2"
 state    real  ddmass_co3_cw04      i%jf      dvel          1         -      rdu    "ddmass_co3_cw04"    "co3_cw04 dry deposition, accumulated"  "ug/m2"
+state    real  dd_dust      ij      misc          1         -      rhdu    "dd_dust"    "Mineral dust dry deposition, accumulated"  "kg/m2"
+state    real  dd_seasalt   ij      misc          1         -      rhdu    "dd_seasalt" "Sea salt dry deposition, accumulated"  "kg/m2"
 
 # aerosol surface area diagnostic
 state  real  -                ikjf    aero_srf_area   1    -   -     - 
@@ -1163,6 +1165,8 @@ state   integer num_vert_mix     -     misc           -         -      r      "n
 #
 # Wet deposition
 #
+state    real  wd_dust_sc     ij        misc           1         -      rhdu      "wd_dust_sc"     "Mineral dust surface wet deposition, accumulated (Sc)"            "kg/m2"
+state    real  wd_seasalt_sc     ij        misc           1         -      rhdu      "wd_seasalt_sc"     "Sea-salt surface wet deposition, accumulated (Sc)"            "kg/m2"
 state    real  wd_so4_sc     ij        misc           1         -      rdu      "wd_so4_sc"     "SO4 surface wet deposition, accumulated (Sc)"            "mmol/m2"
 state    real  wd_no3_sc     ij        misc           1         -      rdu      "wd_no3_sc"     "NO3 surface wet deposition, accumulated (Sc)"            "mmol/m2"
 # added wet deposition totals for NH4 and OA for MOZART coupled version

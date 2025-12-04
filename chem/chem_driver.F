@@ -1101,6 +1101,7 @@
                  grid%xice,                                                           &
                  grid%dustdrydep_1,grid%dustdrydep_2,grid%dustdrydep_3,               &
                  grid%dustdrydep_4,grid%dustdrydep_5,                                 &      
+                 grid%dd_dust, grid%dd_seasalt,                                       &
                  grid%depvelocity,                                                    &      
                  grid%dustgraset_1,grid%dustgraset_2,grid%dustgraset_3,               &
                  grid%dustgraset_4,grid%dustgraset_5,                                 &
@@ -1668,6 +1669,7 @@ if ( cam_mam_aerosols ) &
               grid%wd_no3_sc, grid%wd_so4_sc, grid%wd_nh4_sc,grid%wd_oa_sc,           &
               grid%wd_so2_sc, grid%wd_sulf_sc, grid%wd_hno3_sc, grid%wd_nh3_sc,       &
               grid%wd_cvasoa_sc, grid%wd_cvbsoa_sc, grid%wd_asoa_sc, grid%wd_bsoa_sc, &
+              grid%wd_dust_sc, grid%wd_seasalt_sc,                                    &
               grid%qv_b4mp, grid%qc_b4mp, grid%qi_b4mp, grid%qs_b4mp,                 &
 !======================================================================================
 !Variables required for CAM_MAM_WETSCAV
