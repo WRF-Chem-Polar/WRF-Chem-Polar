@@ -152,7 +152,7 @@ CONTAINS
    !    dtstep = model time step (s)
    !    ids,ims,its etc. = domain, memory, and tile start and end indices
    !  Input/output:
-   !    ddvel = dry deposition velocities (ms/s)
+   !    ddvel = dry deposition velocities (m/s)
 
    ! USE associations:
    USE module_model_constants, ONLY: g,piconst
