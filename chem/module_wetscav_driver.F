@@ -412,7 +412,7 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
        IF(config_flags%chem_opt == MOZCART_KPP .OR. config_flags%chem_opt == T1_MOZCART_KPP) THEN
          CALL wrf_debug(15,'wetscav_driver calling aer_wetscav_simple')
          CALL aer_wetscav_simple( id, dtstep, config_flags,                     &
-                                  t_phy, p_phy, dz8w,                           &
+                                  t_phy, p_phy, dz8w, qsrflx,                   &
                                   chem, rho_phy, cldfra_ls, rainrate, evaprate, &
                                   precr, preci, precs, precg, dx, dy,           &
                                   moist(ims:ime,kms:kme,jms:jme,p_qv),          &
@@ -509,7 +509,7 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
      endif
      CALL wrf_debug(15,'wetscav_driver calling aer_wetscav_simple')
      CALL aer_wetscav_simple( id, dtstep, config_flags,                     &
-                              t_phy, p_phy, dz8w,                           &
+                              t_phy, p_phy, dz8w, qsrflx,                   &
                               chem, rho_phy, cldfra_ls, rainrate, evaprate, &
                               precr, preci, precs, precg, dx, dy,           &
                               moist(ims:ime,kms:kme,jms:jme,p_qv),          &
@@ -529,7 +529,29 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
    ! column change. It is assumed that all precipitation reaches the ground.
    
     SELECT CASE(config_flags%chem_opt)
+
+      CASE( GOCART_SIMPLE,GOCARTRADM2,GOCARTRACM_KPP,MOZCART_KPP,T1_MOZCART_KPP )
       
+      do jj=jts,jte
+        do ii=its,ite
+          ! Mineral dust wet deposition over the current time step:
+          wdi_dust(ii,jj) = - 1.E-9*qsrflx(ii,jj,p_dust_1) &
+                            - 1.E-9*qsrflx(ii,jj,p_dust_2) &
+                            - 1.E-9*qsrflx(ii,jj,p_dust_3) &
+                            - 1.E-9*qsrflx(ii,jj,p_dust_4) &
+                            - 1.E-9*qsrflx(ii,jj,p_dust_5)
+          ! Accumulated mineral dust wet deposition:
+          wd_dust(ii,jj) = wd_dust(ii,jj) + wdi_dust(ii,jj)         ! kg/m2
+          ! Sea salt wet deposition over the current time step:
+          wdi_seasalt(ii,jj) = - 1.E-9*qsrflx(ii,jj,p_seas_1) &
+                               - 1.E-9*qsrflx(ii,jj,p_seas_2) &
+                               - 1.E-9*qsrflx(ii,jj,p_seas_3) &
+                               - 1.E-9*qsrflx(ii,jj,p_seas_4)
+          ! Accumulated sea salt wet deposition:
+          wd_seasalt(ii,jj) = wd_seasalt(ii,jj) + wdi_seasalt(ii,jj)         ! kg/m2
+        enddo
+      enddo
+
       CASE ( RADM2SORG_AQCHEM,RACMSORG_AQCHEM_KPP,RACM_ESRLSORG_AQCHEM_KPP )
       
       do jj=jts,jte

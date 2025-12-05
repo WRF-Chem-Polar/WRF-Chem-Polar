@@ -57,7 +57,7 @@ CONTAINS
 !----------------------------------------------------------------------------
 
    SUBROUTINE aer_wetscav_simple( id, dtstep, config_flags,                &
-                              t_phy, p_phy, dz8w,                          &
+                              t_phy, p_phy, dz8w, qsrflx,                  &
                               chem, rho_phy, cldfra, rainprod, evapprod,   &
                               precr, preci, precs, precg, dx, dy,          &
                               qv, qc, qi, qs, qr, qg,                      &
@@ -94,6 +94,8 @@ CONTAINS
    !   ids,ims,its etc. = domain, memory, and tile start and end indices
    ! Input/output:
    !   chem = advected chemical species (gases in ppm, aerosols in ug/kg)
+   ! Output:
+   !   qsrflx = aerosol column change due to scavenging (µg/m2)
 
    ! USE associations:
    !TODO Use ONLY:
@@ -126,6 +128,8 @@ CONTAINS
        INTENT(IN) :: cldfra
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme, num_chem),          &
        INTENT(INOUT) :: chem
+   REAL, DIMENSION(ims:ime, jms:jme, num_chem),          &
+         INTENT(OUT) :: qsrflx
 
    !---- Local variables and parameters
    ! x,y,z, and chemical species index, chemical species pointer
@@ -301,6 +305,16 @@ CONTAINS
 
          END DO ! nv
        END DO ! k
+
+       !---- Output deposition fluxes
+       DO nv = 1,naerspecies
+         p_chem = aer_pointers(nv)
+         IF(p_chem > param_first_scalar) THEN
+           ! WRF-Chem convention is negative from atmosphere to the ground
+           qsrflx(i,j,p_chem) = -deposition_flux(nv)
+         ENDIF
+       END DO ! nv
+
      END DO ! i
    END DO ! j
 
