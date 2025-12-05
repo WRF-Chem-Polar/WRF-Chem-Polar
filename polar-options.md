@@ -97,7 +97,7 @@ This option controls wet scavenging of aerosols by precipitation.
 ### aer_drydep_opt (0,1,301,311)
 This option controls aerosol dry deposition
   - 0 (default): No dry deposition, unchanged from upstream WRF-Chem
-  - 1 (MOSAIC aerosols, recommended): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Binkowski and Shankar (1995).
+  - 1 (MOSAIC aerosols, recommended): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Binkowski and Shankar (1995). Unchanged from upstream WRF-Chem.
   - 1 (GOCART aerosols, recommended): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Emmerson et al. (2020).
   - 301 (MOSAIC only): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Zhang (2001). Unchanged from upstream WRF except we added a mapping to allow using this option with MODIS land use.
   - 311 (MOSAIC only): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Zhang (2001), with updated parameters. Unchanged from upstream WRF except we added a mapping to allow using this option with MODIS land use.
