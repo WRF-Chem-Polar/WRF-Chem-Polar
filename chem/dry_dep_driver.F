@@ -902,7 +902,6 @@ CONTAINS
                   + ddmassn(p_dust_2) &
                   + ddmassn(p_dust_3) &
                   + ddmassn(p_dust_4) &
-                  + ddmassn(p_dust_4) &
                   + ddmassn(p_dust_5))
         dd_seasalt(i,j) = dd_seasalt(i,j) &
                   + 1.E-9 * ( &
