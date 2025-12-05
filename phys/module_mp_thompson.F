@@ -1151,8 +1151,8 @@
       REAL, DIMENSION(kts:kte):: re_qc1d, re_qi1d, re_qs1d
 #if ( WRF_CHEM == 1 )
       REAL, DIMENSION(kts:kte):: &
-                          rainprod1d, evapprod1d, c2prec, precr1d, precs1d, &
-                          preci1d, precg1d
+                          rainprod1d, evapprod1d, c2prec, precr1d, preci1d, &
+                          precs1d, precg1d
       REAL, DIMENSION(kts:kte, naerbins):: &
                           aernum1d,aerra1d,aerkappa1d,aeractfrac1d
 #endif
@@ -1247,8 +1247,8 @@
          SR(i,j) = 0.
 #if ( WRF_CHEM == 1 )
          precr1d(kts:kte) = 0.0
-         precs1d(kts:kte) = 0.0
          preci1d(kts:kte) = 0.0
+         precs1d(kts:kte) = 0.0
          precg1d(kts:kte) = 0.0
 #endif
 
@@ -1331,7 +1331,7 @@
                       pptrain, pptsnow, pptgraul, pptice, &
 #if ( WRF_CHEM == 1 )
                       wetscav_on, rainprod1d, evapprod1d, c2prec, &
-                      precr1d, precs1d, preci1d, precg1d, &
+                      precr1d, preci1d, precs1d, precg1d, &
                       aernum1d,aerra1d,aerkappa1d,aeractfrac1d, &
                       naerbins, &
 #endif
@@ -1420,8 +1420,8 @@
             rainprod(i,k,j) = rainprod1d(k)
             evapprod(i,k,j) = evapprod1d(k)
             precr(i,k,j) = precr1d(k)
-            precs(i,k,j) = precs1d(k)
             preci(i,k,j) = preci1d(k)
+            precs(i,k,j) = precs1d(k)
             precg(i,k,j) = precg1d(k)
             IF(qc1d(k) .GT. 1.0E-10) THEN
               qlsink(i,k,j) = MIN(1.0, MAX(0.0, c2prec(k)/qc1d(k)))
@@ -1585,7 +1585,7 @@
                           pptrain, pptsnow, pptgraul, pptice, &
 #if ( WRF_CHEM == 1 )
                           wetscav_on, rainprod, evapprod, c2prec, &
-                          precr, precs, preci, precg, &
+                          precr, preci, precs, precg, &
                           aernum1d,aerra1d,aerkappa1d,aeractfrac1d, &
                           naerbins, &
 #endif
@@ -1607,7 +1607,7 @@
 #if ( WRF_CHEM == 1 )
       REAL, DIMENSION(kts:kte), INTENT(INOUT):: &
                           rainprod, evapprod, c2prec, &
-                          precr, precs, preci, precg
+                          precr, preci, precs, precg
       LOGICAL, INTENT(IN) :: wetscav_on
       REAL, DIMENSION(kts:kte, naerbins), INTENT(IN) :: &
                           aernum1d,aerra1d,aerkappa1d
