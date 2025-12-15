@@ -567,6 +567,24 @@
        ENDIF
 #endif
        haveaer = .true.
+     CASE (MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
+       CALL wrf_debug(15,'calling mozart_mosaic_4bin_dms_aq_kpp from chem_driver')
+#if( WRF_CHEM == 1 && WRF_KPP == 1 )
+       IF( grid%irr_opt == 1 ) then
+         ALLOCATE( irr_rates(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,num_irr_diag_mozart_mosaic_4bin_dms_aq),stat=astat )
+         IF( astat /= 0 ) THEN
+           write(msg,'(''chem_driver: Failed to allocate irr_rates; error = '',i8)') astat
+           CALL wrf_error_fatal( trim(msg) )
+         ENDIF
+         num_irr_diag = num_irr_diag_mozart_mosaic_4bin_dms_aq
+       ELSE
+         ! Placeholders to avoid calling kpp_mechanism_driver with unallocated
+         ! arrays as arguments
+         ALLOCATE( irr_rates(1, 1, 1, 1), stat=astat )
+         num_irr_diag = 0
+       ENDIF
+#endif
+       haveaer = .true.
        !BSINGH -  Added case statement for SAPRC 8 bin
      CASE (SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP)
        CALL wrf_debug(15,'calling saprc99_mosaic_8bin_vbs2_aq_kpp from chem_driver')
@@ -787,7 +805,9 @@
                       config_flags%chem_opt == MOZCART_KPP .or. &
                       config_flags%chem_opt == T1_MOZCART_KPP .or. &
                       config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP
+                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP
+
 !------------------------------------------------------------------------
 ! setup ftuv column density timing
 !------------------------------------------------------------------------
@@ -1363,6 +1383,16 @@ CALL kpp_mechanism_driver (chem,                                                
               do k=kts,kte
                 irr_diag_mozart_mosaic_4bin_aq(its:ite,k,j,n) = &
                       irr_diag_mozart_mosaic_4bin_aq(its:ite,k,j,n) &
+                      + dtstepc*irr_rates(its:ite,k,j,n)*1.e6/(dens2con_a*rho(its:ite,k,j))
+              enddo
+            enddo
+          enddo
+        case( MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
+          do n=param_first_scalar,num_irr_diag
+            do j=jts,jte
+              do k=kts,kte
+                irr_diag_mozart_mosaic_4bin_dms_aq(its:ite,k,j,n) = &
+                      irr_diag_mozart_mosaic_4bin_dms_aq(its:ite,k,j,n) &
                       + dtstepc*irr_rates(its:ite,k,j,n)*1.e6/(dens2con_a*rho(its:ite,k,j))
               enddo
             enddo

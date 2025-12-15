@@ -188,6 +188,8 @@ main( int argc, char *argv[], char *env[] )
       retcod = AppendReg( "mozart_mosaic_4bin",ndx );
       if( !retcod ) ndx++;
       retcod = AppendReg( "mozart_mosaic_4bin_aq",ndx );
+      if( !retcod ) ndx++;
+      retcod = AppendReg( "mozart_mosaic_4bin_dms_aq",ndx );
     }
 
     fprintf(fp_tmp,"\n");

@@ -224,6 +224,8 @@ call wrf_message("**************************************************************
        CALL wrf_debug(15,'calling MOZART_MOSAIC_4BIN_KPP from chem_driver')
      CASE (MOZART_MOSAIC_4BIN_AQ_KPP )
        CALL wrf_debug(15,'calling MOZART_MOSAIC_4BIN_AQ_KPP from chem_driver')
+     CASE (MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
+       CALL wrf_debug(15,'calling MOZART_MOSAIC_4BIN_DMS_AQ_KPP from chem_driver')
      CASE (RADM2SORG_AQ )
        CALL wrf_debug(15,'calling RADM2/MADE/SORGAM with AQ chemistry from chem_driver')
        call wrf_message("WARNING: RADM2SORG_AQ chemistry option is experimental and not yet fully tested.")
@@ -302,7 +304,8 @@ call wrf_message("**************************************************************
                 config_flags%chem_opt == T1_MOZCART_KPP .or. &
                 config_flags%chem_opt == MOZART_KPP .or. &
                 config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-                config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP
+                config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP
    ! Initialize aerosol mechanism families IDs
    aer_is_gocart = config_flags%chem_opt == MOZCART_KPP .OR. &
                    config_flags%chem_opt == T1_MOZCART_KPP .OR. &
@@ -315,6 +318,7 @@ call wrf_message("**************************************************************
                        config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
                        config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
                        config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                       config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
                        config_flags%chem_opt == CRI_MOSAIC_4BIN_AQ_KPP .OR. &
                        config_flags%chem_opt == SAPRC99_MOSAIC_4BIN_VBS2_KPP
    aer_is_mosaic8bin = config_flags%chem_opt == CBMZ_MOSAIC_8BIN .OR. &
@@ -339,6 +343,7 @@ call wrf_message("**************************************************************
    if (config_flags%phot_opt == TUV ) then
      if (config_flags%chem_opt /= mozart_mosaic_4bin_kpp .and. &
          config_flags%chem_opt /= mozart_mosaic_4bin_aq_kpp .and. &
+         config_flags%chem_opt /= MOZART_MOSAIC_4BIN_DMS_AQ_KPP .and. &
          config_flags%chem_opt /= mozcart_kpp .and. &
          config_flags%chem_opt /= t1_mozcart_kpp) THEN
        write(message_txt,'(''--- ERROR: chem_opt '',i3,'' not setup for TUV photolysis at this time'')') &
@@ -443,6 +448,7 @@ call wrf_message("**************************************************************
    ELSEIF ( config_flags%mp_morr_icenuc_option /= 0 .AND. &
             config_flags%mp_physics == MORR_TWO_MOMENT ) THEN
      IF ( config_flags%chem_opt /= MOZART_MOSAIC_4BIN_AQ_KPP .AND. &
+          config_flags%chem_opt /= MOZART_MOSAIC_4BIN_DMS_AQ_KPP .AND. &
           config_flags%chem_opt /= CBMZ_MOSAIC_4BIN_AQ .AND. &
           config_flags%chem_opt /= CBMZ_MOSAIC_DMS_4BIN_AQ .AND. &
           config_flags%chem_opt /= CRI_MOSAIC_4BIN_AQ_KPP ) THEN
@@ -463,8 +469,9 @@ call wrf_message("**************************************************************
            ( config_flags%chem_opt == 203).OR.                                    &
            ( config_flags%chem_opt == 131 ) .OR. ( config_flags%chem_opt == 132 ) .OR. &
            ( config_flags%chem_opt >= 601 .AND. config_flags%chem_opt <= 611)  .OR. &
-             config_flags%chem_opt == 109 .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
-             .OR. config_flags%chem_opt == MOZCART_KPP) then
+             config_flags%chem_opt == 109 .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
+             config_flags%chem_opt == MOZCART_KPP) then
            call wrf_debug( 15, 'Chemics_init: Cloud chemistry turned on' )
       else
         call wrf_error_fatal("ERROR: cloud chemistry option requires chem_opt = 8 through 13 or 31 to 36 or 41 to 43 or 109 to function.")
@@ -486,8 +493,9 @@ call wrf_message("**************************************************************
       if(  config_flags%chem_opt /= 9   .and.  config_flags%chem_opt /= 10  .and. &
            config_flags%chem_opt /= 32  .and.  config_flags%chem_opt /= 34  .and.  &
            config_flags%chem_opt /= 202 .and.  config_flags%chem_opt /= 203 .and.  &
+           config_flags%chem_opt /= MOZART_MOSAIC_4BIN_DMS_AQ_KPP .and. &
            config_flags%chem_opt /= 601 .and.  config_flags%chem_opt /= 611 ) then
-         call wrf_error_fatal("ERROR: kfcupscheme requires chem_opt = 9, 10, 32, 34, 202, 203, 601 or 611  to function.")
+         call wrf_error_fatal("ERROR: kfcupscheme requires chem_opt = 9, 10, 32, 34, 202, 212, 203, 601 or 611  to function.")
       endif
    endif
 
@@ -598,6 +606,7 @@ call wrf_message("**************************************************************
              config_flags%chem_opt == 170 .OR.  config_flags%chem_opt == 198  .OR. &
              config_flags%chem_opt == 199 .OR.  config_flags%chem_opt == 201  .OR. &
              config_flags%chem_opt == 202 .OR.  config_flags%chem_opt == 203  .OR. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
              config_flags%chem_opt == 601 .OR.  config_flags%chem_opt == 611 ) then
             call wrf_debug( 15, 'using N2O5 heterogeneous chemistry without Cl- pathway')
         else
@@ -953,9 +962,10 @@ CASE(GOCARTRACM_KPP,RACM_KPP,RACMPM_KPP,RACMSORG_KPP,RACM_MIM_KPP,RACM_ESRLSORG_
              enddo
           enddo
         endif
-        CASE (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP)
+        CASE (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
         grid%vbs_nbin=0
-        if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+        if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
+            .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
           grid%vbs_nbin=4
         endif
         if(config_flags%chem_in_opt == 0 )then
@@ -2067,6 +2077,7 @@ ENDIF ghg_block
            CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ, &
            SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
            MOZART_MOSAIC_4BIN_KPP,MOZART_MOSAIC_4BIN_AQ_KPP, &
+           MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
            CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP, &  !BSINGH(12/03/2013): Added SAPRC 8 bin
            SAPRC99_MOSAIC_8BIN_VBS2_KPP) !BSINGH(04/03/2014): Added SAPRC 8 bin non-aq
        call wrf_debug(15,'call MOSAIC aerosols initialization')
@@ -2093,11 +2104,13 @@ ENDIF ghg_block
       if( config_flags%progn /= 1 ) &
            call wrf_error_fatal( &
            "ERROR: When using a ..._AQ chemistry package, progn must be 1")
-   ! For MOZART_MOSAIC_4BIN_AQ_KPP ACI, either use progn = 1 (with Morrison
-   ! or Lin MP) or use aci_wrfchem_opt>0 (with THOMPSONAERO MP)
-   CASE(MOZART_MOSAIC_4BIN_AQ_KPP)
+   ! For MOZART_MOSAIC_4BIN_AQ_KPP or MOZART_MOSAIC_4BIN_DMS_AQ_KPP ACI,
+   ! either use progn = 1 (with Morrison or Lin MP) or use aci_wrfchem_opt>0
+   ! (with THOMPSONAERO MP)
+   CASE(MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
       IF(config_flags%progn /= 1 .AND. config_flags%mp_physics /= THOMPSONAERO) THEN
-        call wrf_error_fatal("ERROR MOZART_MOSAIC_4BIN_AQ_KPP ACI requires&
+        call wrf_error_fatal("ERROR MOZART_MOSAIC_4BIN_AQ_KPP or &
+        & MOZART_MOSAIC_4BIN_DMS_AQ_KPP ACI requires&
         & mp_physics=THOMPSONAERO or progn=1")
       ENDIF
    END SELECT progn_sanity_check
@@ -2930,7 +2943,7 @@ subroutine print_chem_species_index( chem_opt )
      print*,p_hysw_a04,"hysw_a04"
      print*,p_water_a04,"water_a04"
      print*,p_num_a04,"num_a04"
-  case (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP)
+  case (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
      print*,p_no3_a01,"no3_a01"
      print*,p_cl_a01,"cl_a01"
      print*,p_nh4_a01,"nh4_a01"

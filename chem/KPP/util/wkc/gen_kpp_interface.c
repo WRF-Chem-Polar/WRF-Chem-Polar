@@ -48,7 +48,9 @@ int  is_driver;
 
     fprintf(kpp_if,"  USE module_wkppc_constants\n\n" );
     if( !strcmp( p2->name,"mozcart" ) || !strcmp( p2->name,"t1_mozcart" ) 
-        || !strcmp( p2->name,"mozart_mosaic_4bin" ) || !strcmp( p2->name,"mozart_mosaic_4bin_aq" ) ) 
+        || !strcmp( p2->name,"mozart_mosaic_4bin" )
+        || !strcmp( p2->name,"mozart_mosaic_4bin_aq" )
+        || !strcmp( p2->name,"mozart_mosaic_4bin_dms_aq" ) )
       fprintf(kpp_if,"  USE module_irr_diag\n" );
 
  
@@ -66,7 +68,9 @@ int  is_driver;
     /* pass down variables (see gen_kpp_utils) */ 
 
     if( !strcmp( p2->name,"mozcart" ) || !strcmp( p2->name,"t1_mozcart")
-        || !strcmp( p2->name,"mozart_mosaic_4bin" ) || !strcmp( p2->name,"mozart_mosaic_4bin_aq") )
+        || !strcmp( p2->name,"mozart_mosaic_4bin" )
+        || !strcmp( p2->name,"mozart_mosaic_4bin_aq")
+        || !strcmp( p2->name,"mozart_mosaic_4bin_dms_aq") )
       is_driver = 0;
     else 
       is_driver = 1;

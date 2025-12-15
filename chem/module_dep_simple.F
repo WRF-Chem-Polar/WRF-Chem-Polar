@@ -170,7 +170,8 @@ SUBROUTINE wesely_driver( id, ktau, dtstep, config_flags, current_month,  &
                    config_flags%chem_opt == MOZCART_KPP .or. &
                    config_flags%chem_opt == T1_MOZCART_KPP .or. &
                    config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-                   config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP
+                   config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                   config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP
 
       dep_vap= config_flags%depo_fact
 
@@ -531,7 +532,8 @@ tile_lon_loop : &
                ddvel(i,j,p_meko2)   = 0.
                ddvel(i,j,p_dms)     = 0.
                IF ( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
-                    config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) THEN
+                    config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                    config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) THEN
                  ddvel(i,j,p_benzene)  = 0.
                  ddvel(i,j,p_phen)     = 0.
                  ddvel(i,j,p_bepomuc)  = 0.
@@ -1721,7 +1723,8 @@ include 'netcdf.inc'
           config_flags%chem_opt == MOZCART_KPP .or. &
           config_flags%chem_opt == T1_MOZCART_KPP .or. &
           config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
          call wrf_message( 'dep_init: mozart,mozcart chem option requires netcdf' )
          call wrf_abort
       end if
@@ -2018,7 +2021,8 @@ include 'netcdf.inc'
                config_flags%chem_opt == MOZCART_KPP .or. &
                config_flags%chem_opt == T1_MOZCART_KPP .or. &
                config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-               config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP
 
 !--------------------------------------------------
 !     HENRY''S LAW COEFFICIENTS
@@ -2076,9 +2080,11 @@ is_cbm4_kpp : &
               endif
 
               if( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-                  config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+                  config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                  config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
                 hstar(p_sulf) = 2.600E+06
-                if ( config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+                if ( config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                     config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
                   hstar(p_cvasoaX) = 0.0
                   hstar(p_cvasoa1) = 1.06E+08
                   hstar(p_cvasoa2) = 1.84E+07
@@ -2352,11 +2358,13 @@ is_cbm4_kpp : &
              dhr(p_nterpooh) = 0.
              dhr(p_terpnit)  = 0.
            elseif( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-               config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
              dhr(p_sulf) = 0.000E+00
            end if
 
-           if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+           if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
              dhr(p_cvasoaX) = 0.
              dhr(p_cvasoa1) = 6014.
              dhr(p_cvasoa2) = 6014.
@@ -2565,11 +2573,13 @@ is_cbm4_kpp : &
              f0(p_eooh)    = f0(p_hcho)
              f0(p_honitr)  = f0(p_h2o2)
            elseif( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-                   config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+                   config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                   config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
              f0(p_sulf) = 0.
            end if
            
-           if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+           if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
              f0(p_cvasoaX) = 0.
              f0(p_cvasoa1) = 0.
              f0(p_cvasoa2) = 0.
@@ -2778,11 +2788,13 @@ is_cbm4_kpp : &
            dvj(p_terpooh) = 0.073
 
            if( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-               config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
              dvj(p_sulf) = 1.200E-01
            end if
 
-           if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+           if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+               config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
              dvj(p_cvasoaX) = 0.120 ! ??
              dvj(p_cvasoa1) = 0.120 ! ??
              dvj(p_cvasoa2) = 0.120 ! ??

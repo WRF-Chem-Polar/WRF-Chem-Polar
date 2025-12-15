@@ -14,6 +14,7 @@ USE module_state_description, only:p_cvasoaX,p_cvasoa1,p_cvasoa2,p_cvasoa3,p_cva
 
 USE module_state_description, ONLY: mozart_mosaic_4bin_kpp, &
                               mozart_mosaic_4bin_aq_kpp, &
+                              MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
                               mozcart_kpp, t1_mozcart_kpp, &
                               p_hcho, p_c3h6ooh, p_onit, p_mvk, p_macr, &
                               p_etooh, p_prooh, p_acetp, p_mgly, p_mvkooh, &
@@ -337,8 +338,9 @@ CONTAINS
    ! We use the indices of the chem array that point to aerosol outside of cloud water,
    ! because that's what the cumulus scheme operates with.
    
-   if (chemopt == mozart_mosaic_4bin_kpp .OR. &
-       chemopt == mozart_mosaic_4bin_aq_kpp) then
+   if (chemopt == MOZART_MOSAIC_4BIN_KPP .OR. &
+       chemopt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+       chemopt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
 
      wdi_no3(its:ite,jts:jte) = wdi_no3(its:ite,jts:jte) + &
        (wetdep_2d(its:ite,jts:jte,p_no3_a01) + &
@@ -403,7 +405,8 @@ CONTAINS
           wetdep_2d(its:ite,jts:jte,p_glysoa_sfc_a04))*dt*0.001/mwoa ! mmol/m2
      endif
 
-     if (chemopt == mozart_mosaic_4bin_aq_kpp) then
+     if (chemopt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+         chemopt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
 
        wdi_asoa(its:ite,jts:jte) = wdi_asoa(its:ite,jts:jte) + &
          (wetdep_2d(its:ite,jts:jte,p_asoaX_a01) + &
@@ -1810,8 +1813,9 @@ END subroutine cup_env_clev_tr
         tr_up(i,k,p_nh4aj) = aerosol(lnh4acc)*1.0e9*mwnh4/mwdry
         tr_up(i,k,p_no3aj) = aerosol(lno3acc)*1.0e9*mwno3/mwdry
 
-      else if ((chemopt .EQ. mozart_mosaic_4bin_kpp .OR. &
-                chemopt .EQ. mozart_mosaic_4bin_aq_kpp)  &
+      else if ((chemopt .EQ. MOZART_MOSAIC_4BIN_KPP .OR. &
+                chemopt .EQ. MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                chemopt .EQ. MOZART_MOSAIC_4BIN_DMS_AQ_KPP)  &
                .AND. (conv_tr_aqchem == 1)) then
 
         !
@@ -1971,7 +1975,9 @@ END subroutine cup_env_clev_tr
             
             aq_gas_ratio = 0.0
 is_moz_chm: if( chemopt == MOZCART_KPP .or. chemopt == T1_MOZCART_KPP .or. &
-                chemopt == MOZART_MOSAIC_4BIN_KPP .or. chemopt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+                chemopt == MOZART_MOSAIC_4BIN_KPP .or. &
+                chemopt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                chemopt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
               HLndx = HLC_ndx(nv)
               if( HLndx /= 0 ) then
                 HLCnst1 = HLC(HLndx)%hcnst(1) ; HLCnst2 = HLC(HLndx)%hcnst(2)

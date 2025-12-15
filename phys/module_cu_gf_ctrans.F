@@ -312,6 +312,7 @@ MODULE module_cu_gf_ctrans
   USE module_HLawConst, only:HLC
   USE module_state_description, ONLY: mozart_mosaic_4bin_kpp, &
                               mozart_mosaic_4bin_aq_kpp, &
+                              MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
                               mozcart_kpp, t1_mozcart_kpp, &
                               p_nh3,p_h2o2,p_hno3,p_hcho,p_ch3ooh, &
                               p_c3h6ooh,p_paa,p_hno4,p_onit,p_mvk, &
@@ -369,7 +370,8 @@ MODULE module_cu_gf_ctrans
 !chem moz
      if( chemopt == MOZCART_KPP .or. chemopt == T1_MOZCART_KPP .or. &
                 chemopt == MOZART_MOSAIC_4BIN_KPP .or. &
-                chemopt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+                chemopt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                chemopt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
 ! This setup is not ideal, as the the sub is just a duplicate version of the
 ! init that occurs on the /chem side. But, it will work for now.
        if ( .not. allocated(HLC_ndx) ) then
@@ -552,6 +554,7 @@ is_allocated : &
                   CB05_SORG_VBS_AQ_KPP,RACM_SOA_VBS_HET_KPP,  &
            RACM_ESRLSORG_AQCHEM_KPP,RACM_SOA_VBS_AQCHEM_KPP,  &
            mozart_mosaic_4bin_kpp,mozart_mosaic_4bin_aq_kpp,  &
+           MOZART_MOSAIC_4BIN_DMS_AQ_KPP,  &
                p_so2,p_hno3,p_n2o5,p_nh3,p_h2o2,p_o3,p_sulf,  &
             p_facd,p_mepx,p_pacd,p_ora1,p_op1,p_paa,p_hcooh,  &
                     p_ch3ooh,p_sulf,p_so4aj,p_nh4aj,p_no3aj,  &
@@ -768,7 +771,8 @@ is_allocated : &
         tr_up1d(p_nh4aj) = aerosol(lnh4acc)*1.0e9*mwnh4/mwdry
         tr_up1d(p_no3aj) = aerosol(lno3acc)*1.0e9*mwno3/mwdry
       else if ((chemopt .EQ. mozart_mosaic_4bin_kpp .OR. &
-                chemopt .EQ. mozart_mosaic_4bin_aq_kpp)  &
+                chemopt .EQ. mozart_mosaic_4bin_aq_kpp .OR. &
+                chemopt .EQ. MOZART_MOSAIC_4BIN_DMS_AQ_KPP)  &
                ) then
 
         !

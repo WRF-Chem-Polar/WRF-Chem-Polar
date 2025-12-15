@@ -201,7 +201,7 @@ SUBROUTINE microphysics_driver(                                          &
                     ,GOCARTRADM2, GOCARTRACM_KPP, CBMZ_MOSAIC_4BIN &
                     ,CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_4BIN_AQ &
                     ,CBMZ_MOSAIC_DMS_4BIN_AQ, MOZART_MOSAIC_4BIN_KPP &
-                    ,MOZART_MOSAIC_4BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP &
+                    ,MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP &
                     ,SAPRC99_MOSAIC_4BIN_VBS2_KPP
 
 #endif
@@ -891,11 +891,13 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                          chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
                          chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
                          chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                         chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
                          chem_opt == CRI_MOSAIC_4BIN_AQ_KPP .OR. &
                          chem_opt == SAPRC99_MOSAIC_4BIN_VBS2_KPP
      aer_is_mosaic4binaq = chem_opt == CBMZ_MOSAIC_4BIN_AQ .OR. &
                          chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
                          chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                         chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
                          chem_opt == CRI_MOSAIC_4BIN_AQ_KPP
      IF(aci_wrfchem_opt == 1 .AND. aer_is_mosaic4bin) THEN
        !-- Abdul-Razzak & Ghan ACI with WRF-Chem aerosols
@@ -3319,6 +3321,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                          chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
                          chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
                          chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                         chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
                          chem_opt == CRI_MOSAIC_4BIN_AQ_KPP .OR. &
                          chem_opt == SAPRC99_MOSAIC_4BIN_VBS2_KPP
 
@@ -3712,6 +3715,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                          chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
                          chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
                          chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                         chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
                          chem_opt == CRI_MOSAIC_4BIN_AQ_KPP .OR. &
                          chem_opt == SAPRC99_MOSAIC_4BIN_VBS2_KPP
 

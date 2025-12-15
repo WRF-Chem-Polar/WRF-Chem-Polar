@@ -332,7 +332,8 @@ CONTAINS
                config_flags%chem_opt == T1_MOZCART_KPP .or. &
               config_flags%chem_opt == MOZART_KPP   .or. & 
               config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-              config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) ) then
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) ) then
                do j = jts,jte
                   dvel(its:ite,1,j,p_dvel_o3) = m2cm*ddvel(its:ite,j,p_o3)
                   dvel(its:ite,1,j,p_dvel_no) = m2cm*ddvel(its:ite,j,p_no)
@@ -377,7 +378,8 @@ CONTAINS
                enddo
           endif
 
-          if ( config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+          if ( config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
+               .or. config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
                do j = jts,jte
                    dvel(its:ite,1,j,p_dvel_cvasoaX) = 0.0
                    dvel(its:ite,1,j,p_dvel_cvasoa1) = m2cm*ddvel(its:ite,j,p_cvasoa1)
@@ -449,6 +451,7 @@ CONTAINS
                  CBMZ_MOSAIC_8BIN_AQ,SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
                  CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ, &
                  MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+                 MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
                  CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP, SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP, &!BSINGH(12/03/2013): Added SAPRC 8 bin
                  SAPRC99_MOSAIC_8BIN_VBS2_KPP)!BSINGH(04/04/2014): Added SAPRC 8 bin non-aq
              aer_mech_id = 3
@@ -527,6 +530,7 @@ CONTAINS
           CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ, &
           SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
           MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+          MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
           CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP, &
           SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_KPP)!BSINGH(12/03/2013): Added SAPRC 8 bin and non-aq on 04/04/2014
        CALL wrf_debug(15,'DOING DRY DEP VELOCITIES FOR MOSAIC AEROSOLS')
@@ -719,7 +723,7 @@ CONTAINS
          CASE (RADM2SORG_AQ, RADM2SORG_AQCHEM, RACMSORG_AQ, RACMSORG_AQCHEM_KPP, RACM_ESRLSORG_AQCHEM_KPP, CBMZ_MOSAIC_4BIN_AQ, &
               CBMZ_MOSAIC_8BIN_AQ, CBMZSORG_AQ, CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ,  &
               CBMZ_MOSAIC_DMS_8BIN_AQ, CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP,     &
-              MOZART_MOSAIC_4BIN_AQ_KPP, RACM_SOA_VBS_AQCHEM_KPP,                          &
+              MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP, RACM_SOA_VBS_AQCHEM_KPP, &
               SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP,                                             &
               CB05_SORG_AQ_KPP, CB05_SORG_VBS_AQ_KPP)
             IF(config_flags%mp_physics == THOMPSONAERO &
@@ -787,6 +791,7 @@ CONTAINS
       IF(config_flags%mp_physics == THOMPSONAERO &
          .AND. config_flags%aci_wrfchem_opt > 0 &
          .AND. (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
+                .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP &
                 .OR. config_flags%chem_opt == CBMZ_MOSAIC_4BIN_AQ &
                 .OR. config_flags%chem_opt == CBMZ_MOSAIC_8BIN_AQ &
                 .OR. config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN &
@@ -862,6 +867,7 @@ CONTAINS
       if(config_flags%aci_wrfchem_opt /= 0 .and. &
          (config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .or. &
           config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .or. &
           config_flags%chem_opt == CRI_MOSAIC_4BIN_AQ_KPP)) then
         dd_dust(i,j) = dd_dust(i,j) &
                   + 1.E-9 * ( &
@@ -933,7 +939,8 @@ CONTAINS
            config_flags%chem_opt == T1_MOZCART_KPP .or. &
            config_flags%chem_opt == MOZART_KPP   .or. &
            config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-           config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) ) then
+           config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+           config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) ) then
 
         dvel(i,1,j,p_ddmass_o3) = dvel(i,1,j,p_ddmass_o3) + ddmassn(p_o3)
         dvel(i,1,j,p_ddmass_no) = dvel(i,1,j,p_ddmass_no) + ddmassn(p_no)
@@ -976,7 +983,8 @@ CONTAINS
         dvel(i,1,j,p_ddmass_pan) = dvel(i,1,j,p_ddmass_pan) + ddmassn(p_pan)
         dvel(i,1,j,p_ddmass_terpooh) = dvel(i,1,j,p_ddmass_terpooh) + ddmassn(p_terpooh)
 
-        if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+        if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+            config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
           dvel(i,1,j,p_ddmass_cvasoaX) = dvel(i,1,j,p_ddmass_cvasoaX) + ddmassn(p_cvasoaX)
           dvel(i,1,j,p_ddmass_cvasoa1) = dvel(i,1,j,p_ddmass_cvasoa1) + ddmassn(p_cvasoa1)
           dvel(i,1,j,p_ddmass_cvasoa2) = dvel(i,1,j,p_ddmass_cvasoa2) + ddmassn(p_cvasoa2)
@@ -990,7 +998,8 @@ CONTAINS
         endif
 
         if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-            config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+            config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+            config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
 
           dvel(i,1,j,p_ddmass_so4_a01) = dvel(i,1,j,p_ddmass_so4_a01) + ddmassn(p_so4_a01)
           dvel(i,1,j,p_ddmass_no3_a01) = dvel(i,1,j,p_ddmass_no3_a01) + ddmassn(p_no3_a01)
@@ -1036,7 +1045,8 @@ CONTAINS
           dvel(i,1,j,p_ddmass_co3_a04) = dvel(i,1,j,p_ddmass_co3_a04) + ddmassn(p_co3_a04)
 
           if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
-              config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
             dvel(i,1,j,p_ddmass_glysoa_a01) = dvel(i,1,j,p_ddmass_glysoa_a01) + &
                                               ddmassn(p_glysoa_r1_a01) + &
                                               ddmassn(p_glysoa_r2_a01) + &
@@ -1090,7 +1100,8 @@ CONTAINS
 
           endif
 
-          if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+          if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
 
             dvel(i,1,j,p_ddmass_asoaX_a01) = dvel(i,1,j,p_ddmass_asoaX_a01) + ddmassn(p_asoaX_a01)
             dvel(i,1,j,p_ddmass_asoa1_a01) = dvel(i,1,j,p_ddmass_asoa1_a01) + ddmassn(p_asoa1_a01)
@@ -1219,7 +1230,8 @@ CONTAINS
       ! Mixactivate called only for _AQ packages below MS 12/28/2013
    CASE (CBMZ_MOSAIC_4BIN_AQ, CBMZ_MOSAIC_8BIN_AQ, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ, &
          CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP, &
-         MOZART_MOSAIC_4BIN_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP)!BSINGH(12/03/2013): Added SAPRC 8 bin)
+         MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
+         SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP)!BSINGH(12/03/2013): Added SAPRC 8 bin)
       IF( config_flags%mp_physics == THOMPSONAERO .AND. &
           (config_flags%aci_wrfchem_opt > 0) ) THEN
         CALL wrf_debug(15,'do not call mixactivate for mosaic aerosol +&
@@ -1244,7 +1256,8 @@ CONTAINS
       if(config_flags%aci_wrfchem_opt == 0 .and. &
             (config_flags%chem_opt == CBMZ_MOSAIC_4BIN_AQ .or. &
              config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .or. &
-             config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP)) then
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP)) then
         dd_dust(ims:ime,jms:jme) = dd_dust(ims:ime,jms:jme) &
                   - dtstep * ( &
                   qsrflx(ims:ime,jms:jme,p_oin_a01) &
@@ -1291,7 +1304,8 @@ CONTAINS
        endif
 
       if( config_flags%diagnostic_chem == DEPVEL1 .and. &
-          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+          (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+           config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP)) then
 
           ! qsrflx is in kg/m2/s, recalculate to match ug/m2 for aerosols
           qsrflx = qsrflx * 1.0e9 * dtstep

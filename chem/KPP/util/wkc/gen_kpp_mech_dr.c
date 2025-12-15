@@ -85,7 +85,9 @@ knode_t * p1, * p2, * p3, * p4, * pm1, * pm3, * pm4;
        fprintf(kpp_mdr, "        CALL %s_interface(     &\n", p2->name ); 
        /* pass down variables */
        if( !strcmp( p2->name,"mozcart" ) || !strcmp( p2->name,"t1_mozcart")
-           || !strcmp( p2->name,"mozart_mosaic_4bin" ) || !strcmp( p2->name,"mozart_mosaic_4bin_aq") )
+           || !strcmp( p2->name,"mozart_mosaic_4bin" )
+           || !strcmp( p2->name,"mozart_mosaic_4bin_aq")
+           || !strcmp( p2->name,"mozart_mosaic_4bin_dms_aq") )
          is_driver = 0;
        else
          is_driver = 1;

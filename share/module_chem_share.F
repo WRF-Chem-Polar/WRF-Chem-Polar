@@ -71,7 +71,7 @@ CONTAINS
      case (MOZART_MOSAIC_4BIN_KPP)
         get_last_gas = p_meko2
 
-     case (MOZART_MOSAIC_4BIN_AQ_KPP)
+     case (MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
         get_last_gas = p_meko2
 
      case (CO2_TRACER,GHG_TRACER) ! No gas chemistry or deposition for GHGs

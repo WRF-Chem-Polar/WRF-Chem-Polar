@@ -429,7 +429,7 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
         hno3_col_mdel = delta_mass_col(:,:,p_hno3)
    ! STUPID - cases have to be unique. We repeat both calls done above
    ! (mosaic_wetscav for aerosols, mozcart for gases)
-   CASE (MOZART_MOSAIC_4BIN_AQ_KPP)
+   CASE (MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
        CALL wrf_debug(15,'wetscav_driver calling mosaic_wetscav_driver')
        if( config_flags%mp_physics == THOMPSON &
            .OR. config_flags%mp_physics == THOMPSONAERO) then
@@ -576,7 +576,7 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
         enddo
       enddo
     
-      CASE ( MOZART_MOSAIC_4BIN_AQ_KPP)
+      CASE ( MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
 
       do jj=jts,jte
         do ii=its,ite

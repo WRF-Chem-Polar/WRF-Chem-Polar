@@ -78,7 +78,8 @@ is_moz_chm = config_flags%chem_opt == MOZART_KPP .or. &
              config_flags%chem_opt == MOZCART_KPP .or. &
              config_flags%chem_opt == T1_MOZCART_KPP .or. &
              config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-             config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP
 !       
 ! add emissions
 !
@@ -157,7 +158,9 @@ is_mozart:if( is_moz_chm ) then
                 chem(its:ite,k,j,p_benzene) = chem(its:ite,k,j,p_benzene) + emis_ant(its:ite,k,j,p_e_benzene)*conv_rho(its:ite)
                 chem(its:ite,k,j,p_xylenes) = chem(its:ite,k,j,p_xylenes) + emis_ant(its:ite,k,j,p_e_xylene)*conv_rho(its:ite)
               endif
-            elseif( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+            elseif( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
+                    config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                    config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
               chem(its:ite,k,j,p_hcooh) = chem(its:ite,k,j,p_hcooh) + emis_ant(its:ite,k,j,p_e_hcooh)*conv_rho(its:ite)
               chem(its:ite,k,j,p_hono) = chem(its:ite,k,j,p_hono) + emis_ant(its:ite,k,j,p_e_hono)*conv_rho(its:ite)
               if( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP ) then
