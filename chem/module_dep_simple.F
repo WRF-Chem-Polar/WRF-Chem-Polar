@@ -563,12 +563,14 @@ tile_lon_loop : &
                  ddvel(i,j,p_xylolooh) = ddvel(i,j,p_h2o2)
                  ddvel(i,j,p_xyleno2)  = 0.
                  ddvel(i,j,p_xylenooh) = ddvel(i,j,p_h2o2)
-                 ddvel(i,j,p_dmso) = 0.
-                 ddvel(i,j,p_msa) = ddvel(i,j,p_hno3)
-                 ddvel(i,j,p_ch3s) = 0.
-                 ddvel(i,j,p_ch3so) = 0.
-                 ddvel(i,j,p_ch3so3) = 0.
-                 ddvel(i,j,p_msia) = 0.
+                 IF( config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) THEN
+                   ddvel(i,j,p_dmso) = 0.
+                   ddvel(i,j,p_msa) = ddvel(i,j,p_hno3)
+                   ddvel(i,j,p_ch3s) = 0.
+                   ddvel(i,j,p_ch3so) = 0.
+                   ddvel(i,j,p_ch3so3) = 0.
+                   ddvel(i,j,p_msia) = 0.
+                 ENDIF
                  IF ( config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP) THEN
                    ddvel(i,j,p_voca)     = 0.
                    ddvel(i,j,p_vocbb)    = 0.

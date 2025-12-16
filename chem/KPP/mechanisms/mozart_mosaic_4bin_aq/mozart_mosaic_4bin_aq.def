@@ -250,19 +250,4 @@ END FUNCTION usr26
     
     END FUNCTION vbs_yield
 
-    !
-    ! --------------------------------------------------------------------------
-
-    REAL(KIND=dp) function iupac_ch3sch3(a2,b2,a3,b3,cin_o2,temp)
-      ! Rate calculation for CH3SCH3 + OH = CH3SCH3OO + H2O
-      ! from IUPAC report (www.iupac-kinetic.ch.cam.ac.uk)
-      real(kind=dp) :: cin_o2, tr, temp
-      real(kind=dp) :: a2, b2, a3, b3
-
-      tr = 1._dp + ARR2(a3,b3,temp)*cin_o2
-      iupac_ch3sch3 = ARR2(a2,b2,temp)*cin_o2/tr
-
-    END function iupac_ch3sch3
-
-
 #ENDINLINE 

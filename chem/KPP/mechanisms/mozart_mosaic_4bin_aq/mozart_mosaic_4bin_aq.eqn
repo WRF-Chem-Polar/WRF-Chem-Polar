@@ -385,6 +385,14 @@
 {T210} PAN + OH             = CH2O + NO3{ + CO2}                                 : 4.e-14_dp                                                                                  ;
 {T211} HYAC + OH            = CH3COCHO + HO2                                     : 3.e-12_dp                                                                                  ;
 {T212} GLYALD + OH          = HO2 + .2 GLYOXAL + .8 CH2O { + 0.8 CO2}            : 1.e-11_dp                                                                                  ;
+
+{T213} DMS + OH             = SO2                                                : ARR2(9.6e-12_dp, 234._dp, TEMP)                                                            ;
+
+
+{T214} DMS + OH             = .5 SO2 + .5 HO2                                    : usr24( temp, c_m )                                                                         ;
+
+
+{T215} DMS + NO3            = SO2 + HNO3                                         : ARR2(1.9e-13_dp, -520._dp, TEMP)                                                           ;
 {T216} NH3 + OH             = M                                                  : ARR2(1.7e-12_dp, 710._dp, TEMP)                                                            ;
 {T217} HO2                  = .5 H2O2                                            : usr26( rh, temp )                                                                          ;
 {T218} C2H5O2 + C2H5O2      = 1.6 CH3CHO + 1.2 HO2 + .4 C2H5OH + den             : 6.8e-14_dp                                                                                 ;
@@ -421,20 +429,3 @@
 {S058} CVBSOA3 + OH         = 1.075 CVBSOA2 + OH                                 : ARR2(1.0D-11, 0.0_dp, TEMP)                                                                ;
 {S059} CVBSOA2 + OH         = 1.075 CVBSOA1 + OH                                 : ARR2(1.0D-11, 0.0_dp, TEMP)                                                                ;
 {S060} CVBSOA1 + OH         = 1.075 CVBSOAX + OH                                 : ARR2(1.0D-11, 0.0_dp, TEMP)                                                                ;
-{622:S04} DMS + OH = CH3SCH2OO + H2O :  ARR2(1.12d-11,250._dp,temp) ;					{CH3SCH3+OH->CH3SCH2+H2O ; CH3SCH2+O2->CH3SCH2OO - 1st step is slowest, so use that as reaction function (IUPAC preferred value)}
-{623:S05} DMS + OH {+O2} = DMSO + HO2 :		iupac_ch3sch3(9.5d-39,5270._dp,7.5d-29,5610._dp,C_M*0.2_dp,temp) ;	{IUPAC preferred value}
-{624:S06} DMS + NO3 {+O2} = CH3SCH2OO + HNO3 :		ARR2(1.9d-13,-520._dp,temp) ;
-{625:S12} CH3SCH2OO + NO = CH2O + CH3S + NO2 :		ARR2(4.9d-12,-263._dp,temp) ;
-{626:S13} CH3SCH2OO + CH3SCH2OO {+O2} = 2 CH2O + 2 CH3S :		1.0d-11 ;
-{627:S14} CH3S + O3 = CH3SO {+ O2} :  	ARR2(1.15d-12,-432._dp,temp) ;
-{628:S15} CH3S + NO2 = CH3SO + NO : 	ARR2(3.0d-11,-210._dp,temp) ;
-{629:S16} CH3SO + NO2 {+O2} = 0.82 CH3SO2 + 0.18 SO2 + 0.18 CH3O2 + NO :	1.2d-11 ;
-{630:S17} CH3SO + O3 {+O2} = CH3SO2 :	6.0d-13 ;
-{631:S18} CH3SO2 = SO2 + CH3O2 :		ARR2(5.0d13,9673._dp,temp) {ARR2(1.9d13,8661._dp,temp)} ;
-{632:S19} CH3SO2 + NO2 = CH3SO3 + NO :	2.2d-12 ;
-{633:S20} CH3SO2 + O3 = CH3SO3 :		3.0d-13 ;
-{634:S21} CH3SO3 + HO2 = MSA :  	5.0d-11 ;
-{635:S22} CH3SO3 {+H2O+O2} = CH3O2 + SO4 : 		ARR2(1.36d14,11071._dp,temp) ;
-{636:S23} DMSO + OH = 0.95 MSIA + 0.95 CH3O2 + 0.05 DMSO2 : 		8.7d-11 ;
-{637:S24} MSIA + OH = 0.95 CH3SO2 + 0.05 MSA + 0.05 HO2 + H2O :	9.d-11 ;
-{638:S25} MSIA + NO3 = CH3SO2 + HNO3 :   1.0d-13 ;
