@@ -620,6 +620,21 @@ call wrf_message("**************************************************************
         endif
     endif
 
+    ! MSA nucleation can only be used with a MOSAIC aerosol mechanism
+    ! that includes full DMS chemistry with gaseous and aerosol MSA
+    IF (config_flags%nuc_msa_opt == 1) THEN
+      IF( config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
+          config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN .OR. &
+          config_flags%chem_opt == CBMZ_MOSAIC_DMS_8BIN .OR. &
+          config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
+          config_flags%chem_opt == CBMZ_MOSAIC_DMS_8BIN_AQ) THEN
+        CALL wrf_debug( 15, 'chemics_init: using nuc_msa_opt = 1')
+      ELSE
+        CALL wrf_error_fatal('ERROR: chemics_init: nuc_msa_opt = 1 requires&
+                             & MOSAIC aerosols with DMS and MSA')
+      ENDIF
+    ENDIF
+
 !   IF ( config_flags%chem_opt == 2 .AND. config_flags%dust_opt .NE. 2 ) THEN
 !       call wrf_error_fatal(" ERROR: USE dust_opt = 2 when using MADE/SORGAM aerosol option ")
 !   ENDIF
