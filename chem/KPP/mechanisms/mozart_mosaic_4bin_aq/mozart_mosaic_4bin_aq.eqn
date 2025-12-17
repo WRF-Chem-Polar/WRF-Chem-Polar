@@ -385,13 +385,8 @@
 {T210} PAN + OH             = CH2O + NO3{ + CO2}                                 : 4.e-14_dp                                                                                  ;
 {T211} HYAC + OH            = CH3COCHO + HO2                                     : 3.e-12_dp                                                                                  ;
 {T212} GLYALD + OH          = HO2 + .2 GLYOXAL + .8 CH2O { + 0.8 CO2}            : 1.e-11_dp                                                                                  ;
-
 {T213} DMS + OH             = SO2                                                : ARR2(9.6e-12_dp, 234._dp, TEMP)                                                            ;
-
-
 {T214} DMS + OH             = .5 SO2 + .5 HO2                                    : usr24( temp, c_m )                                                                         ;
-
-
 {T215} DMS + NO3            = SO2 + HNO3                                         : ARR2(1.9e-13_dp, -520._dp, TEMP)                                                           ;
 {T216} NH3 + OH             = M                                                  : ARR2(1.7e-12_dp, 710._dp, TEMP)                                                            ;
 {T217} HO2                  = .5 H2O2                                            : usr26( rh, temp )                                                                          ;

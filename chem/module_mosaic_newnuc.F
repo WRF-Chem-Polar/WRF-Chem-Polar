@@ -68,7 +68,7 @@
 	real, intent(in) :: dtchem, dtnuc_in
 	real, intent(in) :: rsub0(l2maxd,kmaxd,nsubareamaxd)
 	integer, intent(in) :: nuc_msa_opt ! toggles MSA nucleation on/off - namelist option
-	real, intent(in) :: nuc_msa_fac	! tuning factor applied to nucleation rate if nuc_msa_opt = 1
+	real, intent(in) :: nuc_msa_fac ! tuning factor applied to nucleation rate if nuc_msa_opt = 1
 
 !       rsub0 holds mixrat values before the aerchemistry calcs
 
@@ -195,10 +195,12 @@
 	qso4a_del = 0.0
 	qnh4a_del = 0.0
 
-	qmsa_cur = max(0.0,rsub(kmsa,k,m))
-	qmsa_avg   = 0.5*( qmsa_cur   + max(0.0,rsub0(kmsa,k,m)) )
-	qmsa_del = 0.0
-	j2_msa = 0.0
+	if (nuc_msa_opt .eq. 1 .and. kmsa .gt. p1st) then
+	  qmsa_cur = max(0.0,rsub(kmsa,k,m))
+	  qmsa_avg   = 0.5*( qmsa_cur   + max(0.0,rsub0(kmsa,k,m)) )
+	  qmsa_del = 0.0
+	  j2_msa = 0.0
+	endif
 
 	dens_nh4so4a = dens_so4_aer
 
@@ -239,7 +241,7 @@
     ! if namelist option for msa nucleation is activated
     ! compute nucleation rate following Riccobono et al. 2014
 	! and modify concentrations of MSA gas, MSA aerosol and aerosol number accordingly
-	if (nuc_msa_opt .eq. 1) then
+	if (nuc_msa_opt .eq. 1 .and. kmsa .gt. p1st) then
 	   call riccobono_nuc_msa(   &
 	      dtnuc, temp_box, rh_box, cair_box, qh2so4_avg, qh2so4_cur, &
 	      qnh3_avg, maxd_asize, volumlo_nuc, volumhi_nuc, &
@@ -284,7 +286,9 @@
 !   update gas and aerosol so4, nh3/nh4 and msa mixing ratios
 	rsub(kh2so4,k,m) = max( 0.0, rsub(kh2so4,k,m) + qh2so4_del )
 	rsub(knh3,  k,m) = max( 0.0, rsub(knh3,  k,m) + qnh3_del )
-	rsub(kmsa,  k,m) = max( 0.0, rsub(kmsa,  k,m) + qmsa_del )
+	if (nuc_msa_opt .eq. 1 .and. kmsa .gt. p1st) then
+	  rsub(kmsa,  k,m) = max( 0.0, rsub(kmsa,  k,m) + qmsa_del )
+	endif
 	
 	l = lptr_so4_aer(isize,itype,iphase)
 	if (l .ge. p1st) then
@@ -295,10 +299,12 @@
 	    rsub(l,k,m) = rsub(l,k,m) + qnh4a_del
 	end if
 
-	l = lptr_msa_aer(isize,itype,iphase)
-    if (l .ge. p1st) then
-        rsub(l,k,m) = rsub(l,k,m) + qmsaa_del
-    end if
+	if (nuc_msa_opt .eq. 1 .and. kmsa .gt. p1st) then
+	  l = lptr_msa_aer(isize,itype,iphase)
+	  if (l .ge. p1st) then
+	    rsub(l,k,m) = rsub(l,k,m) + qmsaa_del
+	  end if
+	endif
 
 	l = numptr_aer(isize,itype,iphase)
 	rsub(l,k,m) = rsub(l,k,m) + qnuma_del
@@ -345,7 +351,11 @@
 !   so increment mass and volume with the so4, nh4 and msa deltas, then calc density
 	    xxvolu = xxmass/xxdens
 	    duma = qso4a_del*mw_so4_aer + qnh4a_del*mw_nh4_aer
-	    duma_msa = qmsaa_del*mw_msa_aer
+	    if (nuc_msa_opt .eq. 1 .and. kmsa .gt. p1st) then
+	      duma_msa = qmsaa_del*mw_msa_aer
+	    else
+	      duma_msa = 0.0
+	    endif
 	    xxmass = xxmass + duma + duma_msa
 	    xxvolu  = xxvolu  + duma/dens_nh4so4a + duma_msa/dens_msaa
 	    if (xxmass .le. smallmassbb) then
