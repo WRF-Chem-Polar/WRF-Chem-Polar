@@ -126,12 +126,12 @@ CONTAINS
 
 !----------------------------------------------------------------------------
 
-  SUBROUTINE aer_drydep_simple(ddvel, t_phy, rho_phy, ust, dz8w, rh, &
-                               xlat, snowh, xice, ivgtyp,           &
-                               res_adyn, julday, dtstep,            &
-                               ids,ide, jds,jde, kds,kde,           &
-                               ims,ime, jms,jme, kms,kme,           &
-                               its,ite, jts,jte, kts,kte            )
+  SUBROUTINE aer_drydep_simple(ddvel, t_phy, rho_phy, ust, rh, &
+                               xlat, snowh, xice, ivgtyp,      &
+                               res_adyn, julday, dtstep,       &
+                               ids,ide, jds,jde, kds,kde,      &
+                               ims,ime, jms,jme, kms,kme,      &
+                               its,ite, jts,jte, kts,kte       )
    ! Purpose:
    !  Calculates dry deposition velocities for aerosols
    !  
@@ -140,7 +140,6 @@ CONTAINS
    !    t_phy = air temperature (degree celsius)
    !    rho_phy = air density (kg/m3)
    !    ust = friction velocity (m/s)
-   !    dz8w = model vertical level depth (m)
    !    rh = relative humidity (0-1)
    !    xlat = latitude (-90 to 90)
    !    snowh = snow depth (m)
@@ -163,7 +162,7 @@ CONTAINS
 
    !---- Arguments
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: t_phy, rho_phy, &
-     dz8w, rh
+                                                             rh
    REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ust, xlat, snowh, xice
    INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ivgtyp
    REAL, DIMENSION(its:ite, jts:jte), INTENT(IN) :: res_adyn
@@ -176,8 +175,6 @@ CONTAINS
                           its,ite, jts,jte, kts,kte
 
    !---- Local variables
-   ! Aerosol mass mixing ratio (microg/kg)
-   REAL :: aer_mmr, aer_mmr_old
    ! Dry deposition velocity (m/s)
    REAL :: vdep
    ! Settling velocity in lowest level (m/s)

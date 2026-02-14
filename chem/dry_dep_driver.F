@@ -298,7 +298,7 @@ CONTAINS
                config_flags%chem_opt == GOCARTRACM_KPP .OR. &
                config_flags%chem_opt == GOCARTRADM2) THEN
             CALL aer_drydep_simple(ddvel=ddvel, t_phy=t_phy, rho_phy=rho_phy,&
-                                   ust=ust, dz8w=dz8w, rh=rh, xlat=xlat,     &
+                                   ust=ust, rh=rh, xlat=xlat,                &
                                    snowh=snowh, xice=xice, ivgtyp=ivgtyp,    &
                                    res_adyn=aer_res_def, julday=julday,      &
                                    dtstep=dtstep,                            &
