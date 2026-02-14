@@ -4027,8 +4027,8 @@ END subroutine optical_prep_modal_soa_vbs
                relh_frc=amin1(.9,relhum(i,k,j)) !0.8   ! Put in fractional relative humidity, max of .9, here
                   vol_h2o = vol_so4*hygro_so4_aer + vol_aro2*hygro_oc_aer + &
                             vol_nh4*hygro_nh4_aer                         + &
-                  vol_cl*hygro_cl_aer + vol_na*hygro_na_aer + vol_msa*hygro_msa_aer + &
-                  vol_oin*hygro_oin_aer + vol_bc2*hygro_oc_aer  + vol_soil*hygro_dust_aer
+                            vol_cl*hygro_cl_aer + vol_na*hygro_na_aer + vol_msa*hygro_msa_aer + &
+                            vol_oin*hygro_oin_aer + vol_bc2*hygro_oc_aer  + vol_soil*hygro_dust_aer
                   vol_h2o = relh_frc*vol_h2o/(1.-relh_frc)
                   mass_h2o = vol_h2o*dens_h2o
           mass_dry_a = mass_so4 + mass_no3 + mass_nh4 + mass_oin + &
@@ -4037,7 +4037,7 @@ END subroutine optical_prep_modal_soa_vbs
           mass_wet_a = mass_dry_a + mass_h2o 
           vol_dry_a  = vol_so4  + vol_no3  + vol_nh4  + vol_oin  + &
                        vol_oc   + vol_bc   + vol_na   + vol_cl  + &
-                       vol_soil
+                       vol_soil + vol_msa
           vol_wet_a  = vol_dry_a + vol_h2o
           vol_shell  = vol_wet_a - vol_bc
           num_a      = vol_wet_a / (0.52359877*xdia_cm(isize)*xdia_cm(isize)*xdia_cm(isize))
