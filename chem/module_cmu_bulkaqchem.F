@@ -702,6 +702,7 @@
       double precision, parameter :: mw_fe = 55.85
       double precision, parameter :: mw_mn = 54.9
       ! Fe and Mn solubilities, kg/kg
+      ! Remark: Fe solubility should vary with pH
       double precision, parameter :: fe_dust_sol = 0.01
       double precision, parameter :: fe_ant_sol = 0.1
       double precision, parameter :: mn_sol = 0.5
@@ -852,11 +853,10 @@
         mn_ant = fe_ant * mw_fe/mw_mn / 30. ! mol(fe)/L to mol(mn)/L
         ! Solubility is 50% for Fe, 1% for dust-sourced Fe, and 10% for
         ! anthropogenic Fe
-        !TODO Fe solubility should vary with pH
-        fe_dust = MIN(fe_dust, fe_dust_sol/(mw_fe*1.E-3)) ! 0.01 kg/kg conv to mol/L
-        mn_dust = MIN(mn_dust, mn_sol/(mw_mn*1.E-3)) ! 0.5 kg/kg conv to mol/L
-        fe_ant = MIN(fe_ant, fe_ant_sol/(mw_fe*1.E-3)) ! 0.1 kg/kg conv to mol/L
-        mn_ant = MIN(mn_ant, mn_sol/(mw_mn*1.E-3)) ! 0.5 kg/kg conv to mol/L
+        fe_dust = MIN(fe_dust, fe_dust_sol/(mw_fe*1.E-3)) ! kg/kg conv to mol/L
+        mn_dust = MIN(mn_dust, mn_sol/(mw_mn*1.E-3)) ! kg/kg conv to mol/L
+        fe_ant = MIN(fe_ant, fe_ant_sol/(mw_fe*1.E-3)) ! kg/kg conv to mol/L
+        mn_ant = MIN(mn_ant, mn_sol/(mw_mn*1.E-3)) ! kg/kg conv to mol/L
         ! Total Fe(III) and Mn(II)
         cmet(1) = fe_dust + fe_ant ! fe(3+) mol/l
         cmet(2) = mn_dust + mn_ant ! mn(2+) mol/l
