@@ -418,7 +418,6 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
                                  evapprod=evaprate, &
                                  precr=precr, preci=preci, &
                                  precs=precs, precg=precg, &
-                                 qv=moist(ims,kms,jms,p_qv), &
                                  qc=moist(ims,kms,jms,p_qc), &
                                  qi=moist(ims,kms,jms,p_qi), &
                                  qs=moist(ims,kms,jms,p_qs), &
@@ -521,7 +520,6 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
                              evapprod=evaprate, &
                              precr=precr, preci=preci, &
                              precs=precs, precg=precg, &
-                             qv=moist(ims,kms,jms,p_qv), &
                              qc=moist(ims,kms,jms,p_qc), &
                              qi=moist(ims,kms,jms,p_qi), &
                              qs=moist(ims,kms,jms,p_qs), &

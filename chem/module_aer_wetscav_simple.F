@@ -65,7 +65,7 @@ CONTAINS
                              t_phy, rho_phy, dz8w,                        &
                              cldfra, rainprod, evapprod,                  &
                              precr, preci, precs, precg,                  &
-                             qv, qc, qi, qs, qr, qg,                      &
+                             qc, qi, qs, qr, qg,                          &
                              ids,ide, jds,jde, kds,kde,                   &
                              ims,ime, jms,jme, kms,kme,                   &
                              its,ite, jts,jte, kts,kte                    )
@@ -87,7 +87,6 @@ CONTAINS
   !   preci = 3D ice precipitation rate through grid cell (kg/m2/s)
   !   precs = 3D snow precipitation rate through grid cell (kg/m2/s)
   !   precg = 3D graupel precipitation rate through grid cell (kg/m2/s)
-  !   qv = specific humidity = water vapor mixing ratio (kg/kg dry air)
   !   qc = cloud water mixing ratio (kg/kg dry air)
   !   qi = cloud ice mixing ratio (kg/kg dry air)
   !   qs = snow water mixing ratio (kg/kg dry air)
@@ -114,7 +113,7 @@ CONTAINS
                          its,ite, jts,jte, kts,kte
   REAL, INTENT(IN) :: dtstep
   REAL, DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(IN) :: t_phy, rho_phy, &
-      dz8w, qv, qi, qc, qs, qr, qg, rainprod, evapprod, precr, preci, precs, &
+      dz8w, qi, qc, qs, qr, qg, rainprod, evapprod, precr, preci, precs, &
       precg, cldfra
   REAL, DIMENSION(ims:ime,kms:kme,jms:jme,num_chem), INTENT(INOUT) :: chem
   REAL, DIMENSION(ims:ime, jms:jme, num_chem),          &
