@@ -4033,7 +4033,7 @@ END subroutine optical_prep_modal_soa_vbs
                   mass_h2o = vol_h2o*dens_h2o
           mass_dry_a = mass_so4 + mass_no3 + mass_nh4 + mass_oin + &
                        mass_oc  + mass_bc  + mass_na  + mass_cl  + &
-                       mass_soil
+                       mass_soil + mass_msa
           mass_wet_a = mass_dry_a + mass_h2o 
           vol_dry_a  = vol_so4  + vol_no3  + vol_nh4  + vol_oin  + &
                        vol_oc   + vol_bc   + vol_na   + vol_cl  + &
