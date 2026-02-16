@@ -92,6 +92,7 @@ MODULES =                                 \
         module_data_uoc_wd.o              \
         module_seaspray_emis.o            \
         module_dms_emis.o                 \
+        module_pbap_emis.o                \
         module_blowing_snow_emis.o        \
         module_mosaic_addemiss.o          \
         module_mosaic_initmixrats.o       \
