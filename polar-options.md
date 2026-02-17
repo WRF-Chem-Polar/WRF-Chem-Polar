@@ -4,6 +4,17 @@ This file describes the new namelist.input options in the WRF-Chem-Polar version
 
 *Many of these options are not specific to polar regions and can be used for modeling outside the poles.  The main polar specific developments are related to sea ice, which shoudl not negatively impact the results outside the polar regions.*
 
+## Chemical mechanism options (&chem namelist)
+
+### chem_opt (0, 112, 114, 202, 212, 300)
+This option controls the mechanism for gas-phase chemistry and aerosols.
+  - 0 (default): Disables gas-phase chemistry and aerosols. Used to run WRF (met-only) simulations, but it's better to disable the whole &chem namelist rather than each individual option.
+  - 112: MOZCART_KPP option, MOZART chemistry with simple bulk GOCART aerosols. Useful for quick tests or studies focusing on gas-phase chemistry.
+  - 114 (not tested): T1_MOZCART_KPP option, MOZART chemistry with updated T1 mechanism, with simple bulk GOCART aerosols. Should predict gas-phase species more accurately than MOZCART_KPP, but we never tested it.
+  - 202: MOZART_MOSAIC_4BIN_AQ_KPP: MOZART chemistry + MOSAIC aerosols with 4 size bins, including secondary organic aerosols, aqueous chemistry and aerosol-cloud interactions. Includes simplified DMS chemistry. Useful for simulations in continental regions or for studies not focused on sulfate aerosols or aerosol-cloud interactions.
+  - 212 (recommended): MOZART_MOSAIC_4BIN_DMS_AQ_KPP: MOZART chemistry + MOSAIC aerosols with 4 size bins, including secondary organic aerosols, aqueous chemistry and aerosol-cloud interactions, and complex DMS and MSA chemistry. Recommended option for chemistry+aerosol runs in the polar regions.
+  - 300: GOCART_SIMPLE: GOCART simple bulk aerosols, no gas-phase chemistry. Recommended for very fast tests of sea-spray or dust emissions and transport.
+
 ## Emission options (&chem namelist)
 
 ### seas_opt (5, 6, 7, 8)
@@ -29,6 +40,19 @@ This option controls the sea-spray emissions from sea ice leads. Only compatible
 This option controls the treatment of dimethyl sulfide (DMS) emissions from the surface ocean in the model. This replaces the old option dmsemis_opt (deprecated but can still be used if needed).
   - 0 (default): No DMS emissions from the ocean surface.
   - 1 (recommended): DMS emissions from the surface ocean are activated for the open ocean grid cell fraction, using the Nightingale et al. (2000) air–sea flux parameterization. In sea ice, emissions are scaled by the open ocean fraction to the power of 0.4 (Loose et al., 2009). Requires oceanic DMS concentration input in the wrflowinp file in variable DMS_OCEAN. DMS_OCEAN can be taken from the climatologies of [Lana 2011](https://doi.org/10.1029/2010GB003850), [Hulswar 2021](https://doi.org/10.5194/essd-14-2963-2022) or the CSIB model [(Hayashida et al., 2019)](https://doi.org/10.5194/gmd-12-1965-2019).
+### nuc_msa_opt (0, 1)
+This option controls the activation of new particle formation from gas MSA
+  - 0 (default): No nucleation of MSA aerosols
+  - 1: Activation of NPF from MSA following [Riccobono et al. (2014)](https://doi.org/10.1126/science.1243527)
+### nuc_msa_fac (real)
+Tuning factor applied to the [Riccobono et al. (2014)](https://doi.org/10.1126/science.1243527) formula when nuc_msa_opt is activated. The default value is 1.0, i.e. the original formulation of the nucleation rate is used. For Arctic studies, we have found that a value of 0.067 is more appropriate for reproducing observations of aerosol number concentration.
+### nuc_sulf_opt (0, 1, 2, 3, 4)
+This option controls which scheme is used for the nucleation of sulfate aerosols from sulfuric acid.
+  - 0: no nucleation
+  - 1: [Napari et al (2002)](https://doi.org/10.1029/2002JD002132) (invalid, deactivates nucleation)
+  - 2: [Wexler et al (1994)](https://doi.org/10.1016/1352-2310(94)90129-5) (default)
+  - 3: [Kulmala et al (1998)](https://doi.org/10.1029/97JD03718)
+  - 4: [Vehkamaki et al. (2002)](https://doi.org/10.1029/2002JD002184)
 ### blowing_snow_opt (0, 1): This option controls the emissions from blowing snow.
   - 0 (default): Disables emissions associated with blowing snow
   - 1: Includes sea salt aerosol emissions from blowing snow (on the main, halogen and mercury branches) and bromine emissions from blowing snow (halogens and mercury branches)
@@ -75,3 +99,14 @@ io_form_auxinput18                   = 2
 This option controls aerosol sedimentation above the first vertical level for MOSAIC aerosols.
    - 0 (default): No aerosol sedimentation above the first level in MOSAIC. Settling velocities are calculated in the first level and taken into account in the dry deposition velocity.
    - 1: Includes aerosol sedimentation of MOSAIC aerosols at all vertical levels.
+###  wetscav_onoff (0,1)
+This option controls wet scavenging of aerosols by precipitation.
+  - 0 (default): No wet scavenging, unchanged from upstream WRF-Chem
+  - 1 (recommended): For GOCART mechanisms, includes wet scavenging following Luo et al. (2019, 2020), whereas upstream WRF had no wet scavenging for GOCART aerosols. For other aerosol mechanisms, the behavior of this option is unchanged from upstream WRF.
+### aer_drydep_opt (0,1,301,311)
+This option controls aerosol dry deposition
+  - 0 (default): No dry deposition, unchanged from upstream WRF-Chem
+  - 1 (MOSAIC aerosols, recommended): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Binkowski and Shankar (1995). Unchanged from upstream WRF-Chem.
+  - 1 (GOCART aerosols, recommended): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Emmerson et al. (2020).
+  - 301 (MOSAIC only): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Zhang (2001). Unchanged from upstream WRF except we added a mapping to allow using this option with MODIS land use.
+  - 311 (MOSAIC only): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Zhang (2001), with updated parameters. Unchanged from upstream WRF except we added a mapping to allow using this option with MODIS land use.
