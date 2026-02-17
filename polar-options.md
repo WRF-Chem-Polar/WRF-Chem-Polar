@@ -4,6 +4,17 @@ This file describes the new namelist.input options in the WRF-Chem-Polar version
 
 *Many of these options are not specific to polar regions and can be used for modeling outside the poles.  The main polar specific developments are related to sea ice, which shoudl not negatively impact the results outside the polar regions.*
 
+## Chemical mechanism options (&chem namelist)
+
+### chem_opt (0, 112, 114, 202, 212, 300)
+This option controls the mechanism for gas-phase chemistry and aerosols.
+  - 0 (default): Disables gas-phase chemistry and aerosols. Used to run WRF (met-only) simulations, but it's better to disable the whole &chem namelist rather than each individual option.
+  - 112: MOZCART_KPP option, MOZART chemistry with simple bulk GOCART aerosols. Useful for quick tests or studies focusing on gas-phase chemistry.
+  - 114 (not tested): T1_MOZCART_KPP option, MOZART chemistry with updated T1 mechanism, with simple bulk GOCART aerosols. Should predict gas-phase species more accurately than MOZCART_KPP, but we never tested it.
+  - 202: MOZART_MOSAIC_4BIN_AQ_KPP: MOZART chemistry + MOSAIC aerosols with 4 size bins, including secondary organic aerosols, aqueous chemistry and aerosol-cloud interactions. Includes simplified DMS chemistry. Useful for simulations in continental regions or for studies not focused on sulfate aerosols or aerosol-cloud interactions.
+  - 212 (recommended): MOZART_MOSAIC_4BIN_DMS_AQ_KPP: MOZART chemistry + MOSAIC aerosols with 4 size bins, including secondary organic aerosols, aqueous chemistry and aerosol-cloud interactions, and complex DMS and MSA chemistry. Recommended option for chemistry+aerosol runs in the polar regions.
+  - 300: GOCART_SIMPLE: GOCART simple bulk aerosols, no gas-phase chemistry. Recommended for very fast tests of sea-spray or dust emissions and transport.
+
 ## Emission options (&chem namelist)
 
 ### seas_opt (5, 6, 7, 8)
