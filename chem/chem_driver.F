@@ -926,6 +926,7 @@
               grid%mebio_acet,grid%mebio_mbo,grid%mebio_no,                                &
               current_month,                                                               &
               grid%lakemask,grid%e_nacl_ocean,grid%e_nacl_blow,grid%e_nacl_leads,          &
+              grid%e_dms_ocean,                                                            &
          ! stuff for LNOx emissions
              grid%ht, grid%refl_10cm, grid%ic_flashrate, grid%cg_flashrate,                 &
          ! stuff for aircraft emissions
