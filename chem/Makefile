@@ -77,6 +77,7 @@ MODULES =                                 \
         module_zero_plumegen_coms.o       \
         module_vash_settling.o            \
         module_mosaic_settling.o          \
+        module_aer_settling_simple.o      \
         module_chem_plumerise_scalar.o    \
         module_dep_simple.o               \
         module_gocart_dmsemis.o           \
