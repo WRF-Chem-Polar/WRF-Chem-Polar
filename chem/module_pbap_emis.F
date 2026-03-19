@@ -1,4 +1,4 @@
-! Louis Marelle 2025/07
+! Louis Marelle, Anderson Da Silva, 2025
 !
 ! Purpose:
 !  Compute primary biological aerosol particle (PBAP) emissions from
@@ -6,15 +6,19 @@
 !
 ! Remarks:
 !  - Pollen not yet included
-!  - Only enabled for MODIS. To enable for USGS too, need to define bactflux_from_usgs_land
+!  - Only enabled for MODIS landuse. To enable for USGS too, need to define
+!    bactflux_from_usgs_land
 !  - Could add separate tracers bact1 and spore1 for bacteria and spores
 !  - Could emit to MOSAIC tracers oc_a
 !
 ! References
 ! ==============================================================================
-!  (1) Chatziparaschos et al. (2024) - https://doi.org/10.5194/egusphere-2024-952
-!  (2) Hummel et al. (2015) - https://doi.org/10.5194/acp-15-6127-2015
-!  (3) Burrows et al. (2009) - https://doi.org/10.5194/acp-9-9281-2009
+!  (1) Da Silva, A., Marelle, L., Lapere, R., and Raut, J.-C. Modelling Ice
+!      Nucleating Particles from High-Latitude Sources to Reproduce Arctic In
+!      Situ Concentrations. In preparation, 2026
+!  (2) Chatziparaschos et al. (2024) - https://doi.org/10.5194/egusphere-2024-952
+!  (3) Hummel et al. (2015) - https://doi.org/10.5194/acp-15-6127-2015
+!  (4) Burrows et al. (2009) - https://doi.org/10.5194/acp-9-9281-2009
 
 MODULE module_pbap_emis
 
@@ -190,7 +194,7 @@ MODULE module_pbap_emis
           ! emission flux (ug m-2 s-1)
           ! 1E-9 for kg m-3 to ug um-3 conversion
           ! Bacteria
-          bact_vol_emiss = bact_num_emiss * (piconst/6.0)*AER_DIAM_BACT**3.0
+          bact_vol_emiss = bact_num_emiss * (PICONST/6.0)*AER_DIAM_BACT**3.0
           bact_mass_emiss = bact_vol_emiss * BACT_AER_DENS * 1.0E-9
           bact_mass_emiss = MAX(bact_mass_emiss, 0.0)
           e_bact(i,j) = e_bact(i,j) + bact_mass_emiss*1.E-3*dtstep
@@ -269,10 +273,10 @@ MODULE module_pbap_emis
     CALL nl_get_mminlu( 1, mminlu_loc )
     IF(TRIM(mminlu_loc) == 'MODIS' &
        .OR. TRIM(mminlu_loc) == 'MODIFIED_IGBP_MODIS_NOAH') THEN
-      CALL wrf_debug(15, 'drydep_simple_init: Using the following land cover type:')
+      CALL wrf_debug(15, 'pbap_emis_init: Using the following land cover type:')
       CALL wrf_debug(15, TRIM(mminlu_loc))
     ELSE
-      CALL wrf_error_fatal('drydep_simple_init: land cover type not supported')
+      CALL wrf_error_fatal('pabap_emis_init: land cover type not supported')
     END IF
 
   END SUBROUTINE pbap_emis_init

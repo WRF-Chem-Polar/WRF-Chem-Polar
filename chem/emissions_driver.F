@@ -822,7 +822,7 @@ real, save :: freq_industry(24)    = &
          its,ite, jts,jte, kts,kte)
       ENDIF
 
-      ! Primay biological aerosol particles (PBAP) emissions
+      ! Primary biological aerosol particles (PBAP) emissions
       IF(config_flags%pbap_opt > 0) THEN
         ! PBAP emissions for GOCART aerosols
         CALL wrf_debug(15, 'PBAP emissions')
