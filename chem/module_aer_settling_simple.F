@@ -171,8 +171,6 @@ CONTAINS
            ! Cannot advect µg kg-1 directly, because changing cells changes
            ! dilution. We convert first to µg m-2
            aerload_1d(:) = chem(i,:,j,iaer) * dz_1d(:) * rho_1d(:)
-           !TODO calculate column values before and after, and check if mass
-           !     is conserved. Renormalize?
            CALL advect_aer(aerload_1d=aerload_1d, vsettl_1d=vsettl_1d, &
                     dz_1d=dz_1d, timestep=sub_dtstep, kts=kts, kte=kte)
            chem(i,:,j,iaer) = aerload_1d(:) / dz_1d(:) / rho_1d(:)
@@ -189,8 +187,6 @@ CONTAINS
 
   SUBROUTINE calc_vsettl(vsettl, tk, rho_gcm3, aer_wet_d_cm, aer_wet_dens_gcm3)
     ! Calculate the aerosol sedimentation velocity
-    !
-    ! References: TODO
     !
     ! Arguments:
     !  Input:
@@ -229,7 +225,6 @@ CONTAINS
 
   SUBROUTINE advect_aer(aerload_1d, vsettl_1d, dz_1d, timestep, kts, kte)
     ! Advect aerosols from sedimentation from levels k+1 to k
-    !TODO replace by better advection scheme, check Sylvain Mailler, advbench
     !
     ! Arguments:
     !   Input:
