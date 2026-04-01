@@ -77,6 +77,7 @@
    USE module_model_constants, only:t0
    USE module_seaspray_emis, only:seaspray_emis_init
    USE module_blowing_snow_emis, only:blowing_snow_emis_init
+   USE module_pbap_emis, only:pbap_emis_init
 
    IMPLICIT NONE
 
@@ -568,6 +569,17 @@ call wrf_message("**************************************************************
        CALL wrf_error_fatal ('chemics_init: error, blowing snow emission &
            blowing_snow_opt is only compatible with GOCART, MOSAIC_4BIN &
            and MOSAIC_8BIN.')
+     ENDIF
+   ENDIF
+   !-- Checks for continental PBAP aerosol emissions option
+   IF ( config_flags%pbap_opt > 0 ) THEN
+     IF(aer_is_gocart) THEN
+       ! Initialize continental PBAP aerosol emissions
+       CALL wrf_debug( 15, 'Calling pbap_emis_init')
+       CALL pbap_emis_init(config_flags%chem_opt)
+     ELSE
+       CALL wrf_error_fatal ('chemics_init: error, PBAP emission &
+           pbap_opt is only compatible with GOCART')
      ENDIF
    ENDIF
 

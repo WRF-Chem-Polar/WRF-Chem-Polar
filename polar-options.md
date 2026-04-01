@@ -64,6 +64,10 @@ This option controls which scheme is used for the nucleation of sulfate aerosols
   - 0 (default): Disables halogen emissions and recycling from surface snow.
   - 1: Halogen emissions and recycling from surface snow, following Toyota et al. (2011).
 
+### pbap_opt (0, 1): This option controls Primary Biological Aerosol Particle (PBAP) emissions from land surfaces
+  - 0 (default): Disables PBAP emissions
+  - 1: Emissions of fungal spores and bacteria from land surfaces following Hummel et al. (2015) and Burrows et al. (2009) respectively. The option is only active for GOCART aerosols, and PBAP are emitted as OC1 (hydrophobic organic carbon).
+
 ## Aerosol-cloud interaction options
 ### aci_wrfchem_opt (0, 1, 2): This option controls the aerosol-cloud interactions for liquid droplets in WRF-Chem.
 This option only works with Thompson aerosol-aware microphysics, but not with other microphysics scheme.
