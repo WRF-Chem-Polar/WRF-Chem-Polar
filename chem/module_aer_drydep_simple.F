@@ -7,8 +7,7 @@
 !
 ! Remarks:
 !  - Only compatible with GOCART for now
-!  - Sedimentation above the first level is already done in gocart_settling or
-!    mosaic_settling
+!  - Sedimentation above the first level is already done in settling modules
 !  - Hygroscopic growth is only taken into account for seasalt and sulfate
 !
 ! References:
@@ -41,7 +40,7 @@ MODULE module_aer_drydep_simple
   REAL, DIMENSION(:), ALLOCATABLE :: aer_dry_diam
   ! Aerosol densities for aerosol species in aer_pointers (kg/m3)
   REAL, DIMENSION(:), ALLOCATABLE :: aer_dry_dens
-  ! Land cover type name 
+  ! Land cover type name
   CHARACTER(LEN=256) :: mminlu_loc
   ! Radius (m) of surface collectors for interception
   ! Interception efficiency land-dependent coefficient, from Zhang2001
@@ -134,7 +133,7 @@ CONTAINS
                                its,ite, jts,jte, kts,kte       )
    ! Purpose:
    !  Calculates dry deposition velocities for aerosols
-   !  
+   !
    ! Arguments:
    !  Input:
    !    t_phy = air temperature (degree celsius)
@@ -411,7 +410,7 @@ CONTAINS
    END DO ! j
 
   END SUBROUTINE aer_drydep_simple
-  
+
 !----------------------------------------------------------------------------
 
   SUBROUTINE aer_drydep_simple_init(chem_opt)
