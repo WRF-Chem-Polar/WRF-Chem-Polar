@@ -412,10 +412,9 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
        IF(config_flags%chem_opt == MOZCART_KPP .OR. config_flags%chem_opt == T1_MOZCART_KPP) THEN
          CALL wrf_debug(15,'wetscav_driver calling aer_wetscav_simple')
          CALL aer_wetscav_simple(chem=chem, qsrflx=qsrflx, dtstep=dtstep, &
-                                 config_flags=config_flags, t_phy=t_phy, &
-                                 rho_phy=rho_phy, dz8w=dz8w, &
+                                 t_phy=t_phy, rho_phy=rho_phy, dz8w=dz8w, &
                                  cldfra=cldfra_ls, rainprod=rainrate, &
-                                 evapprod=evaprate, &
+                                 evapprod=evaprate, qlsink=qlsink, &
                                  precr=precr, preci=preci, &
                                  precs=precs, precg=precg, &
                                  qc=moist(ims,kms,jms,p_qc), &
@@ -514,10 +513,9 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
      endif
      CALL wrf_debug(15,'wetscav_driver calling aer_wetscav_simple')
      CALL aer_wetscav_simple(chem=chem, qsrflx=qsrflx, dtstep=dtstep, &
-                             config_flags=config_flags, t_phy=t_phy, &
-                             rho_phy=rho_phy, dz8w=dz8w, &
+                             t_phy=t_phy, rho_phy=rho_phy, dz8w=dz8w, &
                              cldfra=cldfra_ls, rainprod=rainrate, &
-                             evapprod=evaprate, &
+                             evapprod=evaprate, qlsink=qlsink, &
                              precr=precr, preci=preci, &
                              precs=precs, precg=precg, &
                              qc=moist(ims,kms,jms,p_qc), &
