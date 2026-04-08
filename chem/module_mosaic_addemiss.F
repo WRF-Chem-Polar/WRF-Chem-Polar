@@ -499,7 +499,8 @@ real, save :: fr8b_bburn_mosaic(8) = &
 	aem_msa = 0.0
 
   chem_select_2 : SELECT CASE( config_flags%chem_opt )
-  CASE(MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP)
+  CASE(MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+       MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
     aem_nh4 = fr_aem_mosaic_f(n)*emis_ant(i,k,j,p_e_nh4j)   &
             + fr_aem_mosaic_c(n)*emis_ant(i,k,j,p_e_nh4c)   &
             + fr_aem_sorgam_i(n)*emis_ant(i,k,j,p_e_nh4i)   &

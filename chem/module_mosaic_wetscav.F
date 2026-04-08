@@ -294,7 +294,8 @@ CONTAINS
 
 ! scavenging of gases in cloud-water
 ! only if not MOZART (--> Neu and Prather used)
-  if ( .NOT. (config_flags%chem_opt == mozart_mosaic_4bin_aq_kpp) ) then
+  if ( .NOT. (config_flags%chem_opt == mozart_mosaic_4bin_aq_kpp .or. &
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) ) then
       do 290 l = param_first_scalar, min( num_chem, numgas_aqfrac )
       if ( is_aerosol(l) ) goto 290
       do 270 j = jts,jte
@@ -449,7 +450,9 @@ CONTAINS
               dqdt, dotend, qsrflx      )
 
 ! only if not MOZART (--> Neu and Prather used)
-  if ( .NOT. (config_flags%chem_opt == mozart_mosaic_4bin_aq_kpp) ) then
+  if ( .NOT. (config_flags%chem_opt == mozart_mosaic_4bin_aq_kpp .or. &
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) ) then
+
       call gasrainscav (ims,ime,kms,kme,jms,jme,its,ite,kts,kte,jts,jte, num_chem,     &
                       config_flags,      &
                       dtstepc,    t_phy,      p_phy,      pdel,  chem,      &

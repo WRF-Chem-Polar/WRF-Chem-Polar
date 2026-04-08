@@ -203,21 +203,21 @@ MODULE module_blowing_snow_emis
 
         !---- Blowing snow: calculate the total NaCl emission flux from blowing snow
         nacl_emiss_tot = 0.0
-        ! Only valid over sea-ice and for snow that has not experienced recent melt
-        IF (xice(i, j) .GT. seaice_crit .AND. meltedsnow(i,j) .LT. 0.5 &
-            .AND. lakemask(i,j) .LT. 0.5) THEN
+        ! Only valid over sea-ice, excluding lake ice
+        IF (xice(i, j) .GT. seaice_crit .AND. lakemask(i,j) .LT. 0.5) THEN
           !SAhmed - if snow melts, turn off surface emissions there until
           ! temperatures are back below freezing AND fresh snow has been
           ! deposited (at least 1 cm).
-          IF(tsk(i, j) .GT. 273) THEN
+          IF(tsk(i, j) .GT. tskcrit) THEN
             snowh_melt(i,j) = snowh(i,j)
             meltedsnow(i,j) = 1.
           ELSEIF (snowh(i,j) .GT. snowh_melt(i,j)+0.01) THEN
             snowh_melt(i,j) = 0.0
             meltedsnow(i,j) = 0.0
           END IF
-          ! Only valid below freezing temperatures
-          IF (tsk(i, j) .LE. tskcrit) THEN
+          ! Only valid below freezing temperatures, and over snow that has not
+          ! experienced past melt
+          IF (tsk(i, j) .LE. tskcrit .AND. meltedsnow(i,j) .LT. 0.5) THEN
             !-- Calculate the critical 10m wind speed for blowing snow, from Yang
             ! et al. (2008)
             w10_crit = w10_0 + 0.0033 * (t2(i,j) - 273.15 + 27.27) ** 2.0
@@ -367,6 +367,7 @@ MODULE module_blowing_snow_emis
                         chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
                         chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
                         chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                        chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
                         chem_opt == CRI_MOSAIC_4BIN_AQ_KPP .OR. &
                         chem_opt == SAPRC99_MOSAIC_4BIN_VBS2_KPP
 
@@ -411,25 +412,25 @@ MODULE module_blowing_snow_emis
     IF(aer_is_gocart) THEN
       ! GOCART sea salt bin center diameters (micrometer)
       ! These should be log-averaged but I follow the GOCART definition instead
-      bin_diameters_cen = (/ 0.60, 2.00, 6.5, 15.0 /)
+      bin_diameters_cen(:) = (/ 0.60, 2.00, 6.5, 15.0 /)
       ! Size-resolved NaCl mass repartition in GOCART size bins
-      emiss_massfrac_nacl = (/ 0.8737, 0.1261, 1.491E-04, 0. /)
+      emiss_massfrac_nacl(:) = (/ 0.8737, 0.1261, 1.491E-04, 0. /)
 
     !-- Initialize NaCl size bin massfrac for MOSAIC-8bin aerosols
     ELSEIF(aer_is_mosaic8bin) THEN
       ! MOSAIC-8bin bin center diameters (micrometer)
-      bin_diameters_cen = (/ 0.0552, 0.1105, 0.2210, 0.4419, &
+      bin_diameters_cen(:) = (/ 0.0552, 0.1105, 0.2210, 0.4419, &
                              0.8839, 1.7678, 3.5355, 7.0711 /)
       ! Size-resolved NaCl mass repartition in MOSAIC-8bin size bins
-      emiss_massfrac_nacl = (/ 2.711E-02, 8.600E-02, 2.181E-01, 0.3580, &
+      emiss_massfrac_nacl(:) = (/ 2.711E-02, 8.600E-02, 2.181E-01, 0.3580, &
                                2.629E-01, 4.721E-02, 7.154E-04, 0. /)
 
     !-- Initialize NaCl size bin massfrac for MOSAIC-4bin aerosols
     ELSEIF(aer_is_mosaic4bin) THEN
       ! MOSAIC-4bin bin center diameters (micrometer)
-      bin_diameters_cen = (/ 0.0781, 0.3125, 1.2500, 5.0000 /)
+      bin_diameters_cen(:) = (/ 0.0781, 0.3125, 1.2500, 5.0000 /)
       ! Size-resolved NaCl mass repartition in MOSAIC-4bin size bins
-      emiss_massfrac_nacl = (/ 0.1131, 0.5761, 0.3101, 0.7155E-03 /)
+      emiss_massfrac_nacl(:) = (/ 0.1131, 0.5761, 0.3101, 0.7155E-03 /)
 
     ELSE ! aer_is_
       CALL wrf_error_fatal ('blowing_snow_emis_init: chem_opt not supported')

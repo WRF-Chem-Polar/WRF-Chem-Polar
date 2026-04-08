@@ -287,7 +287,8 @@
                       config_flags%chem_opt == MOZCART_KPP .or. &
                       config_flags%chem_opt == T1_MOZCART_KPP .or. &
                       config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP
+                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP
 !----------------------------------------------------
 !     set o3,o2 column densities at model top
 !----------------------------------------------------
@@ -307,8 +308,8 @@
                CB05_SORG_AQ_KPP,CB05_SORG_VBS_AQ_KPP)
              isorg=1
              CALL wrf_debug(15,'SORGAM aerosols initialization ')
-         CASE (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP)
-             CALL wrf_debug(15,'MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP aerosols initialization ')
+         CASE (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
+             CALL wrf_debug(15,'MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP aerosols initialization ')
          CASE DEFAULT
              CALL wrf_debug(15,'no aerosols initialization yet')
              CALL wrf_message('no aerosols initialization yet')
@@ -620,7 +621,8 @@ level_loop : &
       use module_state_description, only : mozart_kpp, mozcart_kpp, &
                                            t1_mozcart_kpp,&
                                            mozart_mosaic_4bin_kpp,&
-                                           mozart_mosaic_4bin_aq_kpp
+                                           mozart_mosaic_4bin_aq_kpp, &
+                                           MOZART_MOSAIC_4BIN_DMS_AQ_KPP
       use module_ftuv_subs, only         : aer_init
       use module_configure, only         : grid_config_rec_type
 
@@ -669,7 +671,8 @@ include 'netcdf.inc'
           config_flags%chem_opt == MOZCART_KPP .or. &
           config_flags%chem_opt == T1_MOZCART_KPP .or. &
           config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
          call wrf_message( 'ftuv_init: mozart,mozcart,mozart_mosaic_* chem option requires netcdf' )
          call wrf_abort
       end if
@@ -689,7 +692,8 @@ is_mozart : &
           config_flags%chem_opt == MOZCART_KPP .or. &
           config_flags%chem_opt == T1_MOZCART_KPP .or. &
           config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
 !---------------------------------------------------------------------
 !	... allocate column_density type
 !---------------------------------------------------------------------
@@ -900,7 +904,8 @@ include 'netcdf.inc'
       use module_state_description, only : mozart_kpp, mozcart_kpp, &
                                            t1_mozcart_kpp,&
                                            mozart_mosaic_4bin_kpp,&
-                                           mozart_mosaic_4bin_aq_kpp
+                                           mozart_mosaic_4bin_aq_kpp, &
+                                           MOZART_MOSAIC_4BIN_DMS_AQ_KPP
 
       implicit none
 
@@ -921,7 +926,8 @@ include 'netcdf.inc'
           chem_opt /= MOZCART_KPP .and. &
           chem_opt /= T1_MOZCART_KPP .and. &
           chem_opt /= MOZART_MOSAIC_4BIN_KPP .and. &
-          chem_opt /= MOZART_MOSAIC_4BIN_AQ_KPP ) then
+          chem_opt /= MOZART_MOSAIC_4BIN_AQ_KPP .and. &
+          chem_opt /= MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) then
 !---------------------------------------------------------------------
 !     change unit from m to km
 !---------------------------------------------------------------------
@@ -989,7 +995,8 @@ include 'netcdf.inc'
           chem_opt == MOZCART_KPP .or. &
           chem_opt == T1_MOZCART_KPP .or. &
           chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-          chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+          chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+          chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
          albedo(1:17,2) = (/ 0.0747_dp, 0.0755_dp, 0.0767_dp, 0.0783_dp, 0.0802_dp,   &
                              0.0825_dp, 0.0852_dp, 0.0882_dp, 0.0914_dp, 0.0908_dp,   &
                              0.0763_dp, 0.0725_dp, 0.0689_dp, 0.0632_dp, 0.0570_dp,   &

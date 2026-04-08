@@ -567,6 +567,24 @@
        ENDIF
 #endif
        haveaer = .true.
+     CASE (MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
+       CALL wrf_debug(15,'calling mozart_mosaic_4bin_dms_aq_kpp from chem_driver')
+#if( WRF_CHEM == 1 && WRF_KPP == 1 )
+       IF( grid%irr_opt == 1 ) then
+         ALLOCATE( irr_rates(grid%sm31:grid%em31,grid%sm32:grid%em32,grid%sm33:grid%em33,num_irr_diag_mozart_mosaic_4bin_dms_aq),stat=astat )
+         IF( astat /= 0 ) THEN
+           write(msg,'(''chem_driver: Failed to allocate irr_rates; error = '',i8)') astat
+           CALL wrf_error_fatal( trim(msg) )
+         ENDIF
+         num_irr_diag = num_irr_diag_mozart_mosaic_4bin_dms_aq
+       ELSE
+         ! Placeholders to avoid calling kpp_mechanism_driver with unallocated
+         ! arrays as arguments
+         ALLOCATE( irr_rates(1, 1, 1, 1), stat=astat )
+         num_irr_diag = 0
+       ENDIF
+#endif
+       haveaer = .true.
        !BSINGH -  Added case statement for SAPRC 8 bin
      CASE (SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP)
        CALL wrf_debug(15,'calling saprc99_mosaic_8bin_vbs2_aq_kpp from chem_driver')
@@ -787,7 +805,9 @@
                       config_flags%chem_opt == MOZCART_KPP .or. &
                       config_flags%chem_opt == T1_MOZCART_KPP .or. &
                       config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP
+                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                      config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP
+
 !------------------------------------------------------------------------
 ! setup ftuv column density timing
 !------------------------------------------------------------------------
@@ -905,9 +925,10 @@
               grid%mebio_isop,grid%mebio_apin,grid%mebio_bpin, grid%mebio_bcar,            &
               grid%mebio_acet,grid%mebio_mbo,grid%mebio_no,                                &
               current_month,                                                               &
-              grid%raincv, grid%rainncv,                                                   &
+              grid%lai, grid%raincv, grid%rainncv,                                         &
               grid%lakemask,grid%e_nacl_ocean,grid%e_nacl_blow,grid%e_nacl_leads,          &
               grid%e_dust,                                                                 &
+              grid%e_bact, grid%e_spore, &
          ! stuff for LNOx emissions
              grid%ht, grid%refl_10cm, grid%ic_flashrate, grid%cg_flashrate,                 &
          ! stuff for aircraft emissions
@@ -1100,8 +1121,10 @@
                  grid%ddlen,grid%ddflx, &
                  emis_ant,ebu_in,                                                     &
                  config_flags%sf_urban_physics,numgas,current_month,dvel,grid%snowh,  &
+                 grid%xice,                                                           &
                  grid%dustdrydep_1,grid%dustdrydep_2,grid%dustdrydep_3,               &
                  grid%dustdrydep_4,grid%dustdrydep_5,                                 &      
+                 grid%dd_dust, grid%dd_seasalt,                                       &
                  grid%depvelocity,                                                    &      
                  grid%dustgraset_1,grid%dustgraset_2,grid%dustgraset_3,               &
                  grid%dustgraset_4,grid%dustgraset_5,                                 &
@@ -1363,6 +1386,16 @@ CALL kpp_mechanism_driver (chem,                                                
               do k=kts,kte
                 irr_diag_mozart_mosaic_4bin_aq(its:ite,k,j,n) = &
                       irr_diag_mozart_mosaic_4bin_aq(its:ite,k,j,n) &
+                      + dtstepc*irr_rates(its:ite,k,j,n)*1.e6/(dens2con_a*rho(its:ite,k,j))
+              enddo
+            enddo
+          enddo
+        case( MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
+          do n=param_first_scalar,num_irr_diag
+            do j=jts,jte
+              do k=kts,kte
+                irr_diag_mozart_mosaic_4bin_dms_aq(its:ite,k,j,n) = &
+                      irr_diag_mozart_mosaic_4bin_dms_aq(its:ite,k,j,n) &
                       + dtstepc*irr_rates(its:ite,k,j,n)*1.e6/(dens2con_a*rho(its:ite,k,j))
               enddo
             enddo
@@ -1669,6 +1702,7 @@ if ( cam_mam_aerosols ) &
               grid%wd_no3_sc, grid%wd_so4_sc, grid%wd_nh4_sc,grid%wd_oa_sc,           &
               grid%wd_so2_sc, grid%wd_sulf_sc, grid%wd_hno3_sc, grid%wd_nh3_sc,       &
               grid%wd_cvasoa_sc, grid%wd_cvbsoa_sc, grid%wd_asoa_sc, grid%wd_bsoa_sc, &
+              grid%wd_dust_sc, grid%wd_seasalt_sc,                                    &
               grid%qv_b4mp, grid%qc_b4mp, grid%qi_b4mp, grid%qs_b4mp,                 &
 !======================================================================================
 !Variables required for CAM_MAM_WETSCAV

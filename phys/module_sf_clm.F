@@ -60543,7 +60543,8 @@ end subroutine clmdrv
            SAPRC99_KPP,SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
            SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_KPP, &
            RADM2SORG,RADM2SORG_KPP,RADM2SORG_AQ,RADM2SORG_AQCHEM, &
-           MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP,MOZART_MOSAIC_4BIN_AQ_KPP
+           MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP,MOZART_MOSAIC_4BIN_AQ_KPP, &
+           MOZART_MOSAIC_4BIN_DMS_AQ_KPP
 #endif
 
   USE shr_megan_mod, only   : shr_megan_init
@@ -60811,7 +60812,7 @@ end subroutine clmdrv
       megan_specifier(20)='so2=2*diallyl_2s+2met_2s+2met_s+hydrogen_s+met_mercaptan+2*met_propenyl_2s+2*PPPP_2s'
       megan_specifier(21)='hno3=indole'
 
-     CASE (MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP,MOZART_MOSAIC_4BIN_AQ_KPP)
+     CASE (MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP,MOZART_MOSAIC_4BIN_AQ_KPP,MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
       megan_specifier(1)='isopr=isoprene+2.4*MBO_2m3e2ol+1.25*MBO_3m2e1ol+1.25*MBO_3m3e1ol'
 
       term1='myrcene+sabinene+limonene+carene_3+ocimene_t_b+pinene_b+pinene_a+2met_styrene+phellandrene_a+thujene_a+terpinene_a+terpinene_g+terpinolene+phellandrene_b+camphene'

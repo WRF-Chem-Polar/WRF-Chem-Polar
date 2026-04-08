@@ -22,10 +22,11 @@ CONTAINS
                cvalk1,cvole1,cvapi1,cvapi2,cvlim1,cvlim2,dep_vel_o3,      &
                ddlen,ddflx,                                               &
                emis_ant,ebu_in,                                           &
-               sf_urban_physics,numgas,current_month,dvel,snowh,          & 
+               sf_urban_physics,numgas,current_month,dvel,snowh,xice,     &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
-               depvelocity,                                               &               
+               dd_dust, dd_seasalt,                                       &
+               depvelocity,                                               &
                dustgraset_1,dustgraset_2,dustgraset_3,                    &
                dustgraset_4,dustgraset_5,                                 &
                setvel_1,setvel_2,setvel_3,setvel_4,setvel_5, imod,        &         
@@ -47,6 +48,7 @@ CONTAINS
   USE module_vash_settling
 !LMarelle Add a module for aerosol sedimentation aloft in MOSAIC
   USE module_mosaic_settling
+  USE module_aer_drydep_simple, only: aer_drydep_simple
   USE module_gocart_drydep
   USE module_mosaic_drydep, only:  mosaic_drydep_driver
   USE module_mixactivate_wrappers, only: mosaic_mixactivate, sorgam_mixactivate, &
@@ -131,6 +133,8 @@ CONTAINS
                                                      xlong,     &
                                                      snowh,     &
                                           xland,znt,raincv,ash_fall
+
+   REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN) :: xice
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         ,        &
           INTENT(IN ) ::                                     &
                     cldfra        ! cloud fraction current timestep
@@ -158,6 +162,8 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
                 dustdrydep_1, dustdrydep_2, dustdrydep_3,       &
                 dustdrydep_4, dustdrydep_5, depvelocity
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
+                dd_dust, dd_seasalt
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
                dustgraset_1,dustgraset_2,dustgraset_3,          &
                dustgraset_4,dustgraset_5,                       &
@@ -276,9 +282,7 @@ CONTAINS
            config_flags%chem_opt /= GHG_TRACER     .and.                  &
            config_flags%chem_opt /= CHEM_VASH      .and.                  &
            config_flags%chem_opt /= CHEM_VOLC_4BIN .and.                  &
-           config_flags%chem_opt /= DUST           .and.                  &
-           config_flags%chem_opt /= GOCART_SIMPLE  .and.                  &
-           config_flags%chem_opt /= GOCARTRACM_KPP )THEN
+           config_flags%chem_opt /= DUST) THEN
           call wesely_driver(id,ktau,dtstep,                              &
                config_flags,current_month,                                &
                gmt,julday,t_phy,moist,p8w,t8w,raincv,                     &
@@ -291,19 +295,23 @@ CONTAINS
 !-----------------------------------------------------------------
 ! this does aerosol species (dust,seas, bc,oc) for gocart only
 !-----------------------------------------------------------------
-          IF ( config_flags%chem_opt == MOZCART_KPP .or. &
-               config_flags%chem_opt == T1_MOZCART_KPP ) then
-            call gocart_drydep_driver( dtstep,                            &
-                  config_flags, numgas,                                   &
-                  t_phy, moist, p8w, t8w, rmol,aer_res_def,               &
-                  p_phy, chem, rho_phy, dz8w, ddvel, xland, hfx,          &
-                  ivgtyp, tsk, vegfra, pbl, ust, znt, xlat, xlong,        &
-                  dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
-                  dustdrydep_4,dustdrydep_5,                              &
-                  depvelocity,                                            &                       
-                  ids,ide, jds,jde, kds,kde,                              &
-                  ims,ime, jms,jme, kms,kme,                              &
-                  its,ite, jts,jte, kts,kte )
+          IF ( config_flags%chem_opt == MOZCART_KPP .OR. &
+               config_flags%chem_opt == T1_MOZCART_KPP .OR. &
+               config_flags%chem_opt == GOCART_SIMPLE .OR. &
+               config_flags%chem_opt == GOCARTRACM_KPP .OR. &
+               config_flags%chem_opt == GOCARTRADM2) THEN
+            CALL aer_drydep_simple(ddvel=ddvel, t_phy=t_phy, rho_phy=rho_phy,&
+                                   ust=ust, rh=rh, xlat=xlat,                &
+                                   snowh=snowh, xice=xice, ivgtyp=ivgtyp,    &
+                                   res_adyn=aer_res_def, julday=julday,      &
+                                   dtstep=dtstep,                            &
+                                   ids=ids,ide=ide, jds=jds,jde=jde,         &
+                                   kds=kds,kde=kde,                          &
+                                   ims=ims,ime=ime, jms=jms,jme=jme,         &
+                                   kms=kms,kme=kme,                          &
+                                   its=its,ite=ite, jts=jts,jte=jte,         &
+                                   kts=kts,kte=kte                           )
+
           ENDIF
 
          if( config_flags%diagnostic_chem == DEPVEL1 .and. &
@@ -324,7 +332,8 @@ CONTAINS
                config_flags%chem_opt == T1_MOZCART_KPP .or. &
               config_flags%chem_opt == MOZART_KPP   .or. & 
               config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-              config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) ) then
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP ) ) then
                do j = jts,jte
                   dvel(its:ite,1,j,p_dvel_o3) = m2cm*ddvel(its:ite,j,p_o3)
                   dvel(its:ite,1,j,p_dvel_no) = m2cm*ddvel(its:ite,j,p_no)
@@ -369,7 +378,8 @@ CONTAINS
                enddo
           endif
 
-          if ( config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+          if ( config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
+               .or. config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
                do j = jts,jte
                    dvel(its:ite,1,j,p_dvel_cvasoaX) = 0.0
                    dvel(its:ite,1,j,p_dvel_cvasoa1) = m2cm*ddvel(its:ite,j,p_cvasoa1)
@@ -384,30 +394,6 @@ CONTAINS
                 enddo
            endif
 
-       ELSEIF ( config_flags%chem_opt == GOCART_SIMPLE ) then
-          call wesely_driver(id,ktau,dtstep,                              &
-               config_flags,current_month,                                &
-               gmt,julday,t_phy,moist,p8w,t8w,raincv,                     &
-               p_phy,chem,rho_phy,dz8w,ddvel,aer_res_def,aer_res_zcen,    & 
-               ivgtyp,tsk,gsw,vegfra,pbl,rmol,ust,znt,xlat,xlong,z,z_at_w,&
-               snowh, numgas,                                             &
-               ids,ide, jds,jde, kds,kde,                                 &
-               ims,ime, jms,jme, kms,kme,                                 &
-               its,ite, jts,jte, kts,kte                                  )
-!
-! this does aerosol species (dust,seas, bc,oc) for gocart only
-!
-         call gocart_drydep_driver(dtstep,                                &
-               config_flags,numgas,                                       &
-               t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
-               p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
-               ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
-               dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
-               dustdrydep_4,dustdrydep_5,                                 &
-               depvelocity,                                               &                    
-               ids,ide, jds,jde, kds,kde,                                 &
-               ims,ime, jms,jme, kms,kme,                                 &
-               its,ite, jts,jte, kts,kte                                  )
        ELSEIF ( config_flags%chem_opt == DUST) then
 !
 ! this does aerosol species (dust) for gocart only
@@ -419,36 +405,11 @@ CONTAINS
                ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
                dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
                dustdrydep_4,dustdrydep_5,                                 &
-               depvelocity,                                               &                    
+               depvelocity,                                               &
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
 
-
-       ELSEIF ( config_flags%chem_opt == GOCARTRACM_KPP) then
-!
-! this does aerosol species (dust,seas, bc,oc) for gocart only
-!
-          call wesely_driver(id,ktau,dtstep,                              &
-               config_flags,current_month,                                &
-               gmt,julday,t_phy,moist,p8w,t8w,raincv,                     &
-               p_phy,chem,rho_phy,dz8w,ddvel,aer_res_def,aer_res_zcen,    &
-               ivgtyp,tsk,gsw,vegfra,pbl,rmol,ust,znt,xlat,xlong,z,z_at_w,&
-               snowh, numgas,                                             &
-               ids,ide, jds,jde, kds,kde,                                 &
-               ims,ime, jms,jme, kms,kme,                                 &
-               its,ite, jts,jte, kts,kte                                  )
-         call gocart_drydep_driver(dtstep,                                &
-               config_flags,numgas,                                       &
-               t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
-               p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
-               ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
-               dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
-               dustdrydep_4,dustdrydep_5,                                 &
-               depvelocity,                                               &                    
-               ids,ide, jds,jde, kds,kde,                                 &
-               ims,ime, jms,jme, kms,kme,                                 &
-               its,ite, jts,jte, kts,kte                                  )
 
        ELSE
           !Set dry deposition velocity to zero when using the
@@ -490,6 +451,7 @@ CONTAINS
                  CBMZ_MOSAIC_8BIN_AQ,SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
                  CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ, &
                  MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+                 MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
                  CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP, SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP, &!BSINGH(12/03/2013): Added SAPRC 8 bin
                  SAPRC99_MOSAIC_8BIN_VBS2_KPP)!BSINGH(04/04/2014): Added SAPRC 8 bin non-aq
              aer_mech_id = 3
@@ -568,6 +530,7 @@ CONTAINS
           CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ, &
           SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
           MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+          MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
           CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP, &
           SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_KPP)!BSINGH(12/03/2013): Added SAPRC 8 bin and non-aq on 04/04/2014
        CALL wrf_debug(15,'DOING DRY DEP VELOCITIES FOR MOSAIC AEROSOLS')
@@ -626,6 +589,7 @@ CONTAINS
                       t_phy, rho_phy, p_phy,                                   &
                       alt, p8w, t8w, dz8w, z, z_at_w,                          &
                       ust, aer_res, ivgtyp, vegfra, pbl, rmol, znt,            &
+                      snowh, xice,                                             &
                       moist, chem, ddvel,                                      &
                       h2oai, h2oaj, numgas,                                    &
                       ids,ide, jds,jde, kds,kde,                               &
@@ -759,7 +723,7 @@ CONTAINS
          CASE (RADM2SORG_AQ, RADM2SORG_AQCHEM, RACMSORG_AQ, RACMSORG_AQCHEM_KPP, RACM_ESRLSORG_AQCHEM_KPP, CBMZ_MOSAIC_4BIN_AQ, &
               CBMZ_MOSAIC_8BIN_AQ, CBMZSORG_AQ, CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ,  &
               CBMZ_MOSAIC_DMS_8BIN_AQ, CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP,     &
-              MOZART_MOSAIC_4BIN_AQ_KPP, RACM_SOA_VBS_AQCHEM_KPP,                          &
+              MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP, RACM_SOA_VBS_AQCHEM_KPP, &
               SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP,                                             &
               CB05_SORG_AQ_KPP, CB05_SORG_VBS_AQ_KPP)
             IF(config_flags%mp_physics == THOMPSONAERO &
@@ -827,6 +791,7 @@ CONTAINS
       IF(config_flags%mp_physics == THOMPSONAERO &
          .AND. config_flags%aci_wrfchem_opt > 0 &
          .AND. (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
+                .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP &
                 .OR. config_flags%chem_opt == CBMZ_MOSAIC_4BIN_AQ &
                 .OR. config_flags%chem_opt == CBMZ_MOSAIC_8BIN_AQ &
                 .OR. config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN &
@@ -896,6 +861,62 @@ CONTAINS
         ENDDO ! isize
       ENDIF !THOMPSONAERO and aci_wrfchem_opt and MOSAIC
 
+      ! Add total dust and seasalt deposition output
+      ! This is for the case where dry deposition is calculated in vertmx, if
+      ! it is calculated in mixactivate see the case further down
+      if(config_flags%aci_wrfchem_opt /= 0 .and. &
+         (config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .or. &
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+          config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .or. &
+          config_flags%chem_opt == CRI_MOSAIC_4BIN_AQ_KPP)) then
+        dd_dust(i,j) = dd_dust(i,j) &
+                  + 1.E-9 * ( &
+                  + ddmassn(p_oin_a01) &
+                  + ddmassn(p_oin_a02) &
+                  + ddmassn(p_oin_a03) &
+                  + ddmassn(p_oin_a04) &
+                  + ddmassn(p_oin_cw01) &
+                  + ddmassn(p_oin_cw02) &
+                  + ddmassn(p_oin_cw03) &
+                  + ddmassn(p_oin_cw04))
+        dd_seasalt(i,j) = dd_seasalt(i,j) &
+                  + 1.E-9 * ( &
+                  + ddmassn(p_na_a01) &
+                  + ddmassn(p_na_a02) &
+                  + ddmassn(p_na_a03) &
+                  + ddmassn(p_na_a04) &
+                  + ddmassn(p_na_cw01) &
+                  + ddmassn(p_na_cw02) &
+                  + ddmassn(p_na_cw03) &
+                  + ddmassn(p_na_cw04) &
+                  + ddmassn(p_cl_a01) &
+                  + ddmassn(p_cl_a02) &
+                  + ddmassn(p_cl_a03) &
+                  + ddmassn(p_cl_a04) &
+                  + ddmassn(p_cl_cw01) &
+                  + ddmassn(p_cl_cw02) &
+                  + ddmassn(p_cl_cw03) &
+                  + ddmassn(p_cl_cw04))
+      elseif(config_flags%chem_opt == MOZCART_KPP .or. &
+             config_flags%chem_opt == T1_MOZCART_KPP .or. &
+             config_flags%chem_opt == GOCART_SIMPLE .or. &
+             config_flags%chem_opt == GOCARTRACM_KPP .or. &
+             config_flags%chem_opt == GOCARTRADM2) then
+        dd_dust(i,j) = dd_dust(i,j) &
+                  + 1.E-9 * ( &
+                  + ddmassn(p_dust_1) &
+                  + ddmassn(p_dust_2) &
+                  + ddmassn(p_dust_3) &
+                  + ddmassn(p_dust_4) &
+                  + ddmassn(p_dust_5))
+        dd_seasalt(i,j) = dd_seasalt(i,j) &
+                  + 1.E-9 * ( &
+                  + ddmassn(p_seas_1) &
+                  + ddmassn(p_seas_2) &
+                  + ddmassn(p_seas_3) &
+                  + ddmassn(p_seas_4))
+      endif
+
       if( config_flags%diagnostic_chem == DEPVEL1 .and. &
           (config_flags%chem_opt == CB05_SORG_VBS_AQ_KPP) ) then
         dvel(i,1,j,p_ddmass_o3) = dvel(i,1,j,p_ddmass_o3) + ddmassn(p_o3)
@@ -918,7 +939,8 @@ CONTAINS
            config_flags%chem_opt == T1_MOZCART_KPP .or. &
            config_flags%chem_opt == MOZART_KPP   .or. &
            config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-           config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) ) then
+           config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+           config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) ) then
 
         dvel(i,1,j,p_ddmass_o3) = dvel(i,1,j,p_ddmass_o3) + ddmassn(p_o3)
         dvel(i,1,j,p_ddmass_no) = dvel(i,1,j,p_ddmass_no) + ddmassn(p_no)
@@ -961,7 +983,8 @@ CONTAINS
         dvel(i,1,j,p_ddmass_pan) = dvel(i,1,j,p_ddmass_pan) + ddmassn(p_pan)
         dvel(i,1,j,p_ddmass_terpooh) = dvel(i,1,j,p_ddmass_terpooh) + ddmassn(p_terpooh)
 
-        if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+        if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+            config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
           dvel(i,1,j,p_ddmass_cvasoaX) = dvel(i,1,j,p_ddmass_cvasoaX) + ddmassn(p_cvasoaX)
           dvel(i,1,j,p_ddmass_cvasoa1) = dvel(i,1,j,p_ddmass_cvasoa1) + ddmassn(p_cvasoa1)
           dvel(i,1,j,p_ddmass_cvasoa2) = dvel(i,1,j,p_ddmass_cvasoa2) + ddmassn(p_cvasoa2)
@@ -975,7 +998,8 @@ CONTAINS
         endif
 
         if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-            config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+            config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+            config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
 
           dvel(i,1,j,p_ddmass_so4_a01) = dvel(i,1,j,p_ddmass_so4_a01) + ddmassn(p_so4_a01)
           dvel(i,1,j,p_ddmass_no3_a01) = dvel(i,1,j,p_ddmass_no3_a01) + ddmassn(p_no3_a01)
@@ -1021,7 +1045,8 @@ CONTAINS
           dvel(i,1,j,p_ddmass_co3_a04) = dvel(i,1,j,p_ddmass_co3_a04) + ddmassn(p_co3_a04)
 
           if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
-              config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
             dvel(i,1,j,p_ddmass_glysoa_a01) = dvel(i,1,j,p_ddmass_glysoa_a01) + &
                                               ddmassn(p_glysoa_r1_a01) + &
                                               ddmassn(p_glysoa_r2_a01) + &
@@ -1075,7 +1100,8 @@ CONTAINS
 
           endif
 
-          if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+          if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+              config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
 
             dvel(i,1,j,p_ddmass_asoaX_a01) = dvel(i,1,j,p_ddmass_asoaX_a01) + ddmassn(p_asoaX_a01)
             dvel(i,1,j,p_ddmass_asoa1_a01) = dvel(i,1,j,p_ddmass_asoa1_a01) + ddmassn(p_asoa1_a01)
@@ -1204,7 +1230,8 @@ CONTAINS
       ! Mixactivate called only for _AQ packages below MS 12/28/2013
    CASE (CBMZ_MOSAIC_4BIN_AQ, CBMZ_MOSAIC_8BIN_AQ, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ, &
          CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP, &
-         MOZART_MOSAIC_4BIN_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP)!BSINGH(12/03/2013): Added SAPRC 8 bin)
+         MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
+         SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP)!BSINGH(12/03/2013): Added SAPRC 8 bin)
       IF( config_flags%mp_physics == THOMPSONAERO .AND. &
           (config_flags%aci_wrfchem_opt > 0) ) THEN
         CALL wrf_debug(15,'do not call mixactivate for mosaic aerosol +&
@@ -1224,6 +1251,43 @@ CONTAINS
           its,ite, jts,jte, kts,kte                         )
       ENDIF
 
+      ! Add total dust and seasalt deposition output
+      ! This case is for when dry deposition is calculated in mixactivate
+      if(config_flags%aci_wrfchem_opt == 0 .and. &
+            (config_flags%chem_opt == CBMZ_MOSAIC_4BIN_AQ .or. &
+             config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .or. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP)) then
+        dd_dust(ims:ime,jms:jme) = dd_dust(ims:ime,jms:jme) &
+                  - dtstep * ( &
+                  qsrflx(ims:ime,jms:jme,p_oin_a01) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_a02) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_a03) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_a04) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_cw01) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_cw02) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_cw03) &
+                  + qsrflx(ims:ime,jms:jme,p_oin_cw04))
+        dd_seasalt(ims:ime,jms:jme) = dd_seasalt(ims:ime,jms:jme) &
+                  - dtstep * ( &
+                  + qsrflx(ims:ime,jms:jme,p_na_a01) &
+                  + qsrflx(ims:ime,jms:jme,p_na_a02) &
+                  + qsrflx(ims:ime,jms:jme,p_na_a03) &
+                  + qsrflx(ims:ime,jms:jme,p_na_a04) &
+                  + qsrflx(ims:ime,jms:jme,p_na_cw01) &
+                  + qsrflx(ims:ime,jms:jme,p_na_cw02) &
+                  + qsrflx(ims:ime,jms:jme,p_na_cw03) &
+                  + qsrflx(ims:ime,jms:jme,p_na_cw04) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_a01) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_a02) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_a03) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_a04) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_cw01) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_cw02) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_cw03) &
+                  + qsrflx(ims:ime,jms:jme,p_cl_cw04))
+      endif
+
       if( config_flags%diagnostic_chem == DEPVEL1 .and. &
           config_flags%chem_opt == CB05_SORG_VBS_AQ_KPP ) then
 
@@ -1240,7 +1304,8 @@ CONTAINS
        endif
 
       if( config_flags%diagnostic_chem == DEPVEL1 .and. &
-          config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP ) then
+          (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+           config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP)) then
 
           ! qsrflx is in kg/m2/s, recalculate to match ug/m2 for aerosols
           qsrflx = qsrflx * 1.0e9 * dtstep
@@ -1511,6 +1576,8 @@ CONTAINS
    CASE (CBMZ_MOSAIC_4BIN, CBMZ_MOSAIC_KPP, &
          CBMZ_MOSAIC_8BIN,CBMZ_MOSAIC_4BIN_AQ, CBMZ_MOSAIC_8BIN_AQ, &
          MOZART_MOSAIC_4BIN_KPP,    &      !TO
+         MOZART_MOSAIC_4BIN_AQ_KPP, &
+         MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
          CBMZ_MOSAIC_DMS_4BIN, &
          CBMZ_MOSAIC_DMS_8BIN, &
          CBMZ_MOSAIC_DMS_4BIN_AQ, &

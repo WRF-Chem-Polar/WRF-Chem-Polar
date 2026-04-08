@@ -3,8 +3,8 @@ What is IRR?
 ============
 
 Starting with WRF version 4.0 users may output Integrated Reaction Rate diagnostics
-for the MOZART_KPP, or MOZART_MOSAIC_4BIN_KPP, or MOZART_MOSAIC_4BIN_AQ_KPP chemical
-schemes.
+for the MOZART_KPP, or MOZART_MOSAIC_4BIN_KPP, or MOZART_MOSAIC_4BIN_AQ_KPP, or
+MOZART_MOSAIC_4BIN_DMS_AQ_KPP chemical schemes.
 
 Integrated Reaction Rate diagnostics are the time integrated value of specified
 gas phase reaction rates in one of the above listed chemical schemes.  As an example
@@ -27,9 +27,9 @@ How do I use IRR?
 =================
 
 First, remember that the IRR diagnostics can only be used for chemistry simulations
-for the MOZART_KPP, or MOZART_MOSAIC_4BIN_KPP, or MOZART_MOSAIC_4BIN_AQ_KPP chemical
-schemes. This means your executable must be compiled with the following environment
-variable settings:
+for the MOZART_KPP, or MOZART_MOSAIC_4BIN_KPP, or MOZART_MOSAIC_4BIN_AQ_KPP, or
+MOZART_MOSAIC_4BIN_DMS_AQ_KPP chemical schemes. This means your executable must be
+compiled with the following environment variable settings:
 
 setenv WRF_CHEM 1            ( shell = csh, tcsh )
 setenv WRF_KPP  1

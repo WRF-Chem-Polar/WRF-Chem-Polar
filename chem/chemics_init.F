@@ -68,6 +68,7 @@
    USE module_ctrans_grell, only: conv_tr_wetscav_init
    USE module_aer_aqchem_simple, only: aer_aqchem_simple_init
    USE module_aer_wetscav_simple, only: aer_wetscav_simple_init
+   USE module_aer_drydep_simple, only: aer_drydep_simple_init
 
 !!! TUCCELLA (BUG)
    USE module_prep_wetscav_sorgam, only: aerosols_sorgam_init_aercld_ptrs, aerosols_soa_vbs_init_aercld_ptrs
@@ -77,6 +78,7 @@
    USE module_seaspray_emis, only:seaspray_emis_init
    USE module_mineraldust_emis, only:mineraldust_emis_init
    USE module_blowing_snow_emis, only:blowing_snow_emis_init
+   USE module_pbap_emis, only:pbap_emis_init
 
    IMPLICIT NONE
 
@@ -224,6 +226,8 @@ call wrf_message("**************************************************************
        CALL wrf_debug(15,'calling MOZART_MOSAIC_4BIN_KPP from chem_driver')
      CASE (MOZART_MOSAIC_4BIN_AQ_KPP )
        CALL wrf_debug(15,'calling MOZART_MOSAIC_4BIN_AQ_KPP from chem_driver')
+     CASE (MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
+       CALL wrf_debug(15,'calling MOZART_MOSAIC_4BIN_DMS_AQ_KPP from chem_driver')
      CASE (RADM2SORG_AQ )
        CALL wrf_debug(15,'calling RADM2/MADE/SORGAM with AQ chemistry from chem_driver')
        call wrf_message("WARNING: RADM2SORG_AQ chemistry option is experimental and not yet fully tested.")
@@ -302,7 +306,8 @@ call wrf_message("**************************************************************
                 config_flags%chem_opt == T1_MOZCART_KPP .or. &
                 config_flags%chem_opt == MOZART_KPP .or. &
                 config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .or. &
-                config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP
+                config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .or. &
+                config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP
    ! Initialize aerosol mechanism families IDs
    aer_is_gocart = config_flags%chem_opt == MOZCART_KPP .OR. &
                    config_flags%chem_opt == T1_MOZCART_KPP .OR. &
@@ -315,6 +320,7 @@ call wrf_message("**************************************************************
                        config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
                        config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
                        config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                       config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
                        config_flags%chem_opt == CRI_MOSAIC_4BIN_AQ_KPP .OR. &
                        config_flags%chem_opt == SAPRC99_MOSAIC_4BIN_VBS2_KPP
    aer_is_mosaic8bin = config_flags%chem_opt == CBMZ_MOSAIC_8BIN .OR. &
@@ -339,6 +345,7 @@ call wrf_message("**************************************************************
    if (config_flags%phot_opt == TUV ) then
      if (config_flags%chem_opt /= mozart_mosaic_4bin_kpp .and. &
          config_flags%chem_opt /= mozart_mosaic_4bin_aq_kpp .and. &
+         config_flags%chem_opt /= MOZART_MOSAIC_4BIN_DMS_AQ_KPP .and. &
          config_flags%chem_opt /= mozcart_kpp .and. &
          config_flags%chem_opt /= t1_mozcart_kpp) THEN
        write(message_txt,'(''--- ERROR: chem_opt '',i3,'' not setup for TUV photolysis at this time'')') &
@@ -428,6 +435,13 @@ call wrf_message("**************************************************************
      ENDIF
    ENDIF
 
+   ! Simple aerosol dry deposition for GOCART aerosols
+   ! - Can be enabled for any GOCART chem_opt
+   IF(config_flags%aer_drydep_opt > 0 .AND. aer_is_gocart) THEN
+      CALL wrf_debug( 15, 'Chemics_init: Calling aer_drydep_simple_init' )
+      CALL aer_drydep_simple_init(config_flags%chem_opt)
+   ENDIF
+
    ! LMarelle - WRF-Chem aerosol aware ice nucleation, only coupled for now with
    ! MOSAIC_4bin AQ schemes in Morrison 2-moment microphysics
    IF ( config_flags%mp_morr_icenuc_option /= 0 .AND. &
@@ -436,6 +450,7 @@ call wrf_message("**************************************************************
    ELSEIF ( config_flags%mp_morr_icenuc_option /= 0 .AND. &
             config_flags%mp_physics == MORR_TWO_MOMENT ) THEN
      IF ( config_flags%chem_opt /= MOZART_MOSAIC_4BIN_AQ_KPP .AND. &
+          config_flags%chem_opt /= MOZART_MOSAIC_4BIN_DMS_AQ_KPP .AND. &
           config_flags%chem_opt /= CBMZ_MOSAIC_4BIN_AQ .AND. &
           config_flags%chem_opt /= CBMZ_MOSAIC_DMS_4BIN_AQ .AND. &
           config_flags%chem_opt /= CRI_MOSAIC_4BIN_AQ_KPP ) THEN
@@ -456,8 +471,9 @@ call wrf_message("**************************************************************
            ( config_flags%chem_opt == 203).OR.                                    &
            ( config_flags%chem_opt == 131 ) .OR. ( config_flags%chem_opt == 132 ) .OR. &
            ( config_flags%chem_opt >= 601 .AND. config_flags%chem_opt <= 611)  .OR. &
-             config_flags%chem_opt == 109 .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
-             .OR. config_flags%chem_opt == MOZCART_KPP) then
+             config_flags%chem_opt == 109 .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
+             config_flags%chem_opt == MOZCART_KPP) then
            call wrf_debug( 15, 'Chemics_init: Cloud chemistry turned on' )
       else
         call wrf_error_fatal("ERROR: cloud chemistry option requires chem_opt = 8 through 13 or 31 to 36 or 41 to 43 or 109 to function.")
@@ -479,8 +495,9 @@ call wrf_message("**************************************************************
       if(  config_flags%chem_opt /= 9   .and.  config_flags%chem_opt /= 10  .and. &
            config_flags%chem_opt /= 32  .and.  config_flags%chem_opt /= 34  .and.  &
            config_flags%chem_opt /= 202 .and.  config_flags%chem_opt /= 203 .and.  &
+           config_flags%chem_opt /= MOZART_MOSAIC_4BIN_DMS_AQ_KPP .and. &
            config_flags%chem_opt /= 601 .and.  config_flags%chem_opt /= 611 ) then
-         call wrf_error_fatal("ERROR: kfcupscheme requires chem_opt = 9, 10, 32, 34, 202, 203, 601 or 611  to function.")
+         call wrf_error_fatal("ERROR: kfcupscheme requires chem_opt = 9, 10, 32, 34, 202, 212, 203, 601 or 611  to function.")
       endif
    endif
 
@@ -531,28 +548,39 @@ call wrf_message("**************************************************************
       call wrf_error_fatal( trim(message_txt) )
    endif
 
-   ! Checks for sea spray aerosol emissions option seas_opt = SEASMONAHAN,
-   ! SEASIOANNIDIS, SEASGONG, SEASSALTER
-   IF ( config_flags%seas_opt == SEASMONAHAN .OR. config_flags%seas_opt == SEASIOANNIDIS &
-        .OR. config_flags%seas_opt == SEASGONG .OR. config_flags%seas_opt == SEASSALTER) THEN
+   !-- Checks for sea spray aerosol emissions option
+   SELECT CASE(config_flags%seas_opt)
+   CASE(SEASMONAHAN, SEASIOANNIDIS, SEASGONG, SEASSALTER)
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
-       ! Initialize seaspray emissions for valid chem_opt
+       ! Initialize seaspray emissions
        CALL seaspray_emis_init(config_flags%chem_opt, config_flags%seas_opt)
      ELSE
-       CALL wrf_error_fatal ('chemics_init: error, sea salt emissions seas_opt &
-         == SEASMONAHAN,SEASIOANNIDIS,SEASGONG,SEASSALTER, are only compatible &
-         with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
+       CALL wrf_error_fatal ('chemics_init: error, selected sea spray emissions &
+        option seas_opt is only compatible with GOCART, MOSAIC_4BIN and &
+        MOSAIC_8BIN.')
      ENDIF
-   ENDIF
-   ! Checks for blowing snow aerosol emissions option
+   END SELECT ! seas_opt
+   !-- Checks for blowing snow aerosol emissions option
    IF ( config_flags%blowing_snow_opt == 1 ) THEN
      IF(aer_is_mosaic4bin .OR. aer_is_gocart .OR. aer_is_mosaic8bin) THEN
-       ! Initialize blowing snow emissions for valid chem_opt
+       ! Initialize blowing snow emissions
        CALL wrf_debug( 15, 'Calling blowing_snow_emis_init')
        CALL blowing_snow_emis_init(config_flags%chem_opt)
      ELSE
-       CALL wrf_error_fatal ('chemics_init: error, blowing snow emissions are &
-           only compatible with GOCART, MOSAIC_4BIN and MOSAIC_8BIN.')
+       CALL wrf_error_fatal ('chemics_init: error, blowing snow emission &
+           blowing_snow_opt is only compatible with GOCART, MOSAIC_4BIN &
+           and MOSAIC_8BIN.')
+     ENDIF
+   ENDIF
+   !-- Checks for continental PBAP aerosol emissions option
+   IF ( config_flags%pbap_opt > 0 ) THEN
+     IF(aer_is_gocart) THEN
+       ! Initialize continental PBAP aerosol emissions
+       CALL wrf_debug( 15, 'Calling pbap_emis_init')
+       CALL pbap_emis_init(config_flags%chem_opt)
+     ELSE
+       CALL wrf_error_fatal ('chemics_init: error, PBAP emission &
+           pbap_opt is only compatible with GOCART')
      ENDIF
    ENDIF
    !-- Checks for mineral dust aerosol emissions option
@@ -626,6 +654,7 @@ call wrf_message("**************************************************************
              config_flags%chem_opt == 170 .OR.  config_flags%chem_opt == 198  .OR. &
              config_flags%chem_opt == 199 .OR.  config_flags%chem_opt == 201  .OR. &
              config_flags%chem_opt == 202 .OR.  config_flags%chem_opt == 203  .OR. &
+             config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
              config_flags%chem_opt == 601 .OR.  config_flags%chem_opt == 611 ) then
             call wrf_debug( 15, 'using N2O5 heterogeneous chemistry without Cl- pathway')
         else
@@ -638,6 +667,21 @@ call wrf_message("**************************************************************
             call wrf_error_fatal("ERROR: full N2O5 heterogenous chemistry must be run with MOSAIC aerosol coupled with gas-phase scheme which deals with ClNO2")
         endif
     endif
+
+    ! MSA nucleation can only be used with a MOSAIC aerosol mechanism
+    ! that includes full DMS chemistry with gaseous and aerosol MSA
+    IF (config_flags%nuc_msa_opt == 1) THEN
+      IF( config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
+          config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN .OR. &
+          config_flags%chem_opt == CBMZ_MOSAIC_DMS_8BIN .OR. &
+          config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
+          config_flags%chem_opt == CBMZ_MOSAIC_DMS_8BIN_AQ) THEN
+        CALL wrf_debug( 15, 'chemics_init: using nuc_msa_opt = 1')
+      ELSE
+        CALL wrf_error_fatal('ERROR: chemics_init: nuc_msa_opt = 1 requires&
+                             & MOSAIC aerosols with DMS and MSA')
+      ENDIF
+    ENDIF
 
 !   IF ( config_flags%chem_opt == 2 .AND. config_flags%dust_opt .NE. 2 ) THEN
 !       call wrf_error_fatal(" ERROR: USE dust_opt = 2 when using MADE/SORGAM aerosol option ")
@@ -981,9 +1025,10 @@ CASE(GOCARTRACM_KPP,RACM_KPP,RACMPM_KPP,RACMSORG_KPP,RACM_MIM_KPP,RACM_ESRLSORG_
              enddo
           enddo
         endif
-        CASE (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP)
+        CASE (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
         grid%vbs_nbin=0
-        if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) then
+        if (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
+            .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) then
           grid%vbs_nbin=4
         endif
         if(config_flags%chem_in_opt == 0 )then
@@ -1910,35 +1955,13 @@ ENDIF ghg_block
          call wrf_error_fatal("GOCART simple initialization, phot_opt  MUST BE ZERO")
        endif
        CALL wrf_debug(15,'call GOCART chem/aerosols initialization')
-        ch_dust(:,:)=0.8D-9
-        ch_ss(:,:)=1.
-        if( .NOT. config_flags%restart )then
-        if(config_flags%chem_in_opt == 0 )then
-           do j=jts,jte
-              do k=kts,kte
-                 do i=its,ite
-                   do n=1,num_chem
-                     chem(i,k,j,n)=1.e-12
-                   enddo
-                   chem(i,k,j,p_dms)=0.1e-6
-                   chem(i,k,j,p_so2)=5.e-6
-                   chem(i,k,j,p_sulf)=3.e-6
-                   chem(i,k,j,p_msa)=0.1e-6
-                   chem(i,k,j,p_bc1)=0.1e-3
-                   chem(i,k,j,p_bc2)=0.1e-3
-                   chem(i,k,j,p_oc1)=0.1e-3
-                   chem(i,k,j,p_oc2)=0.1e-3
-                   chem(i,k,j,p_p25)=1.
-                 enddo
-              enddo
-           enddo
-         endif
+       ch_dust(:,:)=0.8D-9
+       ch_ss(:,:)=1.
 !
 ! next is done to scale background oh and no3 in dependence on average zenith angle and day/night for no3
 ! this is done since background values are only available as average/month. It will not be necessary if other
 ! chemistry packages are used that provide oh,no3,h2o2
 !
-         endif
            ndystep=86400/ifix(dt)
            do j=jts,jte
                  do i=its,ite
@@ -2117,6 +2140,7 @@ ENDIF ghg_block
            CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ, &
            SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
            MOZART_MOSAIC_4BIN_KPP,MOZART_MOSAIC_4BIN_AQ_KPP, &
+           MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
            CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP, &  !BSINGH(12/03/2013): Added SAPRC 8 bin
            SAPRC99_MOSAIC_8BIN_VBS2_KPP) !BSINGH(04/03/2014): Added SAPRC 8 bin non-aq
        call wrf_debug(15,'call MOSAIC aerosols initialization')
@@ -2143,11 +2167,13 @@ ENDIF ghg_block
       if( config_flags%progn /= 1 ) &
            call wrf_error_fatal( &
            "ERROR: When using a ..._AQ chemistry package, progn must be 1")
-   ! For MOZART_MOSAIC_4BIN_AQ_KPP ACI, either use progn = 1 (with Morrison
-   ! or Lin MP) or use aci_wrfchem_opt>0 (with THOMPSONAERO MP)
-   CASE(MOZART_MOSAIC_4BIN_AQ_KPP)
+   ! For MOZART_MOSAIC_4BIN_AQ_KPP or MOZART_MOSAIC_4BIN_DMS_AQ_KPP ACI,
+   ! either use progn = 1 (with Morrison or Lin MP) or use aci_wrfchem_opt>0
+   ! (with THOMPSONAERO MP)
+   CASE(MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
       IF(config_flags%progn /= 1 .AND. config_flags%mp_physics /= THOMPSONAERO) THEN
-        call wrf_error_fatal("ERROR MOZART_MOSAIC_4BIN_AQ_KPP ACI requires&
+        call wrf_error_fatal("ERROR MOZART_MOSAIC_4BIN_AQ_KPP or &
+        & MOZART_MOSAIC_4BIN_DMS_AQ_KPP ACI requires&
         & mp_physics=THOMPSONAERO or progn=1")
       ENDIF
    END SELECT progn_sanity_check
@@ -2980,7 +3006,7 @@ subroutine print_chem_species_index( chem_opt )
      print*,p_hysw_a04,"hysw_a04"
      print*,p_water_a04,"water_a04"
      print*,p_num_a04,"num_a04"
-  case (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP)
+  case (MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
      print*,p_no3_a01,"no3_a01"
      print*,p_cl_a01,"cl_a01"
      print*,p_nh4_a01,"nh4_a01"

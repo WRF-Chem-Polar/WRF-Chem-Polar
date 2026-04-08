@@ -278,6 +278,7 @@
          CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ,             &
          SAPRC99_MOSAIC_4BIN_VBS2_KPP,                                 &
          MOZART_MOSAIC_4BIN_KPP,MOZART_MOSAIC_4BIN_AQ_KPP,   &
+         MOZART_MOSAIC_4BIN_DMS_AQ_KPP,   &
          CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP,         &
          SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_KPP)!BSINGH(12/05/2013): Added for SAPRC 8 bin vbs and non-aq on (04/07/2014)
      call optical_prep_sectional(nbin_o, chem, alt,                    &
@@ -4027,17 +4028,17 @@ END subroutine optical_prep_modal_soa_vbs
                relh_frc=amin1(.9,relhum(i,k,j)) !0.8   ! Put in fractional relative humidity, max of .9, here
                   vol_h2o = vol_so4*hygro_so4_aer + vol_aro2*hygro_oc_aer + &
                             vol_nh4*hygro_nh4_aer                         + &
-                  vol_cl*hygro_cl_aer + vol_na*hygro_na_aer + vol_msa*hygro_msa_aer + &
-                  vol_oin*hygro_oin_aer + vol_bc2*hygro_oc_aer  + vol_soil*hygro_dust_aer
+                            vol_cl*hygro_cl_aer + vol_na*hygro_na_aer + vol_msa*hygro_msa_aer + &
+                            vol_oin*hygro_oin_aer + vol_bc2*hygro_oc_aer  + vol_soil*hygro_dust_aer
                   vol_h2o = relh_frc*vol_h2o/(1.-relh_frc)
                   mass_h2o = vol_h2o*dens_h2o
           mass_dry_a = mass_so4 + mass_no3 + mass_nh4 + mass_oin + &
                        mass_oc  + mass_bc  + mass_na  + mass_cl  + &
-                       mass_soil
+                       mass_soil + mass_msa
           mass_wet_a = mass_dry_a + mass_h2o 
           vol_dry_a  = vol_so4  + vol_no3  + vol_nh4  + vol_oin  + &
                        vol_oc   + vol_bc   + vol_na   + vol_cl  + &
-                       vol_soil
+                       vol_soil + vol_msa
           vol_wet_a  = vol_dry_a + vol_h2o
           vol_shell  = vol_wet_a - vol_bc
           num_a      = vol_wet_a / (0.52359877*xdia_cm(isize)*xdia_cm(isize)*xdia_cm(isize))
@@ -4698,19 +4699,23 @@ END subroutine optical_prep_modal_soa_vbs
 ! check for refr and refi outside of lookup table range to prevent unstable extrapolation 'binterp' below
           if (refr < refrtabsw(1,ns)) then
              refr = refrtabsw(1,ns)
-             write(*,*), 'Warning: refr is smaller than lookup table range and reset to minimum bound at SW band ', ns
+             write(msg, *) 'Warning: refr is smaller than lookup table range and reset to minimum bound at SW band ', ns
+             CALL wrf_debug(100, msg)
           endif
           if (refr > refrtabsw(prefr,ns)) then
              refr = refrtabsw(prefr,ns)
-             write(*,*), 'Warning: refr is larger than lookup table range and reset to maximum bound at SW band ', ns
+             write(msg,*), 'Warning: refr is larger than lookup table range and reset to maximum bound at SW band ', ns
+             CALL wrf_debug(100, msg)
           endif
           if (refi < refitabsw(1,ns)) then
              refi = refitabsw(1,ns)
-             write(*,*), 'Warning: refi is smaller than lookup table range and reset to minimum bound at SW band ', ns
+             write(msg,*), 'Warning: refi is smaller than lookup table range and reset to minimum bound at SW band ', ns
+             CALL wrf_debug(100, msg)
           endif
           if (refi > refitabsw(prefi,ns)) then
              refi = refitabsw(prefi,ns)
-             write(*,*), 'Warning: refi is larger than lookup table range and reset to maximum bound at SW band ', ns
+             write(msg,*), 'Warning: refi is larger than lookup table range and reset to maximum bound at SW band ', ns
+             CALL wrf_debug(100, msg)
           endif
 
 ! interpolate coefficients linear in refractive index
@@ -4973,19 +4978,23 @@ END subroutine optical_prep_modal_soa_vbs
 ! check for refr and refi outside of lookup table range to prevent unstable extrapolation 'binterp' below
           if (refr < refrtablw(1,ns)) then
              refr = refrtablw(1,ns)
-             write(*,*), 'Warning: refr is smaller than lookup table range and reset to minimum bound at LW band ', ns
+             write(msg,*), 'Warning: refr is smaller than lookup table range and reset to minimum bound at LW band ', ns
+             CALL wrf_debug(100, msg)
           endif
           if (refr > refrtablw(prefr,ns)) then
              refr = refrtablw(prefr,ns)
-             write(*,*), 'Warning: refr is larger than lookup table range and reset to maximum bound at LW band ', ns
+             write(msg,*), 'Warning: refr is larger than lookup table range and reset to maximum bound at LW band ', ns
+             CALL wrf_debug(100, msg)
           endif
           if (refi < refitablw(1,ns)) then    
              refi = refitablw(1,ns)
-             write(*,*), 'Warning: refi is smaller than lookup table range and reset to minimum bound at LW band ', ns
+             write(msg,*), 'Warning: refi is smaller than lookup table range and reset to minimum bound at LW band ', ns
+             CALL wrf_debug(100, msg)
           endif
           if (refi > refitablw(prefi,ns)) then
              refi = refitablw(prefi,ns)
-             write(*,*), 'Warning: refi is larger than lookup table range and reset to maximum bound at LW band ', ns
+             write(msg,*), 'Warning: refi is larger than lookup table range and reset to maximum bound at LW band ', ns
+             CALL wrf_debug(100, msg)
           endif
 
 ! interpolate coefficients linear in refractive index

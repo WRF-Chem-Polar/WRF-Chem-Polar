@@ -64,8 +64,9 @@ CONTAINS
          mebio_isop, mebio_apin, mebio_bpin, mebio_bcar,                   &
          mebio_acet, mebio_mbo, mebio_no,                                  &
          current_month,                                                    &
-         raincv, rainncv, &
+         lai, raincv, rainncv, &
          lakemask, e_nacl_ocean, e_nacl_blow, e_nacl_leads, e_dust,        &
+         e_bact,  e_spore, &
          ! end stuff for MEGAN v2.04
          ! stuff for LNOx emissions
          ht, refl_10cm,                                                    &
@@ -106,6 +107,7 @@ CONTAINS
   USE module_dms_emis, only: dms_emis
   USE module_mineraldust_emis, only: mineraldust_emis
   USE module_blowing_snow_emis, only: blowing_snow_emis
+  USE module_pbap_emis, only: pbap_emis
   USE uoc_dust  
   USE module_gocart_dms_emis, only: gocart_dmsemis
   USE module_mosaic_addemiss
@@ -335,8 +337,9 @@ CONTAINS
            adapt_step_flag
 
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: lakemask
-      REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: raincv, rainncv
-      REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_ocean, e_nacl_blow, e_nacl_leads, e_dust
+      REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: lai, raincv, rainncv
+      REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_ocean, &
+                            e_nacl_blow, e_nacl_leads, e_spore, e_bact, e_dust
 
 !     stuff for aircraft emissions
 
@@ -823,6 +826,19 @@ real, save :: freq_industry(24)    = &
          its,ite, jts,jte, kts,kte)
       ENDIF
 
+      ! Primary biological aerosol particles (PBAP) emissions
+      IF(config_flags%pbap_opt > 0) THEN
+        ! PBAP emissions for GOCART aerosols
+        CALL wrf_debug(15, 'PBAP emissions')
+        CALL pbap_emis( id, dtstep, dz8w, &
+         config_flags%chem_opt, config_flags%pbap_opt, &
+         rho_phy, chem, e_bact, e_spore,                    &
+         xland, ivgtyp, xice, snowh, lai, T2, Q2, &
+         ids,ide, jds,jde, kds,kde,                                 &
+         ims,ime, jms,jme, kms,kme,                                 &
+         its,ite, jts,jte, kts,kte                                  )
+      ENDIF
+
       dust_select:  SELECT CASE(config_flags%dust_opt)
       CASE (DUSTGOCART)
         CALL wrf_debug(15,'Gocart dust emissions')
@@ -1157,7 +1173,7 @@ real, save :: freq_industry(24)    = &
     CASE (RADM2, RADM2_KPP, RADM2SORG, RADM2SORG_AQ, RADM2SORG_AQCHEM, RADM2SORG_KPP, &
           RACM_KPP, RACMPM_KPP, RACM_MIM_KPP, RACMSORG_AQ, RACMSORG_AQCHEM_KPP, RACM_ESRLSORG_AQCHEM_KPP, RACMSORG_KPP, &
           RACM_SOA_VBS_KPP, RACM_SOA_VBS_AQCHEM_KPP, RACM_SOA_VBS_HET_KPP, RACM_ESRLSORG_KPP, MOZART_KPP, MOZCART_KPP,  &
-          T1_MOZCART_KPP, MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+          T1_MOZCART_KPP, MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
           CRIMECH_KPP, CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP )
        IF(config_flags%emiss_inpt_opt /= 3 ) then
        IF(config_flags%kemit .GT. kte-ksub) THEN
@@ -1817,6 +1833,7 @@ real, save :: freq_industry(24)    = &
           CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, & 
           CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ,SAPRC99_MOSAIC_4BIN_VBS2_KPP,&
           MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+          MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
           CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP,SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP, &
           SAPRC99_MOSAIC_8BIN_VBS2_KPP   )
        call wrf_debug(15,'emissions_driver calling mosaic_addemiss')

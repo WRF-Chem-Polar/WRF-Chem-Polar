@@ -163,7 +163,7 @@
         use module_data_mosaic_therm, only: glysoa_param,                 &
                glysoa_param_off, glysoa_param_simple, glysoa_param_complex
         use module_state_description, only: mozart_mosaic_4bin_kpp, &
-         mozart_mosaic_4bin_aq_kpp
+         mozart_mosaic_4bin_aq_kpp, MOZART_MOSAIC_4BIN_DMS_AQ_KPP
 
 	implicit none
 
@@ -329,7 +329,8 @@
    glysoa_param = glysoa_param_off
    if (config_flags%chem_opt == mozart_mosaic_4bin_kpp) &
      glysoa_param = glysoa_param_simple
-   if (config_flags%chem_opt == mozart_mosaic_4bin_aq_kpp) &
+   if (config_flags%chem_opt == mozart_mosaic_4bin_aq_kpp .or.&
+       config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) &
      glysoa_param = glysoa_param_complex
 
 
@@ -481,7 +482,7 @@
 	    call mosaic_newnuc_1clm( istat,  &
 		it, jt, kclm_calcbgn, kclm_calcend,   &
 		idiagbb_dum, dtchem, dtnuc, rsub0,   &
-		id, ktau, ktauc, its, ite, jts, jte, kts, kte )
+		id, ktau, ktauc, its, ite, jts, jte, kts, kte, config_flags%nuc_sulf_opt, config_flags%nuc_msa_opt, config_flags%nuc_msa_fac)
 	end if
 
 

@@ -29,6 +29,7 @@ CONTAINS
                wd_no3,wd_so4,wd_nh4,wd_oa,                                 &
                wd_so2, wd_sulf, wd_hno3, wd_nh3,                           &
                wd_cvasoa, wd_cvbsoa, wd_asoa, wd_bsoa,                     &
+               wd_dust, wd_seasalt,                                        &
                qv_b4mp, qc_b4mp, qi_b4mp, qs_b4mp,                         &
 !======================================================================================
 !Variables required for CAM_MAM_WETSCAV
@@ -219,7 +220,8 @@ CONTAINS
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT) :: wd_no3,wd_so4, &
                                                           wd_nh4, wd_oa, &
                                                           wd_so2, wd_sulf, &
-                                                          wd_hno3, wd_nh3
+                                                          wd_hno3, wd_nh3, &
+                                                          wd_dust, wd_seasalt
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT) :: &
                    wd_cvasoa, wd_cvbsoa, wd_asoa, wd_bsoa
 !
@@ -279,7 +281,8 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
 ! Wet deposition over the current time step
 !
   REAL, DIMENSION( ims:ime , jms:jme ) :: wdi_no3,wdi_so4,wdi_nh4,wdi_oa, &
-                                          wdi_so2, wdi_sulf, wdi_hno3, wdi_nh3
+                                          wdi_so2, wdi_sulf, wdi_hno3, wdi_nh3, &
+                                          wdi_dust, wdi_seasalt
   REAL, DIMENSION( ims:ime , jms:jme ) :: wdi_cvasoa,wdi_cvbsoa,wdi_asoa,wdi_bsoa
 
 !-----------------------------------------------------------------
@@ -408,22 +411,30 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
        ! gases
        IF(config_flags%chem_opt == MOZCART_KPP .OR. config_flags%chem_opt == T1_MOZCART_KPP) THEN
          CALL wrf_debug(15,'wetscav_driver calling aer_wetscav_simple')
-         CALL aer_wetscav_simple( id, dtstep, config_flags,                         &
-                                  t_phy, p_phy, dz8w,                               &
-                                  chem, rho_phy, cldfra_ls, rainrate, evaprate,     &
-                                  precr, preci, precs, precg, dx, dy,               &
-                                  moist(ims,kms,jms,p_qv), moist(ims,kms,jms,p_qc), &
-                                  moist(ims,kms,jms,p_qi), moist(ims,kms,jms,p_qs), &
-                                  moist(ims,kms,jms,p_qr),                          &
-                                  ids,ide, jds,jde, kds,kde,                        &
-                                  ims,ime, jms,jme, kms,kme,                        &
-                                  its,ite, jts,jte, kts,kte                         )
+         CALL aer_wetscav_simple(chem=chem, qsrflx=qsrflx, dtstep=dtstep, &
+                                 config_flags=config_flags, t_phy=t_phy, &
+                                 rho_phy=rho_phy, dz8w=dz8w, &
+                                 cldfra=cldfra_ls, rainprod=rainrate, &
+                                 evapprod=evaprate, &
+                                 precr=precr, preci=preci, &
+                                 precs=precs, precg=precg, &
+                                 qc=moist(ims,kms,jms,p_qc), &
+                                 qi=moist(ims,kms,jms,p_qi), &
+                                 qs=moist(ims,kms,jms,p_qs), &
+                                 qr=moist(ims,kms,jms,p_qr), &
+                                 qg=moist(ims,kms,jms,p_qg), &
+                                 ids=ids,ide=ide, jds=jds, jde=jde, &
+                                 kds=kds, kde=kde, &
+                                 ims=ims,ime=ime, jms=jms, jme=jme, &
+                                 kms=kms, kme=kme, &
+                                 its=its,ite=ite, jts=jts, jte=jte, &
+                                 kts=kts, kte=kte)
        ENDIF
 
         hno3_col_mdel = delta_mass_col(:,:,p_hno3)
    ! STUPID - cases have to be unique. We repeat both calls done above
    ! (mosaic_wetscav for aerosols, mozcart for gases)
-   CASE (MOZART_MOSAIC_4BIN_AQ_KPP)
+   CASE (MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
        CALL wrf_debug(15,'wetscav_driver calling mosaic_wetscav_driver')
        if( config_flags%mp_physics == THOMPSON &
            .OR. config_flags%mp_physics == THOMPSONAERO) then
@@ -502,16 +513,24 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
        evaprate(:,:,:) = 0.
      endif
      CALL wrf_debug(15,'wetscav_driver calling aer_wetscav_simple')
-     CALL aer_wetscav_simple( id, dtstep, config_flags,                         &
-                              t_phy, p_phy, dz8w,                               &
-                              chem, rho_phy, cldfra_ls, rainrate, evaprate,     &
-                              precr, preci, precs, precg, dx, dy,               &
-                              moist(ims,kms,jms,p_qv), moist(ims,kms,jms,p_qc), &
-                              moist(ims,kms,jms,p_qi), moist(ims,kms,jms,p_qs), &
-                              moist(ims,kms,jms,p_qr),                          &
-                              ids,ide, jds,jde, kds,kde,                        &
-                              ims,ime, jms,jme, kms,kme,                        &
-                              its,ite, jts,jte, kts,kte                         )
+     CALL aer_wetscav_simple(chem=chem, qsrflx=qsrflx, dtstep=dtstep, &
+                             config_flags=config_flags, t_phy=t_phy, &
+                             rho_phy=rho_phy, dz8w=dz8w, &
+                             cldfra=cldfra_ls, rainprod=rainrate, &
+                             evapprod=evaprate, &
+                             precr=precr, preci=preci, &
+                             precs=precs, precg=precg, &
+                             qc=moist(ims,kms,jms,p_qc), &
+                             qi=moist(ims,kms,jms,p_qi), &
+                             qs=moist(ims,kms,jms,p_qs), &
+                             qr=moist(ims,kms,jms,p_qr), &
+                             qg=moist(ims,kms,jms,p_qg), &
+                             ids=ids,ide=ide, jds=jds, jde=jde, &
+                             kds=kds, kde=kde, &
+                             ims=ims,ime=ime, jms=jms, jme=jme, &
+                             kms=kms, kme=kme, &
+                             its=its,ite=ite, jts=jts, jte=jte, &
+                             kts=kts, kte=kte)
    CASE DEFAULT
 
    END SELECT cps_select
@@ -520,7 +539,29 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
    ! column change. It is assumed that all precipitation reaches the ground.
    
     SELECT CASE(config_flags%chem_opt)
+
+      CASE( GOCART_SIMPLE,GOCARTRADM2,GOCARTRACM_KPP,MOZCART_KPP,T1_MOZCART_KPP )
       
+      do jj=jts,jte
+        do ii=its,ite
+          ! Mineral dust wet deposition over the current time step:
+          wdi_dust(ii,jj) = - 1.E-9*qsrflx(ii,jj,p_dust_1) &
+                            - 1.E-9*qsrflx(ii,jj,p_dust_2) &
+                            - 1.E-9*qsrflx(ii,jj,p_dust_3) &
+                            - 1.E-9*qsrflx(ii,jj,p_dust_4) &
+                            - 1.E-9*qsrflx(ii,jj,p_dust_5)
+          ! Accumulated mineral dust wet deposition:
+          wd_dust(ii,jj) = wd_dust(ii,jj) + wdi_dust(ii,jj)         ! kg/m2
+          ! Sea salt wet deposition over the current time step:
+          wdi_seasalt(ii,jj) = - 1.E-9*qsrflx(ii,jj,p_seas_1) &
+                               - 1.E-9*qsrflx(ii,jj,p_seas_2) &
+                               - 1.E-9*qsrflx(ii,jj,p_seas_3) &
+                               - 1.E-9*qsrflx(ii,jj,p_seas_4)
+          ! Accumulated sea salt wet deposition:
+          wd_seasalt(ii,jj) = wd_seasalt(ii,jj) + wdi_seasalt(ii,jj)         ! kg/m2
+        enddo
+      enddo
+
       CASE ( RADM2SORG_AQCHEM,RACMSORG_AQCHEM_KPP,RACM_ESRLSORG_AQCHEM_KPP )
       
       do jj=jts,jte
@@ -545,10 +586,41 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
         enddo
       enddo
     
-      CASE ( MOZART_MOSAIC_4BIN_AQ_KPP)
+      CASE ( MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
 
       do jj=jts,jte
         do ii=its,ite
+          ! Mineral dust wet deposition over the current time step:
+          wdi_dust(ii,jj) = - 1.E-9*qsrflx(ii,jj,p_oin_cw01) &
+                            - 1.E-9*qsrflx(ii,jj,p_oin_cw02) &
+                            - 1.E-9*qsrflx(ii,jj,p_oin_cw03) &
+                            - 1.E-9*qsrflx(ii,jj,p_oin_cw04) &
+                            - 1.E-9*qsrflx(ii,jj,p_oin_a01) &
+                            - 1.E-9*qsrflx(ii,jj,p_oin_a02) &
+                            - 1.E-9*qsrflx(ii,jj,p_oin_a03) &
+                            - 1.E-9*qsrflx(ii,jj,p_oin_a04) ! kg/m2
+          ! Accumulated mineral dust wet deposition:
+          wd_dust(ii,jj) = wd_dust(ii,jj) + wdi_dust(ii,jj)         ! kg/m2
+
+          ! Sea salt wet deposition over the current time step:
+          wdi_seasalt(ii,jj) = - 1.E-9*qsrflx(ii,jj,p_na_cw01) &
+                               - 1.E-9*qsrflx(ii,jj,p_na_cw02) &
+                               - 1.E-9*qsrflx(ii,jj,p_na_cw03) &
+                               - 1.E-9*qsrflx(ii,jj,p_na_cw04) &
+                               - 1.E-9*qsrflx(ii,jj,p_na_a01) &
+                               - 1.E-9*qsrflx(ii,jj,p_na_a02) &
+                               - 1.E-9*qsrflx(ii,jj,p_na_a03) &
+                               - 1.E-9*qsrflx(ii,jj,p_na_a04) &
+                               - 1.E-9*qsrflx(ii,jj,p_cl_cw01) &
+                               - 1.E-9*qsrflx(ii,jj,p_cl_cw02) &
+                               - 1.E-9*qsrflx(ii,jj,p_cl_cw03) &
+                               - 1.E-9*qsrflx(ii,jj,p_cl_cw04) &
+                               - 1.E-9*qsrflx(ii,jj,p_cl_a01) &
+                               - 1.E-9*qsrflx(ii,jj,p_cl_a02) &
+                               - 1.E-9*qsrflx(ii,jj,p_cl_a03) &
+                               - 1.E-9*qsrflx(ii,jj,p_cl_a04) ! kg/m2
+          ! Accumulated sea salt wet deposition:
+          wd_seasalt(ii,jj) = wd_seasalt(ii,jj) + wdi_seasalt(ii,jj)         ! kg/m2
 
           ! Nitrate wet deposition over the current time step:
           wdi_no3(ii,jj) = - 0.001*qsrflx(ii,jj,p_no3_cw01)/mw_no3_aer &

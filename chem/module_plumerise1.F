@@ -96,7 +96,8 @@ subroutine plumerise_driver (id,ktau,dtstep,                           &
 
       if( scale_fire_emiss ) then
         select case( config_flags%chem_opt )
-          case( MOZART_KPP,MOZCART_KPP,T1_MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP,MOZART_MOSAIC_4BIN_AQ_KPP )
+          case( MOZART_KPP,MOZCART_KPP,T1_MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP,&
+                MOZART_MOSAIC_4BIN_AQ_KPP,MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
           case default
             call wrf_error_fatal("Fire emission scaling only supported for MOZART chem options")
         end select
@@ -402,6 +403,8 @@ is_mozcart : &
                   (config_flags%chem_opt == MOZART_MOSAIC_4BIN_KPP .and. &
                    config_flags%biomass_burn_opt == BIOMASSB_MOZC) .or. &
                    (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .and. &
+                   config_flags%biomass_burn_opt == BIOMASSB_MOZC) .or. &
+                   (config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .and. &
                    config_flags%biomass_burn_opt == BIOMASSB_MOZC) ) then
 !-------------------------------------------------------------------
 ! we input total emissions instead of smoldering emissions:

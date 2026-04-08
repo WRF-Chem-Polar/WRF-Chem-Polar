@@ -475,7 +475,8 @@ CONTAINS
        CALL get_megan2mozcart_table
     CASE (  T1_MOZCART_KPP )
        CALL get_megan2t1_mozc_table
-    CASE (  MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP )
+    CASE (  MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+            MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
        CALL get_megan2mozm_table
 
     CASE (SAPRC99_KPP,SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
@@ -967,7 +968,8 @@ is_t1_mozc_species : &
                 END IF use_megan_emis_a
              END DO
 
-          CASE ( MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP )
+          CASE ( MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP,&
+                 MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
 
              DO icount = 1, n_megan2mozm
 !-----------------------------------------------------------------------

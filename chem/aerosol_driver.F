@@ -291,6 +291,7 @@
    CASE (CBMZ_MOSAIC_4BIN, CBMZ_MOSAIC_KPP, CBMZ_MOSAIC_8BIN, CBMZ_MOSAIC_4BIN_AQ, &
          CBMZ_MOSAIC_8BIN_AQ, SAPRC99_MOSAIC_4BIN_VBS2_KPP, &
          MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP, &
+         MOZART_MOSAIC_4BIN_DMS_AQ_KPP,                     &
          SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP, SAPRC99_MOSAIC_8BIN_VBS2_KPP, & !BSINGH  Added "SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP" and "SAPRC99_MOSAIC_8BIN_VBS2_KPP"
          CBMZ_MOSAIC_DMS_4BIN, CBMZ_MOSAIC_DMS_8BIN, CBMZ_MOSAIC_DMS_4BIN_AQ, CBMZ_MOSAIC_DMS_8BIN_AQ)
        CALL wrf_debug(15,'aerosols_driver calling mosaic_aerchem_driver')
@@ -611,7 +612,7 @@
              ims,ime, jms,jme, kms,kme,                                &
              its,ite, jts,jte, kts,kte                                  )
 
-   CASE (MOZART_MOSAIC_4BIN_AQ_KPP)
+   CASE (MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
 
        CALL wrf_debug(15,'sum_pm_driver: calling sum_pm_mosaic_vbs4')
        call sum_pm_mosaic_vbs4 (                                       &

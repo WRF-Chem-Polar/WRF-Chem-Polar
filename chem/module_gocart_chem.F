@@ -44,6 +44,7 @@ CONTAINS
   real, DIMENSION (1,1) :: sza,cosszax
   real*8, DIMENSION (1,1,1,4) :: tc,bems
   real*8, dimension (1) :: dxy
+  REAL(kind=8) :: fnight
   real(kind=8) :: xtime,xhour
   real:: rlat,xlonn
   real :: zenith,zenita,azimuth,xmin,xtimin,gmtp
@@ -113,13 +114,17 @@ CONTAINS
               XNO3(1,1,1) = 0.0
            ELSE
               ! -- Fraction of night
-              ! fnight       = 1.0 - TTDAY(i,j)/86400.0
+              fnight = 1.0 - TTDAY(i,j)/86400.0
               ! The original xno3 values have been averaged over daytime
               ! as well => divide by fnight to get the appropriate night-time
               ! fraction from the monthly average
               ! fnight/=0.0 (for fnight=0: all cosszax (including current
               ! cossza) > 0.0)
-              xno3(1,1,1) = backg_no3(i,k,j) / (1.0 - TTDAY(i,j)/86400.)
+              IF(fnight > 0.) THEN
+                xno3(1,1,1) = backg_no3(i,k,j) / fnight
+              ELSE
+                xno3(1,1,1) = 0.0
+              ENDIF
            END IF
 !         if(i.eq.19.and.j.eq.19.and.k.eq.kts)then
 !          write(0,*)backg_oh(i,k,j),backg_no3(i,k,j),ttday(i,j),tcosz(i,j)

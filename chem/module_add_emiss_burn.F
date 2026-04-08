@@ -336,7 +336,8 @@ CONTAINS
         enddo
         enddo
         enddo
-      CASE (MOZART_KPP,MOZCART_KPP,T1_MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP, MOZART_MOSAIC_4BIN_AQ_KPP )
+      CASE (MOZART_KPP,MOZCART_KPP,T1_MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP, &
+            MOZART_MOSAIC_4BIN_AQ_KPP,MOZART_MOSAIC_4BIN_DMS_AQ_KPP )
         if( biomass_burn_opt == BIOMASSB_MOZC .or. biomass_burn_opt == BIOMASSB_MOZ &
                                               .or. biomass_burn_opt == BIOMASSB_T1_MOZCART ) then
           do j=jts,jte
@@ -399,7 +400,9 @@ CONTAINS
                 chem(its:ite,k,j,p_xylenes)  = chem(its:ite,k,j,p_xylenes) + ebu(its:ite,k,j,p_ebu_xylenes)*conv_rho_gas(its:ite)
               enddo
             enddo
-          ELSEIF (chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP) THEN
+          ELSEIF (chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
+                  chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                  chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP) THEN
             do j=jts,jte
               do k=kts,kte
                 conv_rho_gas(its:ite) = (r_q*4.828e-4*dtstep)/(rho_phy(its:ite,k,j)*dz8w(its:ite,k,j)*60.)*.04*28./250.

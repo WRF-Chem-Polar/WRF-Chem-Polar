@@ -67,6 +67,7 @@ MODULES =                                 \
         module_mozcart_wetscav.o          \
         module_aer_wetscav_simple.o       \
         module_aer_aqchem_simple.o        \
+        module_aer_drydep_simple.o        \
         module_peg_util.o                 \
         module_tropopause.o               \
         module_upper_bc_driver.o          \
@@ -91,6 +92,7 @@ MODULES =                                 \
         module_data_uoc_wd.o              \
         module_seaspray_emis.o            \
         module_dms_emis.o                 \
+        module_pbap_emis.o                \
         module_blowing_snow_emis.o        \
         module_mineraldust_emis.o         \
         module_mosaic_addemiss.o          \

@@ -283,6 +283,7 @@ CONTAINS
                         chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ .OR. &
                         chem_opt == MOZART_MOSAIC_4BIN_KPP .OR. &
                         chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP .OR. &
+                        chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP .OR. &
                         chem_opt == CRI_MOSAIC_4BIN_AQ_KPP .OR. &
                         chem_opt == SAPRC99_MOSAIC_4BIN_VBS2_KPP
 
