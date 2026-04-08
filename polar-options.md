@@ -1,6 +1,6 @@
 # New namelist.input options in the polar version
 
-This file describes the new namelist.input options in the WRF-Chem-Polar version. 
+This file describes the new namelist.input options in the WRF-Chem-Polar version.
 
 *Many of these options are not specific to polar regions and can be used for modeling outside the poles.  The main polar specific developments are related to sea ice, which shoudl not negatively impact the results outside the polar regions.*
 
@@ -26,9 +26,11 @@ This option controls the sea-spray emissions from sea ice leads. Only compatible
   - 0 (default): Sea-spray emissions from leads use the seas_opt source function weighted by the open ocean fraction (1-seaice_concentration)
   - 1: Sea-spray emissions from leads use the seas_opt source function weighted by the leads fraction, also applying a correction factor to reduce the emissions to account for the reduced wind fetch over leads (Lapere et al., 2024). Requires lead fraction input in the wrflowinp file in variable LEADFRAC
 ### dms_opt (0, 1, previoulsy dmsemis_opt)
-This option controls the treatment of dimethyl sulfide (DMS) emissions from the surface ocean in the model. This replaces the old option dmsemis_opt (deprecated but can still be used if needed).
+This option controls the treatment of dimethyl sulfide (DMS) emissions from the surface ocean in the model. This replaces the old option dmsemis_opt (deprecated but can still be used if needed). Options 1, 2, and 3 require oceanic DMS concentration input in the wrflowinp file in variable DMS_OCEAN. DMS_OCEAN can be taken from the climatologies of [Lana 2011](https://doi.org/10.1029/2010GB003850), [Hulswar 2021](https://doi.org/10.5194/essd-14-2963-2022) or the CSIB model [(Hayashida et al., 2019)](https://doi.org/10.5194/gmd-12-1965-2019). For options 1, 2, and 3, emissions from sea ice regions are scaled by the open ocean fraction to the power of 0.4 (Loose et al., 2009).
   - 0 (default): No DMS emissions from the ocean surface.
-  - 1 (recommended): DMS emissions from the surface ocean are activated for the open ocean grid cell fraction, using the Nightingale et al. (2000) air–sea flux parameterization. In sea ice, emissions are scaled by the open ocean fraction to the power of 0.4 (Loose et al., 2009). Requires oceanic DMS concentration input in the wrflowinp file in variable DMS_OCEAN. DMS_OCEAN can be taken from the climatologies of [Lana 2011](https://doi.org/10.1029/2010GB003850), [Hulswar 2021](https://doi.org/10.5194/essd-14-2963-2022) or the CSIB model [(Hayashida et al., 2019)](https://doi.org/10.5194/gmd-12-1965-2019).
+  - 1 (recommended): DMS emissions using the Nightingale et al. (2000) sea-air flux parameterization.
+  - 2: DMS emissions using the Liss and Merlivat (1986) sea-air flux parameterization.
+  - 3: DMS emissions using the Wanninkhof (2014) sea-air flux parameterization.
 ### blowing_snow_opt (0, 1): This option controls the emissions from blowing snow.
   - 0 (default): Disables emissions associated with blowing snow
   - 1: Includes sea salt aerosol emissions from blowing snow (on the main, halogen and mercury branches) and bromine emissions from blowing snow (halogens and mercury branches)
