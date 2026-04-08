@@ -23,7 +23,7 @@ This option controls mineral dust aerosol emissions.
   - 1 (GOCART-only, not recommended): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in gocart_dust_driver
   - 3 (GOCART-only, untested): AFWA dust emissions following Legrand et al. (2019), calculated in gocart_dust_afwa_driver
   - 4 (untested): UoC dust emissions following Shao (2001), calculated in uoc_dust_driver
-  - 5 (GOCART and MOSAIC): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in mineraldust_emis. Should be identical to options 1 and 13.
+  - 5 (GOCART and MOSAIC, not recommended): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in mineraldust_emis. Should be identical to options 1 and 13.
   - 6 (recommended, GOCART and MOSAIC): WRF-Chem-Polar dust emissions based on Ginoux (2004), with updates from Legrand et al. (2019) and additional corrections to allow for emissions from high-latitude regions.
   - 7 (GOCART-only, untested): FLEXDUST dust emissions following Groot Zwaaftink et al. (2016) and the FLEXDUST model, not including specific treatment for emissions of Icelandic dust.
   - 13 (MOSAIC-only, not recommended): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in mosaic_dust_gocartemis in mosaic_addemiss.
