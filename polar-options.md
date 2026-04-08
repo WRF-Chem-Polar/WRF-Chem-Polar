@@ -17,6 +17,20 @@ This option controls the mechanism for gas-phase chemistry and aerosols.
 
 ## Emission options (&chem namelist)
 
+### dust_opt (0, 1, 3, 4, 5, 6, 7, 13)
+This option controls mineral dust aerosol emissions.
+  - 0 (default): Disables dust emissions
+  - 1 (GOCART-only, not recommended): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in gocart_dust_driver
+  - 3 (GOCART-only, untested): AFWA dust emissions following Legrand et al. (2019), calculated in gocart_dust_afwa_driver
+  - 4 (untested): UoC dust emissions following Shao (2001), calculated in uoc_dust_driver
+  - 5 (GOCART and MOSAIC): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in mineraldust_emis. Should be identical to options 1 and 13.
+  - 6 (recommended, GOCART and MOSAIC): WRF-Chem-Polar dust emissions based on Ginoux (2004), with updates from Legrand et al. (2019) and additional corrections to allow for emissions from high-latitude regions.
+  - 7 (GOCART-only, untested): FLEXDUST dust emissions following Groot Zwaaftink et al. (2016) and the FLEXDUST model, not including specific treatment for emissions of Icelandic dust.
+  - 13 (MOSAIC-only, not recommended): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in mosaic_dust_gocartemis in mosaic_addemiss.
+### dust_hl_opt (0, 1)
+This option controls the source of the soil erodibility fraction used for dust emissions.
+  - 0 (default): Uses EROD from WPS, read from wrfinput
+  - 1 (recommended for high-latitude dust): Uses EROD_HL read from wrfinput. EROD_HL needs to be included in the wrfinput file with an additional preprocessor.
 ### seas_opt (5, 6, 7, 8)
 This option controls the sea spray emissions source function.
   - 0 (default): Disables aerosol emissions from sea-spray.
