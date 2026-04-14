@@ -720,8 +720,10 @@ CONTAINS
                            0.078E-6, 0.174E-6, 1.46E-6, 2.8E-6, 4.8E-6, &
                            9.0E-6, 16.0E-6 /)
       ! Fraction of activated aerosols for aer_pointers species
-      ! Activated fraction in liquid clouds - use values from Grell convection
-      ! wetscav
+      ! Activated fraction in liquid clouds
+      ! We use the same values as the aq_gas_ratio parameters for the same
+      ! species in the wetscav subroutine in convective clouds, in
+      ! phys/module_cu_gf_ctrans.F
       aq_aer_ratio(:) = (/ 1.0, 1.0, 1.0, 1.0, 1.0, &
                            0.8, 0.8, 0.5, 0.5, 0.5, &
                            0.5, 0.5 /)
