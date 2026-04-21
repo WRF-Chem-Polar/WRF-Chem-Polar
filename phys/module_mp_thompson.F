@@ -5624,10 +5624,8 @@
 
         !-- Local variables
         INTEGER :: ibin
-        ! Air density (kg m-3)
-        REAL :: rhoair
-        ! Saturation mixing ratio (kg m-3) and pressure (Pa)
-        REAL :: qs, es
+        ! Saturation vapor pressure (Pa)
+        REAL :: es
         ! Latent heat of vaporization (J kg-1)
         REAL :: lvap
         ! Mass diffusivity of water in air (m2 s-1)
@@ -5655,8 +5653,6 @@
         !-- Parameters
         ! Surface tension of air-water interface (J m-2)
         REAL, PARAMETER :: SURFTEN = 76.E-3
-        ! Accomodation coefficient for condensation (XXref)
-        REAL, PARAMETER :: ACCOM = 1.0
         ! Minimum vertical wind speed for the scheme (m/s)
         REAL, PARAMETER :: WWCRIT = 1.E-12
         ! MOSAIC bin radius
@@ -5676,11 +5672,8 @@
           !-- Initialize physical parameters
           ! Latent heat of vaporization
           lvap = XLV0 - XLV1*tt
-          ! Air density
-          rhoair = pp/(R_D*tt)
           ! Saturation pressure and mixing ratio
           es = 1000.*SVP1*EXP( SVP2*(tt-SVPT0)/(tt-SVP3) )
-          qs = EP_2*es/(pp-es)
 
           !-- Initialize ARG parameterization factors
           ! Ghan2011 eq. A7
