@@ -38,7 +38,7 @@
 !      emissions and atmospheric transport, Atmos. Chem. Phys., 17,
 !      10865–10878, https://doi.org/10.5194/acp-17-10865-2017, 2017.
 ! General references
-!  (1) [LeGrand2019]AFWA - LeGrand et al. (2019) - https://doi.org/10.5194/gmd-12-131-2019
+!  (1) [LeGrand2019] AFWA - LeGrand et al. (2019) - https://doi.org/10.5194/gmd-12-131-2019
 !      (describes the original wrfgocart parameterizations and its issues)
 
 MODULE module_mineraldust_emis
@@ -64,23 +64,12 @@ MODULE module_mineraldust_emis
   LOGICAL :: aer_is_mosaic4bin
   LOGICAL :: aer_is_mosaic8bin
 
-  ! Soil properties for calculating the saltation flux, from AFWA
-  ! These values are identical to the data in phys/module_data_gocart_dust.F,
-  ! but they have unclear names, and in case the GOCART module is changed in
-  ! the future it is better to have a copy here
-  INTEGER, PARAMETER :: NSOIL=9
-  REAL, DIMENSION (NSOIL), PARAMETER :: REFF_SOIL=(/0.71E-6,1.37E-6,2.63E-6,5.00E-6,9.50E-6,18.1E-6,34.5E-6,65.5E-6,125.E-6/) ! m
-  REAL, DIMENSION (NSOIL), PARAMETER :: DEN_SOIL=(/2500.,2650.,2650.,2650.,2650.,2650.,2650.,2650.,2650./) ! kg m-3
-  REAL, DIMENSION (NSOIL), PARAMETER :: FRACSIZE_SOIL=(/1.,0.2,0.2,0.2,0.2,0.2,0.333,0.333,0.333/) ! fraction, 0-1
-  INTEGER, DIMENSION (NSOIL), PARAMETER :: SPOINT_SOIL=(/1,2,2,2,2,2,3,3,3/)  ! 1 Clay, 2 Silt, 3 Sand
-
-
   CONTAINS
 
 !------------------------------------------------------------------------------
 
   SUBROUTINE mineraldust_emis( dtstep, dz8w, tsk, &
-         chem_opt, dust_opt, dust_hl_opt,   &
+         chem_opt, dust_opt, dust_erod_opt,   &
          rho_phy, chem, e_dust,                                     &
          u10, v10, ust, xland, xice, snowh, &
          raincv, rainncv, &
@@ -100,7 +89,7 @@ MODULE module_mineraldust_emis
     !  tsk = skin temperature (K)
     !  chem_opt = chemical mechanism + aerosol mechanism option from config_flags
     !  dust_opt = dust emission option from config_flags
-    !  dust_hl_opt = high-latitude dust option from config_flags
+    !  dust_erod_opt = erodibility (S-function) source option from config_flags
     !  rho_phy = 3D air density (kg m-3)
     !  u10 = windpeed at 10m in x (positive west-east) direction (m s-1)
     !  v10 = windpeed at 10m in y (positive south-north) direction (m s-1)
@@ -121,7 +110,7 @@ MODULE module_mineraldust_emis
     !  ids,ims,its etc. = domain, memory, and tile start and end indices
     ! Input/output
     !  chem = advected chemical species (gases in ppm, aerosols in µg kg-1)
-    !  e_dust = accumulated dust emission flux (kg m-2)
+    !  e_dust = accumulated dust emission flux (g m-2)
 
     USE module_state_description, ONLY: PARAM_FIRST_SCALAR, NUM_CHEM, &
                            P_DUST_1, P_DUST_2, P_DUST_3, P_DUST_4, P_DUST_5, &
@@ -134,7 +123,7 @@ MODULE module_mineraldust_emis
 
     !---- Arguments
     ! Input
-    INTEGER, INTENT(IN) :: chem_opt, dust_opt, dust_hl_opt
+    INTEGER, INTENT(IN) :: chem_opt, dust_opt, dust_erod_opt
     INTEGER, INTENT(IN) :: ids,ide, jds,jde, kds,kde,               &
                            ims,ime, jms,jme, kms,kme,               &
                            its,ite, jts,jte, kts,kte
@@ -187,8 +176,19 @@ MODULE module_mineraldust_emis
     INTEGER :: l_dust, l_num
     ! Ginoux S-function scaled by bare soil fraction ("Erodibility" in WRF-Chem)
     REAL :: s_ginoux
+    ! Minimum S-function/erodibility to perform dust emissions
+    REAL :: S_MIN = 1.E-4
     ! Size distribution of dust in the original wrfgocart scheme
     REAL, DIMENSION(5) :: frac_s_wrfgocart = (/0.1,0.25,0.25,0.25,0.25/)
+    ! Soil properties for calculating the saltation flux, from AFWA
+    ! These values are identical to the data in phys/module_data_gocart_dust.F,
+    ! but they have unclear names, and in case the GOCART module is changed in
+    ! the future it is better to have a copy here
+    INTEGER, PARAMETER :: NSOIL=9
+    REAL, DIMENSION (NSOIL), PARAMETER :: REFF_SOIL=(/0.71E-6,1.37E-6,2.63E-6,5.00E-6,9.50E-6,18.1E-6,34.5E-6,65.5E-6,125.E-6/) ! m
+    REAL, DIMENSION (NSOIL), PARAMETER :: DEN_SOIL=(/2500.,2650.,2650.,2650.,2650.,2650.,2650.,2650.,2650./) ! kg m-3
+    REAL, DIMENSION (NSOIL), PARAMETER :: FRACSIZE_SOIL=(/1.,0.2,0.2,0.2,0.2,0.2,0.333,0.333,0.333/) ! fraction, 0-1
+    INTEGER, DIMENSION (NSOIL), PARAMETER :: SPOINT_SOIL=(/1,2,2,2,2,2,3,3,3/)  ! 1 Clay, 2 Silt, 3 Sand
 
     !-------- Compute dust emissions --------
     ! No emissions to cloud-phase
@@ -201,9 +201,9 @@ MODULE module_mineraldust_emis
         ! Only perform dust emissions over snow-free land. Sea ice is
         ! considered land, so exclude sea ice points explicitly.
         IF (xland(i,j)<1.5 .AND. snowh(i,j)<0.1 .AND. xice(i,j)<=0.01) THEN
-          IF(dust_hl_opt == 1) THEN
+          IF(dust_erod_opt == 1) THEN
             ! Scale the S-function by (1.-vegfra): only bare soil can emit
-            ! dust. This is not already done for HLdust EROD
+            ! dust. This is not already done for HLdust EROD (EROD_HL)
             s_ginoux = erod_hl(i,j) * (100.-vegfra(i,j))/100.
           ELSE
             ! WPS EROD already includes bare soil scaling
@@ -211,7 +211,7 @@ MODULE module_mineraldust_emis
           ENDIF
 
           ! Skip dust emission calculation if there is no potential dust source
-          IF(s_ginoux > 1.E-3) THEN
+          IF(s_ginoux > S_MIN) THEN
             !-------- Initialize mineral dust emission parameters
             dust_mass_emiss = 0.0
             dust_num_emiss = 0.0
@@ -303,7 +303,7 @@ MODULE module_mineraldust_emis
                 ! to each bin based on emiss_size_massfrac
                 dust_mass_emiss = dust_mass_emiss_tot * emiss_size_massfrac(iaerbin)
               ENDIF
-              e_dust(i,j) = e_dust(i,j) + dust_mass_emiss*dtstep*1.E-9
+              e_dust(i,j) = e_dust(i,j) + dust_mass_emiss*dtstep*1.E-6
 
               !---- Convert dust aerosol mass emission flux to number
               ! emission flux (m-2 s-1)
@@ -365,7 +365,10 @@ MODULE module_mineraldust_emis
     !  Compute dust mass emission flux (µg m-2 s-1) as in the GOCART emissions scheme in WRF-Chem
     !
     ! Remarks:
-    !  Only use this for GOCART mechanisms
+    !  - Only use this for GOCART mechanisms
+    !  - This formulation has several errors and issues documented in
+    !    LeGrand2019. Do not use except for comparisons/compatibility with
+    !    previous runs using the WRF-Chem GOCART option
 
     ! Arguments:
     ! Input:
@@ -407,7 +410,8 @@ MODULE module_mineraldust_emis
     ELSE
       aer_dens_gocart = 2650.
     ENDIF
-    ! Threshold velocity (m s-1)
+    ! Threshold velocity (m s-1) following Ginoux2004 eq. 2, following the
+    ! implementation from GOCART in WRF-Chem
     w_ts = 0.13*1.0E-2*SQRT((aer_dens_gocart*1.E-3)*(G*1.E2)*(aer_diam*1.E2)/(air_dens*1.E-3))* &
            SQRT(1.0+0.006/(aer_dens_gocart*1.E-3)/(G*1.E2)/(aer_diam*1.E2)**2.5)/ &
            SQRT(1.928*(1331.0*(aer_diam*1.E2)**1.56+0.38)**0.092-1.0)
@@ -492,10 +496,11 @@ MODULE module_mineraldust_emis
     ! 0.25*0.8 = 0.2 factor from original GOCART implementation
     REAL, PARAMETER :: CDIM = 0.2
     ! Use soil moisture to limit emissions, by increasing the threshold
-    ! velocity and decreasing the total flux. If false, emissions are not
-    ! affected by soil moisture directly, but emissions are cut when
-    ! precipitation exceeds 1.0 mm hr-1 following GZ2017
-    LOGICAL, PARAMETER :: USE_SOIL_MOISTURE = .true.
+    ! velocity and decreasing the total flux in wet soils.
+    LOGICAL, PARAMETER :: USE_MOISTURE_CORRECTION = .true.
+    ! Use precipitation to disable emissions when precipitation exceeds 1.0 mm
+    ! hr-1 following GZ2017
+    LOGICAL, PARAMETER :: USE_PRECIP_CORRECTION = .false.
     REAL, PARAMETER :: PRECIP_RATE_CRIT = 1.0 ! mm hr-1
 
     dust_mass_emiss = 0.0
@@ -509,28 +514,25 @@ MODULE module_mineraldust_emis
       tsk_freeze = 272.
     ENDIF
 
-    ! No emissions over frozen soils
-    IF(tsk > tsk_freeze) THEN
+    ! Only calculate emissions if the soil is not frozen and it does not rain
+    IF(tsk > tsk_freeze  &
+       .OR. (USE_PRECIP_CORRECTION .AND. precip_rate < PRECIP_RATE_CRIT)) THEN
       ! Threshold velocity from MB1995
       w_ts = w_ts_mb1995(soil_diam=soil_diam, soil_dens=soil_dens, &
                          air_dens=air_dens)
-
-      ! Soil moisture / precipitation inhibition of emissions
-      IF(USE_SOIL_MOISTURE) THEN
+      ! Threshold velocity correction for soil moisture
+      IF(USE_MOISTURE_CORRECTION) THEN
         ! Correct threshold velocity for soil moisture
         ! We use Fécan1999 instead of the original Ginoux2004 factor
         fcorr_w_ts = fcorr_f1999(smois_grav=smois_grav, clayfrac=clayfrac)
         w_ts = w_ts * fcorr_w_ts
-      ELSEIF(precip_rate > PRECIP_RATE_CRIT) THEN
-        ! Disable emissions if it rains (GZ2017)
-        w_ts = 1000.0
-      ENDIF ! USE_SOIL_MOISTURE
+      ENDIF
 
-      ! Calculate the dust emissions (µg m-2 s-1)
+      ! Calculate dust emissions (µg m-2 s-1)
       IF(ust > w_ts .AND. ust > 1.E-6) THEN
-        ! Convert threshold friction velocity to a threshold 10-m velocity using
-        ! the local w10/ust ratio
+        ! Convert threshold friction velocity to a threshold 10-m velocity
         w10_ts = w_ts * w10/ust
+        ! Calculate dust emissions following G2004
         IF(w10 > w10_ts) THEN
           dust_mass_emiss = CDIM * s_ginoux &
                             * w10**2. * (w10 - w10_ts)
@@ -538,14 +540,14 @@ MODULE module_mineraldust_emis
       ENDIF ! ust > w_ts
 
       ! Soil moisture reduction of emissions
-      IF(USE_SOIL_MOISTURE) THEN
+      IF(USE_MOISTURE_CORRECTION) THEN
         ! Correct emission flux for soil moisture, from UNCCD2022
         IF(smois_vol > 0.15) THEN
           soil_moisture_corr = 0.15/smois_vol
         ELSE
           soil_moisture_corr = 1.0
         ENDIF
-      ENDIF ! USE_SOIL_MOISTURE
+      ENDIF ! USE_MOISTURE_CORRECTION
 
       dust_mass_emiss = dust_mass_emiss * soil_moisture_corr
       ! Prevent negative emissions
@@ -615,43 +617,48 @@ MODULE module_mineraldust_emis
     REAL, PARAMETER :: sandfrac_minval = 1. ! %
     REAL, PARAMETER :: scaling_factor_mb95 = 4.8E-4
     ! Use soil moisture to limit emissions, by increasing the threshold
-    ! velocity. If false, emissions are not affected by soil moisture
-    ! directly, but emissions are cut when precipitation exceeds 1.0 mm hr-1
-    ! following GZ2017
-    LOGICAL, PARAMETER :: USE_SOIL_MOISTURE = .true.
+    ! velocity in wet soils.
+    LOGICAL, PARAMETER :: USE_MOISTURE_CORRECTION = .true.
+    ! Use precipitation to disable emissions when precipitation exceeds 1.0 mm
+    ! hr-1 following GZ2017
+    LOGICAL, PARAMETER :: USE_PRECIP_CORRECTION = .false.
     REAL, PARAMETER :: PRECIP_RATE_CRIT = 1.0 ! mm hr-1
 
     !---- Calculate dust emission flux following GZ2016
-    sandfrac_adj = sandfrac*100.
-    ! Threshold velocity (GZ2016 eq. 2)
-    IF(sandfrac_adj >= sandfrac_minval) THEN
-      soil_diam = 75.E-6
-    ELSE
-      soil_diam = 10.E-6
-    ENDIF
-    w_ts = SQRT( 0.0123 * (soil_dens/air_dens * G * soil_diam &
-                          + 3E-4/(air_dens*soil_diam)) )
-    ! Soil moisture / precipitation inhibition of emissions
-    IF(USE_SOIL_MOISTURE) THEN
-      ! Correct threshold velocity for soil moisture (Fécan et al., 1999)
-      fcorr_w_ts = fcorr_f1999(smois_grav=smois_grav, clayfrac=clayfrac)
-      w_ts = w_ts * fcorr_w_ts
-    ELSEIF(precip_rate > PRECIP_RATE_CRIT) THEN
-      ! Disable emissions if it rains (GZ2017)
-      w_ts = 1000.0
-    ENDIF ! USE_SOIL_MOISTURE
-    ! Sandblasting efficiency, from MB95 (m-1)
-    clayfrac_adj = MIN(clayfrac*100., 20.)
-    alpha_sandblast = 100. * 10.**(0.134*clayfrac_adj-6.)
-    IF(ust > w_ts) THEN
+    dust_mass_emiss = 0.0
+    ! Only calculate emissions if it does not rain (GZ2017)
+    IF(USE_PRECIP_CORRECTION .AND. precip_rate < PRECIP_RATE_CRIT) THEN
+      sandfrac_adj = sandfrac*100.
+      ! Threshold velocity (GZ2016 eq. 2)
+      IF(sandfrac_adj >= sandfrac_minval) THEN
+        soil_diam = 75.E-6
+      ELSE
+        soil_diam = 10.E-6
+      ENDIF
+      w_ts = SQRT( 0.0123 * (soil_dens/air_dens * G * soil_diam &
+                            + 3E-4/(air_dens*soil_diam)) )
+      ! Soil moisture / precipitation inhibition of emissions
+      IF(USE_MOISTURE_CORRECTION) THEN
+        ! Correct threshold velocity for soil moisture (Fécan et al., 1999)
+        fcorr_w_ts = fcorr_f1999(smois_grav=smois_grav, clayfrac=clayfrac)
+        w_ts = w_ts * fcorr_w_ts
+      ENDIF ! USE_MOISTURE_CORRECTION
+      ! Sandblasting efficiency, from MB95 (m-1)
+      clayfrac_adj = MIN(clayfrac*100., 20.)
+      alpha_sandblast = 100. * 10.**(0.134*clayfrac_adj-6.)
       ! Dust emissions following GZ2016 based on MB95
-      dust_mass_emiss = 1.E9 * s_ginoux * scaling_factor_mb95 &
-                       * alpha_sandblast * air_dens * ust**3. / G &
-                       * (1. - w_ts**2./ust**2.) * (1. + w_ts/ust)
-    ELSE
-      dust_mass_emiss = 0.0
-    ENDIF
-    dust_mass_emiss = MAX(0.0, dust_mass_emiss)
+      IF(ust > w_ts) THEN
+        IF(USE_PRECIP_CORRECTION .AND. precip_rate > PRECIP_RATE_CRIT) THEN
+          ! Disable emissions if it rains (GZ2017)
+          dust_mass_emiss = 0.0
+        ELSE
+          dust_mass_emiss = 1.E9 * s_ginoux * scaling_factor_mb95 &
+                           * alpha_sandblast * air_dens * ust**3. / G &
+                           * (1. - w_ts**2./ust**2.) * (1. + w_ts/ust)
+        ENDIF
+      ENDIF
+      dust_mass_emiss = MAX(0.0, dust_mass_emiss)
+    ENDIF ! USE_PRECIP_CORRECTION
 
   END SUBROUTINE source_mineraldust_flexdust
 

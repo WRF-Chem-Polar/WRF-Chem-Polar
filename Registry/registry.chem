@@ -616,7 +616,7 @@ state    real  wdflx          ijo     misc        1         Z      r       "WET_
 state    real  e_nacl_ocean   ij      misc        1         Z      rh      "E_NACL_OCEAN"       "Ocean NaCl emiss"               "ug m^-2"
 state    real  e_nacl_blow    ij      misc        1         Z      rh      "E_NACL_BLOW"        "Blowing snow NaCl emiss"        "ug m^-2"
 state    real  e_nacl_leads   ij      misc        1         Z      rh      "E_NACL_LEADS"       "Leads NaCl emiss"               "ug m^-2"
-state    real  e_dust         ij      misc        1         Z      rh      "E_DUST"             "Dust aerosol emiss"             "kg m^-2"
+state    real  e_dust         ij      misc        1         Z      rh      "E_DUST"             "Dust aerosol emiss"             "g m^-2"
 state    real  e_bact         ij      misc        1         Z      rh      "E_BACT"             "Bacteria aerosol emiss"         "mg m^-2"
 state    real  e_spore        ij      misc        1         Z      rh      "E_SPORE"            "Spore aerosol emiss"            "mg m^-2"
 
@@ -3935,7 +3935,7 @@ rconfig   integer     aer_aerodynres_opt  namelist,chem          max_domains    
 rconfig   integer     emiss_opt           namelist,chem          max_domains    0       rh    "emiss_opt"           ""      ""
 rconfig   integer     emiss_opt_vol       namelist,chem          max_domains    0       rh    "emiss_opt_vol"       ""      ""
 rconfig   integer     dust_opt            namelist,chem          1              0       rh    "dust_opt"            ""      ""
-rconfig   integer     dust_hl_opt         namelist,chem          1              0       rh    "dust_hl_opt"         ""      ""
+rconfig   integer     dust_erod_opt       namelist,chem          1              0       rh    "dust_erod_opt"       ""      ""
 rconfig   integer     dust_schme          namelist,chem          1              2       rh    "dust_schme"       ""      ""
 
 #renchuanhua rch added

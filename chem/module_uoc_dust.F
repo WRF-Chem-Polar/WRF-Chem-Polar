@@ -182,7 +182,8 @@ MODULE uoc_dust
 ! 
   do j=jts,jte
   do i=its,ite
-     IF(config_flags%dust_hl_opt == 1) THEN
+     IF(config_flags%dust_erod_opt == 1) THEN
+        ! Use erodibility from erod_hl, including high latitude sources
         erod_in = erod_hl(i,j)
      ELSE
         erod_in = sum(erod(i,j,:))
@@ -257,7 +258,8 @@ MODULE uoc_dust
          emis_dust(i,1,j,p_edust3)=emis_dust(i,1,j,p_edust3)+bems(3)
          emis_dust(i,1,j,p_edust4)=emis_dust(i,1,j,p_edust4)+bems(4)
          emis_dust(i,1,j,p_edust5)=emis_dust(i,1,j,p_edust5)+bems(5)
-         e_dust(i,j) = e_dust(i,j) + SUM(bems)
+         ! Output total emissions in g m-2
+         e_dust(i,j) = e_dust(i,j) + SUM(bems)*1000.0
          
      else   ! no dust source
          emis_dust(i,1,j,p_edust1)=0.

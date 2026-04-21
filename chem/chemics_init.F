@@ -608,16 +608,16 @@ call wrf_message("**************************************************************
      ENDIF
    END SELECT ! dust_opt
    !-- Checks for high latitude dust emissions
-   IF(config_flags%dust_hl_opt == 1) THEN
+   IF(config_flags%dust_erod_opt == 1) THEN
      SELECT CASE(config_flags%dust_opt)
      CASE(DUST_WRFGOCART, DUST_WCP, DUST_FLEXDUST, &
           DUSTGOCARTAFWA, DUSTUOC)
        CALL wrf_debug( 15, 'Using high-latitude-dust emissions')
      CASE DEFAULT
-       CALL wrf_error_fatal ('chemics_init: error, dust_hl_opt=1 is not &
+       CALL wrf_error_fatal ('chemics_init: error, dust_erod_opt=1 is not &
            compatible with this dust_opt')
      END SELECT ! dust_opt
-   ENDIF ! dust_hl_opt
+   ENDIF ! dust_erod_opt
 
    ! osipov check that ddflx & ddlen has correct dim size (chem_opt=106 and such)
    if ( config_flags%diagnostic_dep .EQ. 1 .AND. config_flags%ne_area .LT. num_chem ) then

@@ -154,7 +154,8 @@ CONTAINS
       ! DRI with the Ginoux dataset, but there will be inconsistencies. GAC
       ! Erodibility is broken up into 3 bins, sum them up here.
 
-      IF(config_flags%dust_hl_opt == 1) THEN
+      IF(config_flags%dust_erod_opt == 1) THEN
+        ! Use erodibility from EROD_HL, including high latitude sources
         erodtot(1,1) = erod_hl(i,j) * (1. - vegfra(i,j))
       ELSE
         IF (config_flags%dust_dsr .eq. 1) then  ! DRI DSR
@@ -343,7 +344,8 @@ CONTAINS
      emis_dust(i,1,j,p_edust3)=emis_dust(i,1,j,p_edust3)+bems(3)
      emis_dust(i,1,j,p_edust4)=emis_dust(i,1,j,p_edust4)+bems(4)
      emis_dust(i,1,j,p_edust5)=emis_dust(i,1,j,p_edust5)+bems(5)
-     e_dust(i,j) = e_dust(i,j) + SUM(bems)
+     ! Output total emissions in g m-2
+     e_dust(i,j) = e_dust(i,j) + SUM(bems)*1000.0
 
 
      ! Diagnostic accumulated total emitted dust (kg/m2)

@@ -882,7 +882,7 @@ real, save :: freq_industry(24)    = &
         CALL wrf_debug(15, 'mineraldust_emis dust emissions')
         CALL mineraldust_emis( dtstep=dtstep, dz8w=dz8w, tsk=tsk, &
          chem_opt=config_flags%chem_opt, dust_opt=config_flags%dust_opt, &
-         dust_hl_opt=config_flags%dust_hl_opt, rho_phy=rho_phy, chem=chem, &
+         dust_erod_opt=config_flags%dust_erod_opt, rho_phy=rho_phy, chem=chem, &
          e_dust=e_dust, u10=u10, v10=v10, ust=ust, xland=xland, xice=xice, &
          raincv=raincv, rainncv=rainncv, &
          snowh=snowh, clayfrac=clayfrac, sandfrac=sandfrac, erod=erod, &
