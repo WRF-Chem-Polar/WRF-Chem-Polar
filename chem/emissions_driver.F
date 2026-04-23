@@ -64,8 +64,10 @@ CONTAINS
          mebio_isop, mebio_apin, mebio_bpin, mebio_bcar,                   &
          mebio_acet, mebio_mbo, mebio_no,                                  &
          current_month,                                                    &
+         lai, &
          lakemask, e_nacl_ocean, e_nacl_blow, e_nacl_leads,                &
          e_dms_ocean,                                                      &
+         e_bact,  e_spore, &
          ! end stuff for MEGAN v2.04
          ! stuff for LNOx emissions
          ht, refl_10cm,                                                    &
@@ -105,6 +107,7 @@ CONTAINS
   USE module_seaspray_emis, only: seaspray_emis
   USE module_dms_emis, only: dms_emis
   USE module_blowing_snow_emis, only: blowing_snow_emis
+  USE module_pbap_emis, only: pbap_emis
   USE uoc_dust  
   USE module_gocart_dms_emis, only: gocart_dmsemis
   USE module_mosaic_addemiss
@@ -331,8 +334,9 @@ CONTAINS
            adapt_step_flag
 
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: lakemask
+      REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: lai
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_ocean, &
-               e_nacl_blow, e_nacl_leads, e_dms_ocean
+                                   e_nacl_blow, e_nacl_leads, e_dms_ocean, e_spore, e_bact
 
 !     stuff for aircraft emissions
 
@@ -817,6 +821,19 @@ real, save :: freq_industry(24)    = &
          ids,ide, jds,jde, kds,kde,                                    &
          ims,ime, jms,jme, kms,kme,                                    &
          its,ite, jts,jte, kts,kte)
+      ENDIF
+
+      ! Primary biological aerosol particles (PBAP) emissions
+      IF(config_flags%pbap_opt > 0) THEN
+        ! PBAP emissions for GOCART aerosols
+        CALL wrf_debug(15, 'PBAP emissions')
+        CALL pbap_emis( id, dtstep, dz8w, &
+         config_flags%chem_opt, config_flags%pbap_opt, &
+         rho_phy, chem, e_bact, e_spore,                    &
+         xland, ivgtyp, xice, snowh, lai, T2, Q2, &
+         ids,ide, jds,jde, kds,kde,                                 &
+         ims,ime, jms,jme, kms,kme,                                 &
+         its,ite, jts,jte, kts,kte                                  )
       ENDIF
 
       dust_select:  SELECT CASE(config_flags%dust_opt)

@@ -614,6 +614,8 @@ state    real  e_nacl_ocean   ij      misc        1         Z      rh      "E_NA
 state    real  e_nacl_blow    ij      misc        1         Z      rh      "E_NACL_BLOW"        "Blowing snow NaCl emiss"        "ug m^-2"
 state    real  e_nacl_leads   ij      misc        1         Z      rh      "E_NACL_LEADS"       "Leads NaCl emiss"               "ug m^-2"
 state    real  e_dms_ocean    ij      misc        1         Z      rh      "E_DMS_OCEAN"        "Ocean DMS emiss"                "mol m^-2"
+state    real  e_bact         ij      misc        1         Z      rh      "E_BACT"             "Bacteria aerosol emiss"         "mg m^-2"
+state    real  e_spore        ij      misc        1         Z      rh      "E_SPORE"            "Spore aerosol emiss"            "mg m^-2"
 
 #
 state    real  e_bio          ijo     misc        1         Z      r        "E_BIO"             "EMISSIONS"             "ppm m/min"
@@ -3941,6 +3943,7 @@ rconfig   integer     blowing_snow_opt    namelist,chem          1              
 rconfig   integer     seas_leads_opt      namelist,chem          max_domains    0 	rh    "seas_leads_opt"      ""      ""
 rconfig   integer     seas_so4_opt        namelist,chem          max_domains    0       rh    "seas_so4_opt"        ""      ""
 rconfig   integer     seas_oa_opt         namelist,chem          max_domains    0       rh    "seas_oa_opt"         ""      ""
+rconfig   integer     pbap_opt            namelist,chem          1              0       rh    "pbap_opt"            ""      ""
 rconfig   integer     nuc_sulf_opt        namelist,chem          max_domains    2       rh    "nuc_sulf_opt"         ""      ""
 rconfig   integer     nuc_msa_opt         namelist,chem          max_domains    0       rh    "nuc_msa_opt"         ""      ""
 rconfig   real        nuc_msa_fac         namelist,chem          max_domains    1.0     rh    "nuc_msa_fac"         ""      ""

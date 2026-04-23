@@ -77,6 +77,7 @@
    USE module_model_constants, only:t0
    USE module_seaspray_emis, only:seaspray_emis_init
    USE module_blowing_snow_emis, only:blowing_snow_emis_init
+   USE module_pbap_emis, only:pbap_emis_init
 
    IMPLICIT NONE
 
@@ -411,6 +412,7 @@ call wrf_message("**************************************************************
        endif
      endif
    endif
+
    ! Simple aerosol wet scavenging for GOCART aerosols
    ! - Can be enabled for any GOCART chem_opt
    ! - For MOZCART mechanisms sulf scavenging needs to be
@@ -418,18 +420,17 @@ call wrf_message("**************************************************************
    ! - Can be enabled for other aerosol mechanisms if the proper mapping
    !   for chem_opt is provided in aer_wetscav_simple_init and if
    !   aerosol wetscav is not already done elsewhere for this chem_opt
+   ! - Can be enabled for other mp_physics option if evapprod, rainprod,
+   !   qlsink and precr, precs (+preci and precg ideally) are calculated
    IF (config_flags%wetscav_onoff == 1 .AND. aer_is_gocart) THEN
      IF(config_flags%mp_physics == THOMPSON &
         .OR. config_flags%mp_physics == THOMPSONAERO &
-        .OR. config_flags%mp_physics == WSM6SCHEME &
-        .OR. config_flags%mp_physics == CAMMGMPSCHEME &
         .OR. config_flags%mp_physics == MORR_TWO_MOMENT) THEN
        CALL wrf_debug( 15, 'Chemics_init: Calling aer_wetscav_simple_init' )
        CALL aer_wetscav_simple_init(config_flags%chem_opt)
      ELSE
        CALL wrf_error_fatal("ERROR: wet scavenging option for GOCART &
-            & requires mp_phys = THOMPSON, THOMPSONAERO, WSM6SCHEME, &
-            & CAMMGMPSCHEME or MORR_TWO_MOMENT")
+            & requires mp_phys = THOMPSON, THOMPSONAERO, or MORR_TWO_MOMENT")
      ENDIF
    ENDIF
 
@@ -568,6 +569,17 @@ call wrf_message("**************************************************************
        CALL wrf_error_fatal ('chemics_init: error, blowing snow emission &
            blowing_snow_opt is only compatible with GOCART, MOSAIC_4BIN &
            and MOSAIC_8BIN.')
+     ENDIF
+   ENDIF
+   !-- Checks for continental PBAP aerosol emissions option
+   IF ( config_flags%pbap_opt > 0 ) THEN
+     IF(aer_is_gocart) THEN
+       ! Initialize continental PBAP aerosol emissions
+       CALL wrf_debug( 15, 'Calling pbap_emis_init')
+       CALL pbap_emis_init(config_flags%chem_opt)
+     ELSE
+       CALL wrf_error_fatal ('chemics_init: error, PBAP emission &
+           pbap_opt is only compatible with GOCART')
      ENDIF
    ENDIF
 

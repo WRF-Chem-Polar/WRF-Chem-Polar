@@ -1,10 +1,9 @@
 ! 2025/06 Louis Marelle
 !
 ! Purpose:
-!  Perform dry deposition and sedimentation for aerosols at the surface, with
-!  dry deposition velocities calculated following Emerson et al. (2020), a
-!  modified version of the Zhang et al. (2001) parameterization with updated
-!  parameters.
+!  Calculate dry deposition and sedimentation velocities for aerosols at the
+!  surface, following Emerson et al. (2020), a modified version of the Zhang
+!  et al. (2001) parameterization with updated parameters.
 !
 ! Remarks:
 !  - Only compatible with GOCART for now
@@ -127,21 +126,20 @@ CONTAINS
 
 !----------------------------------------------------------------------------
 
-  SUBROUTINE aer_drydep_simple(chem, t_phy, rho_phy, ust, dz8w, rh, &
-                               xlat, snowh, xice, ivgtyp,           &
-                               res_adyn, julday, dtstep,            &
-                               ids,ide, jds,jde, kds,kde,           &
-                               ims,ime, jms,jme, kms,kme,           &
-                               its,ite, jts,jte, kts,kte            )
+  SUBROUTINE aer_drydep_simple(ddvel, t_phy, rho_phy, ust, rh, &
+                               xlat, snowh, xice, ivgtyp,      &
+                               res_adyn, julday, dtstep,       &
+                               ids,ide, jds,jde, kds,kde,      &
+                               ims,ime, jms,jme, kms,kme,      &
+                               its,ite, jts,jte, kts,kte       )
    ! Purpose:
-   !  Calculates and applies dry deposition tendencies for aerosols
+   !  Calculates dry deposition velocities for aerosols
    !  
    ! Arguments:
    !  Input:
    !    t_phy = air temperature (degree celsius)
    !    rho_phy = air density (kg/m3)
    !    ust = friction velocity (m/s)
-   !    dz8w = model vertical level depth (m)
    !    rh = relative humidity (0-1)
    !    xlat = latitude (-90 to 90)
    !    snowh = snow depth (m)
@@ -152,7 +150,7 @@ CONTAINS
    !    dtstep = model time step (s)
    !    ids,ims,its etc. = domain, memory, and tile start and end indices
    !  Input/output:
-   !    chem = advected chemical species (gases in ppm, aerosols in ug/kg)
+   !    ddvel = dry deposition velocities (m/s)
 
    ! USE associations:
    USE module_model_constants, ONLY: g,piconst
@@ -164,12 +162,12 @@ CONTAINS
 
    !---- Arguments
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: t_phy, rho_phy, &
-     dz8w, rh
+                                                             rh
    REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ust, xlat, snowh, xice
    INTEGER, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: ivgtyp
    REAL, DIMENSION(its:ite, jts:jte), INTENT(IN) :: res_adyn
-   REAL, DIMENSION(ims:ime, kms:kme, jms:jme, num_chem),          &
-       INTENT(INOUT) :: chem
+   REAL, DIMENSION(its:ite, jts:jte, num_chem),          &
+       INTENT(INOUT) :: ddvel
    REAL, INTENT(IN) :: dtstep
    INTEGER, INTENT(IN) :: julday
    INTEGER, INTENT(IN) :: ids,ide, jds,jde, kds,kde,    &
@@ -177,8 +175,6 @@ CONTAINS
                           its,ite, jts,jte, kts,kte
 
    !---- Local variables
-   ! Aerosol mass mixing ratio (microg/kg)
-   REAL :: aer_mmr, aer_mmr_old
    ! Dry deposition velocity (m/s)
    REAL :: vdep
    ! Settling velocity in lowest level (m/s)
@@ -205,8 +201,6 @@ CONTAINS
    REAL :: airkinvisc
    ! Cunningham correction factor
    REAL :: cunningham_fact
-   ! Dry deposition rate (s-1)
-   REAL :: drydeprate
    ! Interception collection radius parameter (cm)
    REAL :: aintercept
    ! Deposition efficiencies from brownian motion, impaction, and interception
@@ -246,7 +240,7 @@ CONTAINS
    REAL, PARAMETER :: C3_WET_SULFATE = 3.110E-11
    REAL, PARAMETER :: C4_WET_SULFATE = -1.428
 
-   !-------- Perform dry deposition for aerosol species -------
+   !-------- Calculate dry deposition velocities for aerosol species -------
    DO j=jts,jte
      DO i=its,ite
        !---- Initialize physical parameters and convert units
@@ -406,14 +400,9 @@ CONTAINS
          !---- Calculate the total deposition velocity in m/s
          vsettl = vsettl * 0.01 ! m/s
          vdep = vsettl + 1./(res_adyn(i,j) + res_sfc)
-
-         !---- Perform dry deposition
          ! WRITE(*,*) 'i,j,iaer,aerd,aerdens,vdep,vsettl,res_sfc,res_adyn',i,j,iaer,aer_wet_d_cm,aer_dry_dens_gcm3,vdep,vsettl,res_sfc,res_adyn(i,j)
-         drydeprate = vdep/dz8w(i,kts,j) ! s -1
          IF(p_chem > param_first_scalar) THEN
-           aer_mmr_old = chem(i,kts,j,p_chem)
-           aer_mmr = aer_mmr_old * EXP(-dtstep*drydeprate)
-           chem(i,kts,j,p_chem) = MAX(0.0, aer_mmr)
+           ddvel(i,j,p_chem) = vdep
          ENDIF
 
        END DO !iaer

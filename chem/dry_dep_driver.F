@@ -300,17 +300,17 @@ CONTAINS
                config_flags%chem_opt == GOCART_SIMPLE .OR. &
                config_flags%chem_opt == GOCARTRACM_KPP .OR. &
                config_flags%chem_opt == GOCARTRADM2) THEN
-            CALL aer_drydep_simple(chem=chem, t_phy=t_phy, rho_phy=rho_phy, &
-                                   ust=ust, dz8w=dz8w, rh=rh, xlat=xlat,    &
-                                   snowh=snowh, xice=xice, ivgtyp=ivgtyp,   &
-                                   res_adyn=aer_res_def, julday=julday,     &
-                                   dtstep=dtstep,                           &
-                                   ids=ids,ide=ide, jds=jds,jde=jde,        &
-                                   kds=kds,kde=kde,                         &
-                                   ims=ims,ime=ime, jms=jms,jme=jme,        &
-                                   kms=kms,kme=kme,                         &
-                                   its=its,ite=ite, jts=jts,jte=jte,        &
-                                   kts=kts,kte=kte                          )
+            CALL aer_drydep_simple(ddvel=ddvel, t_phy=t_phy, rho_phy=rho_phy,&
+                                   ust=ust, rh=rh, xlat=xlat,                &
+                                   snowh=snowh, xice=xice, ivgtyp=ivgtyp,    &
+                                   res_adyn=aer_res_def, julday=julday,      &
+                                   dtstep=dtstep,                            &
+                                   ids=ids,ide=ide, jds=jds,jde=jde,         &
+                                   kds=kds,kde=kde,                          &
+                                   ims=ims,ime=ime, jms=jms,jme=jme,         &
+                                   kms=kms,kme=kme,                          &
+                                   its=its,ite=ite, jts=jts,jte=jte,         &
+                                   kts=kts,kte=kte                           )
 
           ENDIF
 
@@ -1576,6 +1576,8 @@ CONTAINS
    CASE (CBMZ_MOSAIC_4BIN, CBMZ_MOSAIC_KPP, &
          CBMZ_MOSAIC_8BIN,CBMZ_MOSAIC_4BIN_AQ, CBMZ_MOSAIC_8BIN_AQ, &
          MOZART_MOSAIC_4BIN_KPP,    &      !TO
+         MOZART_MOSAIC_4BIN_AQ_KPP, &
+         MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
          CBMZ_MOSAIC_DMS_4BIN, &
          CBMZ_MOSAIC_DMS_8BIN, &
          CBMZ_MOSAIC_DMS_4BIN_AQ, &

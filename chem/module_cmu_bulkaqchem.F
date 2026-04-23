@@ -701,6 +701,15 @@
       double precision wa1(numfunc),wa2(numfunc),wa3(numfunc),wa4(numfunc)
 
       double precision, parameter :: one=1.
+
+      ! Fe and Mn molar weights, g/mol
+      double precision, parameter :: mw_fe = 55.85
+      double precision, parameter :: mw_mn = 54.9
+      ! Fe and Mn solubilities, kg/kg
+      ! Remark: Fe solubility should vary with pH
+      double precision, parameter :: fe_dust_sol = 0.01
+      double precision, parameter :: fe_ant_sol = 0.1
+      double precision, parameter :: mn_sol = 0.5
 !
       double precision af, ah, arytm
       double precision chen, chyd, co2_mixrat, crustal
@@ -830,29 +839,28 @@
 !            calculated as a fraction of the crustal aerosol mass.
 !
       ! Calculate Fe and Mn
-      cmet(1) = firon*crustal*1000./(55.85*wlm)  ! fe(3+) mol/l
-      cmet(2) = fman*crustal*1000./(54.9*wlm)    ! mn(2+) mol/l
+      cmet(1) = firon*crustal*1000./(mw_fe*wlm)  ! fe(3+) mol/l
+      cmet(2) = fman*crustal*1000./(mw_mn*wlm)    ! mn(2+) mol/l
 
+      ! Calculate Fe and Mn as in Alexander et al., (2009),
+      ! https://doi.org/10.1029/2008JD010486
       if(init_metal_opt == 2) then
-        ! Calculate Fe and Mn as in Alexander et al., (2009),
-        ! https://doi.org/10.1029/2008JD010486
         ! Fe mass is 3.5% of dust mass and Mn = Fe/50 in dust
-        fe_dust = crustal * 3.5E-2 * 1000./(55.85*wlm) ! Fe mol/L
-        mn_dust = crustal * 3.5E-2 * 1000./(54.9*wlm) ! Fe mol/L
+        fe_dust = crustal * 3.5E-2 * 1000./(mw_fe*wlm) ! Fe mol/L
+        mn_dust = crustal * 3.5E-2 * 1000./(mw_mn*wlm) ! Fe mol/L
         ! Mn mass is Fe/30 in anthropogenic ash
-        !TODO Set at 0 for now, but could be calculated prognostically in chem/aer code
+        ! Set at 0 for now, but could be calculated prognostically in chem/aer code
         fe_ant = 0.0
         mn_ant = 0.0
         ! rho = 101325.*pres/(287.1*temp)
         ! fe_ant = fe_a / 28.97 * rho / wl ! ppmv to mol/L
-        mn_ant = fe_ant * 55.85/54.9 / 30. ! mol(fe)/L to mol(mn)/L
-        ! 50% of Mn is dissolved, but only 1% of dust-sourced Fe and 10%
-        ! of anthropogenic Fe
-        !TODO fe solubility should vary with pH
-        fe_dust = fe_dust * 0.01
-        mn_dust = mn_dust * 0.5
-        fe_ant = fe_ant * 0.1
-        mn_ant = mn_ant * 0.5
+        mn_ant = fe_ant * mw_fe/mw_mn / 30. ! mol(fe)/L to mol(mn)/L
+        ! Solubility is 50% for Fe, 1% for dust-sourced Fe, and 10% for
+        ! anthropogenic Fe
+        fe_dust = MIN(fe_dust, fe_dust_sol/(mw_fe*1.E-3)) ! kg/kg conv to mol/L
+        mn_dust = MIN(mn_dust, mn_sol/(mw_mn*1.E-3)) ! kg/kg conv to mol/L
+        fe_ant = MIN(fe_ant, fe_ant_sol/(mw_fe*1.E-3)) ! kg/kg conv to mol/L
+        mn_ant = MIN(mn_ant, mn_sol/(mw_mn*1.E-3)) ! kg/kg conv to mol/L
         ! Total Fe(III) and Mn(II)
         cmet(1) = fe_dust + fe_ant ! fe(3+) mol/l
         cmet(2) = mn_dust + mn_ant ! mn(2+) mol/l
