@@ -103,9 +103,6 @@ state    real  e_so4i         i+jf     emis_ant     1         Z      i5r     "E_
 state    real  e_so4j         i+jf     emis_ant     1         Z      i5r     "E_SO4J"              "EMISSION RATE OF J-MODE ORG. AER."   "ug/m3 m/s"
 state    real  e_no3i         i+jf     emis_ant     1         Z      i5r     "E_NO3I"              "EMISSION RATE OF I-MODE ORG. AER."   "ug/m3 m/s"
 state    real  e_no3j         i+jf     emis_ant     1         Z      i5r     "E_NO3J"              "EMISSION RATE OF J-MODE ORG. AER."   "ug/m3 m/s"
-#LMarelle: Additional DMS oceanic content for DMS emissions. This should be
-#somewhere else than emis_ant at some point since this is not anthropogenic
-state    real  e_dms_oc       i+jf     emis_ant     1         Z      i5r     "E_DMS_OC"            "OCEANIC SURFACE DMS CONTENT"          "mol/m3"
 # Additional MOZART emission variables...
 state    real  e_nh4i         i+jf     emis_ant     1         Z      i5r     "E_NH4I"              "EMISSION RATE OF I-MODE ORG. AER."   "ug/m3 m/s"
 state    real  e_nh4j         i+jf     emis_ant     1         Z      i5r     "E_NH4J"              "EMISSION RATE OF J-MODE ORG. AER."   "ug/m3 m/s"
@@ -615,7 +612,8 @@ state    real  wdflx          ijo     misc        1         Z      r       "WET_
 
 state    real  e_nacl_ocean   ij      misc        1         Z      rh      "E_NACL_OCEAN"       "Ocean NaCl emiss"               "ug m^-2"
 state    real  e_nacl_blow    ij      misc        1         Z      rh      "E_NACL_BLOW"        "Blowing snow NaCl emiss"        "ug m^-2"
-state    real  e_nacl_leads    ij      misc        1         Z      rh      "E_NACL_LEADS"        "Leads NaCl emiss"        "ug m^-2"
+state    real  e_nacl_leads   ij      misc        1         Z      rh      "E_NACL_LEADS"       "Leads NaCl emiss"               "ug m^-2"
+state    real  e_dms_ocean    ij      misc        1         Z      rh      "E_DMS_OCEAN"        "Ocean DMS emiss"                "mol m^-2"
 state    real  e_bact         ij      misc        1         Z      rh      "E_BACT"             "Bacteria aerosol emiss"         "mg m^-2"
 state    real  e_spore        ij      misc        1         Z      rh      "E_SPORE"            "Spore aerosol emiss"            "mg m^-2"
 
@@ -4160,13 +4158,12 @@ package   ecbmz_mosaic    emiss_opt==4                   -             emis_ant:
 package   ecptec          emiss_opt==5                   -             emis_ant:e_iso,e_so2,e_no,e_no2,e_co,e_eth,e_hc3,e_hc5,e_hc8,e_xyl,e_ol2,e_olt,e_oli,e_tol,e_csl,e_hcho,e_ald,e_ket,e_ora2,e_nh3,e_pm_25,e_pm_10,e_oc,e_sulf,e_bc
 package   gocart_ecptec   emiss_opt==6                   -             emis_ant:e_so2,e_sulf,e_bc,e_oc,e_pm_25,e_pm_10
 package   mozem           emiss_opt==7                   -             emis_ant:e_co,e_no,e_no2,e_bigalk,e_bigene,e_c2h4,e_c2h5oh,e_c2h6,e_c3h6,e_c3h8,e_ch2o,e_ch3cho,e_ch3coch3,e_ch3oh,e_mek,e_so2,e_toluene,e_nh3,e_isop,e_c10h16,e_sulf
-package   mozcem          emiss_opt==8                   -             emis_ant:e_co,e_no,e_no2,e_bigalk,e_bigene,e_c2h4,e_c2h5oh,e_c2h6,e_c3h6,e_c3h8,e_ch2o,e_ch3cho,e_ch3coch3,e_ch3oh,e_mek,e_so2,e_toluene,e_nh3,e_isop,e_c10h16,e_dms_oc,e_pm_10,e_pm_25,e_bc,e_oc,e_sulf
+package   mozcem          emiss_opt==8                   -             emis_ant:e_co,e_no,e_no2,e_bigalk,e_bigene,e_c2h4,e_c2h5oh,e_c2h6,e_c3h6,e_c3h8,e_ch2o,e_ch3cho,e_ch3coch3,e_ch3oh,e_mek,e_so2,e_toluene,e_nh3,e_isop,e_c10h16,e_pm_10,e_pm_25,e_bc,e_oc,e_sulf
 package   cammam          emiss_opt==9                   -             emis_ant:e_iso,e_so2,e_no,e_co,e_eth,e_hc3,e_hc5,e_hc8,e_xyl,e_ol2,e_olt,e_oli,e_tol,e_csl,e_hcho,e_ald,e_ket,e_ora2,e_nh3,e_dms,e_ecj,e_orgj,e_so4i,e_so4j,e_soag_bigene,e_soag_isoprene,e_soag_terpene,e_soag_toluene,e_dust_a1,e_dust_a3,e_ncl_a1,e_ncl_a2,e_ncl_a3,e_orgj_num,e_ecj_num,e_so4j_num,e_so4i_num
 
-package   mozmem           emiss_opt==10                   -             emis_ant:e_co,e_no,e_no2,e_bigalk,e_bigene,e_c2h4,e_c2h5oh,e_c2h6,e_c3h6,e_c3h8,e_ch2o,e_ch3cho,e_ch3coch3,e_ch3oh,e_mek,e_so2,e_toluene,e_benzene,e_xylene,e_nh3,e_isop,e_apin,e_pm25i,e_pm25j,e_eci,e_ecj,e_orgi,e_orgj,e_so4i,e_so4j,e_no3i,e_no3j,e_nh4i,e_nh4j,e_nai,e_naj,e_cli,e_clj,e_co_a,e_orgi_a,e_orgj_a,e_co_bb,e_orgi_bb,e_orgj_bb,e_pm_10,e_c2h2,e_gly,e_sulf,e_macr,e_mgly,e_mvk,e_hcooh,e_hono,e_dms_oc,e_hcl
+package   mozmem           emiss_opt==10                   -             emis_ant:e_co,e_no,e_no2,e_bigalk,e_bigene,e_c2h4,e_c2h5oh,e_c2h6,e_c3h6,e_c3h8,e_ch2o,e_ch3cho,e_ch3coch3,e_ch3oh,e_mek,e_so2,e_toluene,e_benzene,e_xylene,e_nh3,e_isop,e_apin,e_pm25i,e_pm25j,e_eci,e_ecj,e_orgi,e_orgj,e_so4i,e_so4j,e_no3i,e_no3j,e_nh4i,e_nh4j,e_nai,e_naj,e_cli,e_clj,e_co_a,e_orgi_a,e_orgj_a,e_co_bb,e_orgi_bb,e_orgj_bb,e_pm_10,e_c2h2,e_gly,e_sulf,e_macr,e_mgly,e_mvk,e_hcooh,e_hono,e_hcl
 package   mozc_t1_em      emiss_opt==11                  -             emis_ant:e_co,e_no,e_no2,e_bigalk,e_bigene,e_c2h4,e_c2h5oh,e_c2h6,e_c3h6,e_c3h8,e_ch2o,e_ch3cho,e_ch3coch3,e_ch3oh,e_mek,e_so2,e_toluene,e_nh3,e_isop,e_hcooh,e_ch3cn,e_ch3cooh,e_hcn,e_apin,e_mvk,e_mgly,e_benzene,e_xylene,e_sulf,e_c2h2,e_pm_10,e_pm_25,e_bc,e_oc
-#LMarelle: Add e_dms_oc, DMS oceanic content in mol/m3 (technically, this should not be in emis_ant)
-package   esaprcnov       emiss_opt==13                  -             emis_ant:e_so2,e_c2h6,e_c3h8,e_c2h2,e_alk3,e_alk4,e_alk5,e_ethene,e_c3h6,e_ole1,e_ole2,e_aro1,e_aro2,e_hcho,e_ccho,e_rcho,e_acet,e_mek,e_isoprene,e_terp,e_sesq,e_co,e_no,e_no2,e_phen,e_cres,e_meoh,e_gly,e_mgly,e_bacl,e_isoprod,e_methacro,e_mvk,e_prod2,e_ch4,e_bald,e_hcooh,e_cco_oh,e_rco_oh,e_nh3,e_pm25i,e_pm25j,e_eci,e_ecj,e_orgi,e_orgj,e_so4i,e_so4j,e_no3i,e_no3j,e_orgi_a,e_orgj_a,e_orgi_bb,e_orgj_bb,e_dms_oc
+package   esaprcnov       emiss_opt==13                  -             emis_ant:e_so2,e_c2h6,e_c3h8,e_c2h2,e_alk3,e_alk4,e_alk5,e_ethene,e_c3h6,e_ole1,e_ole2,e_aro1,e_aro2,e_hcho,e_ccho,e_rcho,e_acet,e_mek,e_isoprene,e_terp,e_sesq,e_co,e_no,e_no2,e_phen,e_cres,e_meoh,e_gly,e_mgly,e_bacl,e_isoprod,e_methacro,e_mvk,e_prod2,e_ch4,e_bald,e_hcooh,e_cco_oh,e_rco_oh,e_nh3,e_pm25i,e_pm25j,e_eci,e_ecj,e_orgi,e_orgj,e_so4i,e_so4j,e_no3i,e_no3j,e_orgi_a,e_orgj_a,e_orgi_bb,e_orgj_bb
 # For CB05 mechanism based on CBMZ speciation, used with emiss_inpt_opt = 102 
 package   ecb05_opt1      emiss_opt==14                   -             emis_ant:e_no2,e_xyl,e_tol,e_terp,e_so2,e_ora2,e_olt,e_oli,e_ol2,e_no,e_nh3,e_iso,e_hcl,e_hcho,e_eth,e_csl,e_co,e_ch3oh,e_c2h5oh,e_ald,e_aldx,e_hc3,e_hc5,e_hc8,e_ket,e_pm25i,e_pm25j,e_eci,e_ecj,e_orgi,e_orgj,e_so4i,e_so4j,e_no3i,e_no3j,e_so4c,e_no3c,e_orgc,e_ecc,e_pm10
 # For CB05 emissions inventory base on CB05 speciation, used with emiss_inpt_opt = 101
@@ -4245,7 +4242,9 @@ package   seasgong      seas_opt==7                  -                -
 package   seassalter    seas_opt==8                  -                -
 package   dmsgocart     dmsemis_opt==1               -                -
 package   dmsn2000_old  dmsemis_opt==2               -                -
-package   dmsnightingale   dms_opt==1                -                -
+package   dms_nightingale  dms_opt==1                -                -
+package   dms_lm1986       dms_opt==2                -                -
+package   dms_w2014        dms_opt==3                -                -
 package   volume_approx    aer_op_opt==1                -             -
 package   maxwell_approx   aer_op_opt==2                -             -
 package   volume_exact     aer_op_opt==3                -             -

@@ -66,6 +66,7 @@ CONTAINS
          current_month,                                                    &
          lai, &
          lakemask, e_nacl_ocean, e_nacl_blow, e_nacl_leads,                &
+         e_dms_ocean,                                                      &
          e_bact,  e_spore, &
          ! end stuff for MEGAN v2.04
          ! stuff for LNOx emissions
@@ -335,7 +336,7 @@ CONTAINS
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: lakemask
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN) :: lai
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: e_nacl_ocean, &
-                                   e_nacl_blow, e_nacl_leads, e_spore, e_bact
+                                   e_nacl_blow, e_nacl_leads, e_dms_ocean, e_spore, e_bact
 
 !     stuff for aircraft emissions
 
@@ -882,9 +883,9 @@ real, save :: freq_industry(24)    = &
       END SELECT dust_select
 
       dms_select:  SELECT CASE(config_flags%dms_opt)
-      CASE(DMSNIGHTINGALE)
+      CASE(DMS_NIGHTINGALE, DMS_LM1986, DMS_W2014)
         CALL dms_emis( id, dtstep, dz8w, config_flags%dms_opt,      &
-         rho_phy, chem,                                             &
+         rho_phy, p_phy, chem, e_dms_ocean,                         &
          u10, v10, xland, tsk, xice, lakemask, dms_ocean,           &
          ids,ide, jds,jde, kds,kde,                                 &
          ims,ime, jms,jme, kms,kme,                                 &
