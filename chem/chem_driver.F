@@ -927,7 +927,7 @@
               current_month,                                                               &
               grid%lai, grid%raincv, grid%rainncv,                                         &
               grid%lakemask,grid%e_nacl_ocean,grid%e_nacl_blow,grid%e_nacl_leads,          &
-              grid%e_dust,                                                                 &
+              grid%e_dms_ocean, grid%e_dust,                                               &
               grid%e_bact, grid%e_spore, &
          ! stuff for LNOx emissions
              grid%ht, grid%refl_10cm, grid%ic_flashrate, grid%cg_flashrate,                 &
