@@ -15,8 +15,8 @@ MODULE GOCART_DUST_AFWA
 
 CONTAINS
   SUBROUTINE gocart_dust_afwa_driver(dt,config_flags,alt,  &
-         chem,rho_phy,smois,u10,v10,dz8w,erod,erod_dri,dustin,snowh,   &
-         isltyp,vegfra,lai_vegmask,xland,g,emis_dust,      &
+         chem,rho_phy,smois,u10,v10,dz8w,erod,erod_dri,erod_hl,dustin,snowh,   &
+         isltyp,vegfra,lai_vegmask,xland,g,emis_dust,e_dust,      &
          ust,znt,clay_wrf,sand_wrf,clay_nga,sand_nga,afwa_dustloft,                 &
          tot_dust,tot_edust,vis_dust,alpha,gamma,smtune,ustune,            &
          ids,ide, jds,jde, kds,kde,                                        &
@@ -38,6 +38,8 @@ CONTAINS
          INTENT(INOUT ) ::                           chem
    REAL, DIMENSION( ims:ime, 1, jms:jme,num_emis_dust),OPTIONAL,           &
          INTENT(INOUT ) ::    emis_dust
+   REAL, DIMENSION( ims:ime, jms:jme),                    &
+         INTENT(INOUT ) ::    e_dust
          
    REAL, DIMENSION( ims:ime, config_flags%num_soil_layers, jms:jme ) ,     &
          INTENT(IN   ) ::                            smois   
@@ -57,6 +59,7 @@ CONTAINS
                                                      sand_wrf,             &
                                                      clay_nga,             &
                                                      sand_nga,             &
+                                                     erod_hl, &
                                                      snowh
    REAL, DIMENSION( ims:ime , kms:kme , jms:jme )   ,                      &
          INTENT(IN   ) ::                            alt,                  &
@@ -151,14 +154,19 @@ CONTAINS
       ! DRI with the Ginoux dataset, but there will be inconsistencies. GAC
       ! Erodibility is broken up into 3 bins, sum them up here.
 
-      IF (config_flags%dust_dsr .eq. 1) then  ! DRI DSR
-          IF (erod_dri(i,j,1).ge.0) THEN  ! Where DRI is defined
-             erodtot(1,1) = SUM(erod_dri(i,j,:))
-          ELSE ! Outside where DRI not defined, use Ginoux
-             erodtot(1,1)=SUM(erod(i,j,:))
-          ENDIF
-      ELSE ! Ginoux DSR
-          erodtot(1,1)=SUM(erod(i,j,:))
+      IF(config_flags%dust_erod_opt == 1) THEN
+        ! Use erodibility from EROD_HL, including high latitude sources
+        erodtot(1,1) = erod_hl(i,j) * (1. - vegfra(i,j))
+      ELSE
+        IF (config_flags%dust_dsr .eq. 1) then  ! DRI DSR
+            IF (erod_dri(i,j,1).ge.0) THEN  ! Where DRI is defined
+               erodtot(1,1) = SUM(erod_dri(i,j,:))
+            ELSE ! Outside where DRI not defined, use Ginoux
+               erodtot(1,1)=SUM(erod(i,j,:))
+            ENDIF
+        ELSE ! Ginoux DSR
+            erodtot(1,1)=SUM(erod(i,j,:))
+        ENDIF
       ENDIF
 
       ! Set the vegmask variable to the desired vegation mask at this gridpoint
@@ -184,7 +192,7 @@ CONTAINS
 
          ! Default choice = static ginoux vegmask
 
-         IF (erod(i,j,1) .eq. 0) THEN
+         IF (erodtot(1,1) .eq. 0) THEN
             vegmask(1,1) = 0.0
          ELSE
             vegmask(1,1) = 1.0
@@ -336,6 +344,8 @@ CONTAINS
      emis_dust(i,1,j,p_edust3)=emis_dust(i,1,j,p_edust3)+bems(3)
      emis_dust(i,1,j,p_edust4)=emis_dust(i,1,j,p_edust4)+bems(4)
      emis_dust(i,1,j,p_edust5)=emis_dust(i,1,j,p_edust5)+bems(5)
+     ! Output total emissions in g m-2
+     e_dust(i,j) = e_dust(i,j) + SUM(bems)*1000.0
 
 
      ! Diagnostic accumulated total emitted dust (kg/m2)

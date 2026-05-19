@@ -614,6 +614,7 @@ state    real  e_nacl_ocean   ij      misc        1         Z      rh      "E_NA
 state    real  e_nacl_blow    ij      misc        1         Z      rh      "E_NACL_BLOW"        "Blowing snow NaCl emiss"        "ug m^-2"
 state    real  e_nacl_leads   ij      misc        1         Z      rh      "E_NACL_LEADS"       "Leads NaCl emiss"               "ug m^-2"
 state    real  e_dms_ocean    ij      misc        1         Z      rh      "E_DMS_OCEAN"        "Ocean DMS emiss"                "mol m^-2"
+state    real  e_dust         ij      misc        1         Z      rh      "E_DUST"             "Dust aerosol emiss"             "g m^-2"
 state    real  e_bact         ij      misc        1         Z      rh      "E_BACT"             "Bacteria aerosol emiss"         "mg m^-2"
 state    real  e_spore        ij      misc        1         Z      rh      "E_SPORE"            "Spore aerosol emiss"            "mg m^-2"
 
@@ -749,6 +750,7 @@ state    real  backg_oh       ikj     misc        1         -      i08r    "BACK
 state    real  backg_h2o2     ikj     misc        1         -      i08r    "BACKG_H2O2"     "Background H2O2 for Aerosol-GOcart option"     "volume mixing ratio"
 state    real  backg_no3      ikj     misc        1         -      i08r    "BACKG_NO3"      "Background NO3 for Aerosol-GOcart option"      "volume mixing ratio"
 
+state    real  erod_hl        ij      misc        1         -      i01r    "EROD_HL"        "frac. of erodible surface including high latitudes (0-1)"   "none"
 # AFWA GOCART Dust
 state    real  erod_dri        ij.    misc        1         -      i012rdu "EROD_DRI"            "frac. of erodible surface in each grid cell (0-1); DRI"                    "none"
 state    real  lai_vegmask     ij     misc        0         -      i012rh  "LAI_VEGMASK"         "MODIS LAI vegetation mask for this date; 0=no dust produced (vegetation)"  "none"
@@ -3931,6 +3933,7 @@ rconfig   integer     aer_aerodynres_opt  namelist,chem          max_domains    
 rconfig   integer     emiss_opt           namelist,chem          max_domains    0       rh    "emiss_opt"           ""      ""
 rconfig   integer     emiss_opt_vol       namelist,chem          max_domains    0       rh    "emiss_opt_vol"       ""      ""
 rconfig   integer     dust_opt            namelist,chem          1              0       rh    "dust_opt"            ""      ""
+rconfig   integer     dust_erod_opt       namelist,chem          1              0       rh    "dust_erod_opt"       ""      ""
 rconfig   integer     dust_schme          namelist,chem          1              2       rh    "dust_schme"       ""      ""
 
 #renchuanhua rch added
@@ -4231,6 +4234,9 @@ package   opt_out      opt_pars_out==1             -          ext_coef:extcof3,e
 package   dustgocart    dust_opt==1                  -              emis_dust:edust1,edust2,edust3,edust4,edust5 
 package   dustgocartafwa   dust_opt==3               -              emis_dust:edust1,edust2,edust3,edust4,edust5;state:afwa_dustloft,tot_dust,tot_edust,vis_dust
 package   dustuoc       dust_opt==4                  -              emis_dust:edust1,edust2,edust3,edust4,edust5
+package   dust_wrfgocart dust_opt==5                 -              -
+package   dust_wcp      dust_opt==6                  -              -
+package   dust_flexdust dust_opt==7                  -              -
 package   shao_2001     dust_schme==1                -              emis_dust:edust1,edust2,edust3,edust4,edust5
 package   shao_2004     dust_schme==2                -              emis_dust:edust1,edust2,edust3,edust4,edust5
 package   shao_2011     dust_schme==3                -              emis_dust:edust1,edust2,edust3,edust4,edust5

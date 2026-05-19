@@ -94,6 +94,7 @@ MODULES =                                 \
         module_dms_emis.o                 \
         module_pbap_emis.o                \
         module_blowing_snow_emis.o        \
+        module_mineraldust_emis.o         \
         module_mosaic_addemiss.o          \
         module_mosaic_initmixrats.o       \
         module_mosaic_support.o           \
