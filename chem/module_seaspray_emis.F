@@ -182,7 +182,7 @@ MODULE module_seaspray_emis
     ! low temperatures to ~5.28 at high temperatures, so we chose to adjust
     ! by 1/2.5, which is the ratio in the 10C/20C range
     REAL, PARAMETER :: salter_mode3_corr = 2.5
-    ! Maximum sea ice fraction for treating open ocean fraction in sea ice as leads (unitless, 0-1)
+    ! Maximum open ocean fraction in sea ice for treating open ocean as leads (unitless, 0-1)
     REAL, PARAMETER :: SEAICE_LEADS_CRIT = 0.2
     ! Polynomial parameters for the Salter2015 emissions SST factors
     REAL, PARAMETER :: A1=-5.2168E5, B1=3.31725E7, C1=-6.95275E8, D1=1.0684E10
@@ -266,7 +266,8 @@ MODULE module_seaspray_emis
           leads_to_oo_ratio = 1.0
           !- seas_leads_opt=0 sea_spray*(1-sea_ice) everywhere
           !- seas_leads_opt=1 seaspray*lead_frac*leads_to_oo_ratio in leads
-          !- seas_leads_opt=2 sea_spray*(1-sea_ice)*leads_to_oo_ratio where seaice <= SEAICE_LEADS_CRIT
+          !- seas_leads_opt=2 sea_spray*(1-sea_ice)*leads_to_oo_ratio where
+          !  open ocean <= SEAICE_LEADS_CRIT
           IF(seas_leads_opt == 1) THEN
             lead_frac = leadfrac(i,j)
           ELSEIF(seas_leads_opt == 2 .AND. open_ocean_frac <= SEAICE_LEADS_CRIT) THEN
