@@ -184,6 +184,7 @@ SUBROUTINE microphysics_driver(                                          &
                     ,NUWRF4ICESCHEME &
                     ,MILBRANDT2MOM , CAMMGMPSCHEME,FULL_KHAIN_LYNN, P3_1CATEGORY, P3_1CATEGORY_NC, P3_2CATEGORY, P3_1CAT_3MOM &
                     ,MORR_TM_AERO, JENSEN_ISHMAEL, SPRINKLER, NTU !,MILBRANDT3MOM
+   USE module_state_description, ONLY : MICROWCP
    USE module_state_description, ONLY : WSM6RSCHEME
 #if ( WRFPLUS == 1 )
    USE module_state_description, ONLY : LSCONDSCHEME, MKESSLERSCHEME
@@ -238,6 +239,7 @@ SUBROUTINE microphysics_driver(                                          &
    USE module_mp_etanew
    USE module_mp_fer_hires
    USE module_mp_thompson
+   USE module_mp_microwcp, ONLY : mp_microwcp_driver
    USE module_mp_full_sbm
 #if ( BUILD_SBM_FAST == 1 )
    USE module_mp_fast_sbm
@@ -1502,6 +1504,34 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
 
              ELSE
                 CALL wrf_error_fatal ( 'arguments not present for calling thompson_et_al' )
+             ENDIF
+
+        CASE (MICROWCP)
+             CALL wrf_debug ( 100 , 'microphysics_driver: calling microwcp' )
+             IF ( PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR ) .AND.  &
+                  PRESENT( QR_CURR ) .AND. PRESENT ( QI_CURR ) .AND.  &
+                  PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.  &
+                  PRESENT( QNR_CURR) .AND. PRESENT ( QNI_CURR) .AND.  &
+                  PRESENT( RAINNC  ) .AND. PRESENT ( RAINNCV ) ) THEN
+                CALL mp_microwcp_driver(                       &
+                     QV=qv_curr, QC=qc_curr, QR=qr_curr,         &
+                     QI=qi_curr, QS=qs_curr, QG=qg_curr,         &
+                     NI=qni_curr, NR=qnr_curr, NC=qnc_curr,      &
+                     NWFA=qnwfa_curr, NIFA=qnifa_curr,           &
+                     TH=th, PII=pi_phy, P=p, W=w, DZ=dz8w,       &
+                     DT_IN=dt, ITIMESTEP=itimestep,              &
+                     RAINNC=RAINNC, RAINNCV=RAINNCV,             &
+                     SNOWNC=SNOWNC, SNOWNCV=SNOWNCV,             &
+                     GRAUPELNC=GRAUPELNC, GRAUPELNCV=GRAUPELNCV, &
+                     SR=SR,                                      &
+                     REFL_10CM=refl_10cm, DO_RADAR_REF=do_radar_ref, &
+                     RE_CLOUD=re_cloud, RE_ICE=re_ice, RE_SNOW=re_snow, &
+                     HAS_REQC=has_reqc, HAS_REQI=has_reqi, HAS_REQS=has_reqs, &
+                     IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde, &
+                     IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme, &
+                     ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte)
+             ELSE
+                CALL wrf_error_fatal ( 'arguments not present for calling microwcp' )
              ENDIF
 #if (EM_CORE==1)
         CASE (NTU)

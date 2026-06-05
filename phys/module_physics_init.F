@@ -1003,6 +1003,7 @@ CHARACTER(LEN=8) :: name
 #endif
          (config_flags%ra_sw_physics .eq. goddardswscheme ) ) .and. &
         (config_flags%mp_physics  .eq. THOMPSON .or.        &
+         config_flags%mp_physics  .eq. MICROWCP .or.      &
          config_flags%mp_physics  .eq. THOMPSONAERO .or.    &
          (config_flags%mp_physics .eq. NSSL_2MOM .and. config_flags%nssl_2moment_on == 1) .or. &
          config_flags%mp_physics  .eq. WSM3SCHEME .or.      &
@@ -4390,6 +4391,7 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
    USE module_mp_HWRF
 #endif
    USE module_mp_thompson
+   USE module_mp_microwcp, ONLY : mp_microwcp_init
    USE module_mp_full_sbm
 #if (BUILD_SBM_FAST == 1)
    USE module_mp_fast_sbm
@@ -4519,6 +4521,11 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
                           IDS=ids, IDE=ide, JDS=jds, JDE=jde, KDS=kds, KDE=kde,   &
                           IMS=ims, IME=ime, JMS=jms, JME=jme, KMS=kms, KME=kme,   &
                           ITS=its, ITE=ite, JTS=jts, JTE=jte, KTS=kts, KTE=kte)
+
+     CASE (MICROWCP)
+         ! Precompute gamma-factor tables once, in this serial init,
+         ! so the threaded microphysics tile loop never races on them.
+         CALL mp_microwcp_init()
 
      CASE (THOMPSONAERO)
 ! Cycling the WRF forecast with moving nests will cause this initialization to be
