@@ -400,8 +400,8 @@ state    real   obs_savwt      hikj     dyn_em      1         X      -       "OB
 # Other
 state   real    rdx            -        misc      -         -     irh       "rdx"                   "INVERSE X GRID LENGTH"         "m-1"      
 state   real    rdy            -        misc      -         -     irh       "rdy"                   "INVERSE Y GRID LENGTH"         "m-1"      
-state   real    area2d         ij       misc      -         -     rh        "area2d"                "Horizontal grid cell area, using dx, dy, and map factors" "m2"
-state   real    dx2d           ij       misc      -         -     rh        "dx2d"                  "Horizontal grid distance: sqrt(area2d)"   "m"
+state   real    area2d         ij       misc      -         -     r        "area2d"                "Horizontal grid cell area, using dx, dy, and map factors" "m2"
+state   real    dx2d           ij       misc      -         -     r        "dx2d"                  "Horizontal grid distance: sqrt(area2d)"   "m"
 state   real    dts            -        misc      -         -     ir        "dts"                   "SMALL TIMESTEP"         ""      
 state   real    dtseps         -        misc      -         -     ir        "dtseps"                "TIME WEIGHT CONSTANT FOR SMALL STEPS"         ""      
 state   real    resm           -        misc      -         -     irh       "resm"                  "TIME WEIGHT CONSTANT FOR SMALL STEPS"         ""      
@@ -493,8 +493,8 @@ state   real    dfi_qh         ikjftb   dfi_moist       1         -     \
    rusdf=(bdy_interp:dt)  "DFI_QHAIL"        "Hail mixing ratio"             "kg kg-1"
 state    real   qvold            ikj    misc        1         -     rdu      "QVOLD"          "Water vapor mixing ratio, old time step"      "kg kg-1"
 state    real   rimi             ikj    misc        1         -     irh      "RIMI"           "riming intensity"  "fraction"
-state    real   qnwfa2d          ij     misc        1         -     i01{17}rhdu "QNWFA2D"     "Surface aerosol number conc emission"  "kg-1 s-1"
-state    real   qnifa2d          ij     misc        1         -     i01{17}rhdu "QNIFA2D"     "Surface dust number conc emission"  "kg-1 s-1"
+state    real   qnwfa2d          ij     misc        1         -     i01{17}rdu "QNWFA2D"     "Surface aerosol number conc emission"  "kg-1 s-1"
+state    real   qnifa2d          ij     misc        1         -     i01{17}rdu "QNIFA2D"     "Surface dust number conc emission"  "kg-1 s-1"
 state    real   qnbca2d          ij     misc        1         -     i01{17}rhdu "QNBCA2D"     "Surface black carbon number conc emission"  "kg-1 s-1"
 state    real   qnocbb2d         ij     misc        1         -     i01{17}rhdu "QNOCBB2D"    "Surface organic carbon biomass burning number conc emission"  "kg-1 s-1"
 state    real   qnbcbb2d         ij     misc        1         -     i01{17}rhdu "QNBCBB2D"    "Surface black carbon biomass burning number conc emission"  "kg-1 s-1"
@@ -885,9 +885,9 @@ state  integer  IFNDSNOWSI       -      misc        1         -     ir        "F
 state  integer  IFNDICEDEPTH     -      misc        1         -     ir        "FNDICEDEPTH" "ICEDEPTH_LOGICAL"
 state    real   XLAIDYN          ij     misc        1         -     -         "XLAIDYN"     "Noah Dynamic LEAF AREA INDEX"       "m-2/m-2"
 # SKIN SST
-state    real   SSTSK            ij     misc        1         -     rhd=(interp_mask_field:lu_index,iswater)u=(copy_fcnm)   "SSTSK"              "SKIN SEA SURFACE TEMPERATURE" "K"
+state    real   SSTSK            ij     misc        1         -     rd=(interp_mask_field:lu_index,iswater)u=(copy_fcnm)   "SSTSK"              "SKIN SEA SURFACE TEMPERATURE" "K"
 state    real   lake_depth       ij     misc        1         -     i012rd=(interp_mask_water_field:lu_index,islake)        "lake_depth"         "lake depth" "m"
-state    real   water_depth      ij     misc        1         -     i0rhd                                                   "water_depth"        "global water depth" "m"
+state    real   water_depth      ij     misc        1         -     i0rd                                                   "water_depth"        "global water depth" "m"
 state    real   DTW              ij     misc        1         -     r                                                       "DTW"                "WARM LAYER TEMP DIFF" "C"
 # Ocean surface currents
 state    real   UOCE            ij     misc        1         -     i0124rd=(interp_mask_water_field:lu_index,iswater)  "UOCE"  "SEA SURFACE ZONAL CURRENTS" "m s-1"
@@ -1154,8 +1154,8 @@ state   real   sub_sqv3D       ikj     misc        1         -      h         "s
 state   real   det_thl3D       ikj     misc        1         -      h         "det_thl3D"        "thetaL detrainment tendency from EDMF" "K s-1"
 state   real   det_sqv3D       ikj     misc        1         -      h         "det_sqv3D"        "qv detrainment tendency from EDMF" "kg kg-1 s-1"
 state   integer  ktop_plume     ij     misc        1         -      h         "ktop_plume"       "k-level of highest pentrating plume"    ""
-state   real   maxMF            ij     misc        1         -      h         "maxMF"            "Maximum mass-flux (neg: all dry, pos: moist)"   "m/s * area"
-state   real   maxwidth         ij     misc        1         -      h         "maxwidth"         "Maximum plume width"   "m"
+state   real   maxMF            ij     misc        1         -      -         "maxMF"            "Maximum mass-flux (neg: all dry, pos: moist)"   "m/s * area"
+state   real   maxwidth         ij     misc        1         -      -         "maxwidth"         "Maximum plume width"   "m"
 state   real   ztop_plume       ij     misc        1         -      h         "ztop_plume"       "Height of tallest plume"   "m"
 
 #FogDES variables
@@ -1275,7 +1275,7 @@ state integer   ncfrcv           ij     misc        1         -      -
 # new rad variables
 state    real   o3rad           ikj     misc        1         -      rdf=(p2c)      "o3rad"    "RADIATION 3D OZONE" "ppmv"
 # GFS Total ozone
-state   real    o3_gfs_du       ij      misc        1         -      i012rh         "o3_gfs_du"    "Total ozone from GFS" "Dobson Units"
+state   real    o3_gfs_du       ij      misc        1         -      i012r         "o3_gfs_du"    "Total ozone from GFS" "Dobson Units"
 
 # incoming optical depth derived from aerosol data
 state  real   aerodm    i{lsa}jm{ty}    misc        1    -   -     -
@@ -1409,7 +1409,7 @@ state   real    msfty          ij      misc         1         -     i012rhdu=(co
 state   real    msfux          ij      misc         1         X     i012rhdu=(copy_fcnm)    "MAPFAC_UX"         "Map scale factor on u-grid, x direction" ""
 state   real    msfuy          ij      misc         1         X     i012rhdu=(copy_fcnm)    "MAPFAC_UY"         "Map scale factor on u-grid, y direction" ""
 state   real    msfvx          ij      misc         1         Y     i012rhdu=(copy_fcnm)    "MAPFAC_VX"         "Map scale factor on v-grid, x direction" ""
-state   real    msfvx_inv      ij      misc         1         Y     i012rhdu=(copy_fcnm)    "MF_VX_INV"         "Inverse map scale factor on v-grid, x direction" ""
+state   real    msfvx_inv      ij      misc         1         Y     i012rdu=(copy_fcnm)    "MF_VX_INV"         "Inverse map scale factor on v-grid, x direction" ""
 state   real    msfvy          ij      misc         1         Y     i012rhdu=(copy_fcnm)    "MAPFAC_VY"         "Map scale factor on v-grid, y direction" ""
 
 state   real    f              ij      misc         1         -     i012rhdu=(copy_fcnm)    "f"                "Coriolis sine latitude term"  "s-1"
@@ -1715,8 +1715,8 @@ state    real  CLDFRA_OLD      ikj      misc        1         -      r        "C
 state    real  CLDFRA_BL       ikj      misc        1         -      r        "CLDFRA_BL"             "CLOUD FRACTION pbl"                                   ""
 state    real  CLDT             ij      misc        1         -      -        "CFRACT"                "TOTAL CLOUD FRACTION"                                 ""
 state    real  CLDFRA_LS       ikj      misc        1         -      r        "CLDFRA_LS"             "Cloud fraction from large scale microphysics"   ""
-state    real   CLDFRAL_PHYS     ikj    misc        1         -      rh       "CLDFRAL_PHYS"        "LIQUID GRID-SCALE CLOUD FRAC. IN PHYS STEP"
-state    real   CLDFRAL_PHYS_OLD ikj    misc        1         -      rh       "CLDFRAL_PHYS_OLD"        "LIQUID GRID-SCALE CLOUD FRAC. IN PREV. PHYS STEP"
+state    real   CLDFRAL_PHYS     ikj    misc        1         -      r       "CLDFRAL_PHYS"        "LIQUID GRID-SCALE CLOUD FRAC. IN PHYS STEP"
+state    real   CLDFRAL_PHYS_OLD ikj    misc        1         -      r       "CLDFRAL_PHYS_OLD"        "LIQUID GRID-SCALE CLOUD FRAC. IN PREV. PHYS STEP"
 #state    real  CLDL             ij      misc        1         -      -        "CFRACL"                "LOW CLOUD FRACTION (ETA GREATER THAN 0.69)"           ""
 #state    real  LWP              ij      misc        1         -      -        "LWP"                   "LIQUID CLOUD WATER PATH"                              "kg m-2"
 state    real  SWDOWN           ij      misc        1         -      rhd      "SWDOWN"                "DOWNWARD SHORT WAVE FLUX AT GROUND SURFACE"           "W m-2"      
@@ -1751,7 +1751,7 @@ state   real    aerssa2d     ij     misc         1         -     i{15}r "AERSSA2
 state   real    aerasy2d     ij     misc         1         -     i{15}r "AERASY2D"   "Aerosol asymmetry factor" ""
 state   real    aod5503d     ikj    misc         1         -     r      "AOD5503D"   "3D aerosol optical depth at 550 nm" ""
 state   real    taod5503d    ikj    misc         1         -     r      "TAOD5503D"  "3D aerosol optical depth at 550 nm (MP=28)" ""
-state   real    taod5502d    ij     misc         1         -     rh     "TAOD5502D"  "2D aerosol optical depth at 550 nm (MP=28)" ""
+state   real    taod5502d    ij     misc         1         -     r     "TAOD5502D"  "2D aerosol optical depth at 550 nm (MP=28)" ""
 
 # CLWRF-WRF4G
 state    real  T2MIN            ij      misc        1         -      rh3      "T2MIN"                 "MINIMUM TEMPERATURE AT 2M HEIGHT IN DIAGNOSTIC OUTPUT INTERVAL"                      "K"
@@ -1859,7 +1859,7 @@ state    real  XLAT_V           ij      dyn_em      1         Y     i012rhdu=(co
 state    real  XLONG_V          ij      dyn_em      1         Y     i012rhd=(interp_fcn_blint_ll:xlat_v,input_from_file)u=(copy_fcnm)         "XLONG_V"             "LONGITUDE, WEST IS NEGATIVE"                                          "degree_east"
 state    real  ALBEDO           ij      misc        1         -      rh          "ALBEDO"                   "ALBEDO"
 state    real  CLAT             ij      misc        1         -     i012rhdu=(copy_fcnm)         "CLAT"                "COMPUTATIONAL GRID LATITUDE, SOUTH IS NEGATIVE"                       "degree_north"
-state    real  ALBBCK           ij      misc        1         -     i0124rh   "ALBBCK"                "BACKGROUND ALBEDO"        ""
+state    real  ALBBCK           ij      misc        1         -     i0124r   "ALBBCK"                "BACKGROUND ALBEDO"        ""
 state    real  EMBCK            ij      misc        1         -      r        "EMBCK"                 "BACKGROUND EMISSIVITY"         ""
 state    real  EMISS            ij      misc        1         -      rh       "EMISS"                 "SURFACE EMISSIVITY"         "" 
 state    real  SNOTIME          ij      misc        1         -      r        "SNOTIME"               "SNOTIME"         "" 
@@ -2019,7 +2019,7 @@ state   real    div            ikj      misc        1         -     r         "d
 state   real    BN2            ikj      misc        1         -     r         "BN2"                   "BRUNT-VAISALA FREQUENCY"                                         "s-2"
 state  logical warm_rain        -       misc        1         -     -         "warm_rain"              "WARM_RAIN_LOGICAL"
 state  logical adv_moist_cond   -       misc        1         -     -         "adv_moist_cond"         "ADVECT MOIST CONDENSATES LOGICAL"
-state  integer save_topo_from_real -    dyn_em	    1         -     i02rh     "save_topo_from_real"    "1=original topo from real/0=topo modified by WRF"      "flag"
+state  integer save_topo_from_real -    dyn_em	    1         -     i02r     "save_topo_from_real"    "1=original topo from real/0=topo modified by WRF"      "flag"
 
 ## FDDA variables
 
