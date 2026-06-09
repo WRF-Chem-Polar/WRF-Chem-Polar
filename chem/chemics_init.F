@@ -2184,7 +2184,7 @@ ENDIF ghg_block
 
    ! Check THOMPSONAERO aerosol-cloud options
    IF(config_flags%aci_wrfchem_opt>0) THEN
-     IF(config_flags%mp_physics /= THOMPSONAERO .or. config_flags%mp_physics /= MICROWCP) THEN
+     IF(config_flags%mp_physics /= THOMPSONAERO .and. config_flags%mp_physics /= MICROWCP) THEN
        CALL wrf_error_fatal("chemics_init: aci_wrfchem_opt>0 requires&
        & THOMPSONAERO microphysics or MICROWCP microphysics")
      ELSEIF(config_flags%aci_wrf_opt > 0) THEN

@@ -2324,7 +2324,8 @@ integer::oops1,oops2
 
             aer_init_opt = config_flags%aer_init_opt
 
-            if_thompsonaero_3d: IF (config_flags%mp_physics .EQ. THOMPSONAERO .AND. &
+            if_thompsonaero_3d: IF ((config_flags%mp_physics .EQ. THOMPSONAERO .OR. &
+                config_flags%mp_physics .EQ. MICROWCP) .AND. &
                 config_flags%wif_input_opt .GT. 0) THEN
 
             select_aer_init_opt_3d: select case (aer_init_opt)
@@ -2731,9 +2732,10 @@ integer::oops1,oops2
 
                end select select_aer_init_opt_3d
 
-            ELSE IF (config_flags%mp_physics .EQ. THOMPSONAERO .and. &
+            ELSE IF ((config_flags%mp_physics .EQ. THOMPSONAERO .OR. &
+                     config_flags%mp_physics .EQ. MICROWCP) .and. &
                      config_flags%wif_input_opt .EQ. 0 ) THEN
-               CALL wrf_error_fatal ('wif_input_opt=0 but mp_physics=28' )
+               CALL wrf_error_fatal ('wif_input_opt=0 but mp_physics=28 or 60' )
             END IF if_thompsonaero_3d
 
 !=========================================================================================
@@ -4493,7 +4495,8 @@ endif
 !.. to read biomass burning aerosol emissions
 !+---+-----------------------------------------------------------------+
 
-      if_thompsonaero_2d: IF (config_flags%mp_physics .EQ. THOMPSONAERO .AND. &
+      if_thompsonaero_2d: IF ((config_flags%mp_physics .EQ. THOMPSONAERO .OR. &
+                config_flags%mp_physics .EQ. MICROWCP) .AND. &
                 config_flags%wif_input_opt .GT. 0) THEN
 
       select_aer_init_opt_2d: select case (aer_init_opt)
@@ -4782,7 +4785,8 @@ endif
 !+---+-----------------------------------------------------------------+
 
       IF ( config_flags%mp_physics .EQ. THOMPSON .OR.                   &
-                   config_flags%mp_physics .EQ. THOMPSONAERO ) THEN
+                   config_flags%mp_physics .EQ. THOMPSONAERO .OR.       &
+                   config_flags%mp_physics .EQ. MICROWCP ) THEN
 
          !..As it occurs up above, temporarily utilizing the v_1 variable,
          !.. to hold temperature, which it does when time_loop=0.
