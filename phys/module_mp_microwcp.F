@@ -1,28 +1,9 @@
 !=======================================================================
 ! module_mp_microwcp
-!-----------------------------------------------------------------------
-! Fortran port of the Python microphysics prototype (the micro package).
-!
-! Interface mirrors WRF's module_mp_thompson:
-!   * mp_microwcp_driver  <->  mp_gt_driver   (the (i,j) tile loop)
-!   * mp_microwcp_column   <->  mp_thompson    (per-column physics)
-!
-! I/O conventions copied exactly from Thompson:
-!   * 3-D arrays are (ims:ime, kms:kme, jms:jme)  -- k is the MIDDLE index
-!   * temperature carried as potential temperature: t = th*pii, th = t/pii
-!   * moist density: rho = 0.622*p/(R*t*(qv+0.622))
-!   * surface precip returned as depth [mm] per category
-!
-! The physics is a faithful transliteration of the prototype; it is
-! validated column-by-column against micro/column.py::step_column
-! (see fortran/validate_fortran.py).
-!
-! Build (standalone test):  see fortran/Makefile
-!
 !=======================================================================
 ! HOW TO READ THE VARIABLE NAMES
 !-----------------------------------------------------------------------
-! Prognostic fields (the things microphysics predicts):
+! Prognostic fields:
 !   qv,qc,qr,qi,qs,qg   mixing ratios   [kg kg-1]  vapour / cloud /
 !                       rain / cloud-ice / snow / graupel
 !   nc,nr,ni            number concentrations [kg-1] for the 2-moment
@@ -80,7 +61,7 @@ module module_mp_microwcp
   integer, parameter :: IC=1, IR=2, II=3, IS=4, IG=5   ! cloud rain ice snow graupel
   integer, parameter :: NCAT=5
 
-  ! ---- physical constants (== micro/constants.py) -----------------
+  ! ---- physical constants -----------------
   real(rk), parameter :: PI    = 3.14159265358979_rk
   real(rk), parameter :: CP    = 1004.64_rk
   real(rk), parameter :: RD    = 287.04_rk
@@ -105,14 +86,13 @@ module module_mp_microwcp
   real(rk), parameter :: QS_MIN= 1.0e-10_rk
   real(rk), parameter :: QG_MIN= 1.0e-10_rk
 
-  ! ---- diffusion / vapour constants (cold.py) ---------------------
+  ! ---- diffusion / vapour constants ---------------------
   real(rk), parameter :: D_V  = 2.26e-5_rk
   real(rk), parameter :: K_A  = 2.43e-2_rk
   real(rk), parameter :: NU_AIR = 1.5e-5_rk
   real(rk), parameter :: M_ICE_MIN = 1.0e-12_rk
 
   ! Deposition ventilation mass-weighted Gamma ratio, matching the
-  ! hardcoded values in cold.py::_VENT_PARAMS (rounded to 4 dp there).
   ! Only ice/snow/graupel deposit; cloud/rain entries unused.
   !                            cloud   rain   ice     snow      graupel
   real(rk), parameter :: vent_Gq(NCAT) = (/ 0.0_rk, 0.0_rk, 1.0_rk, 0.8873_rk, 0.8912_rk /)
@@ -126,7 +106,7 @@ module module_mp_microwcp
                                        PI/6.0_rk*RHO_G /)
   real(rk), parameter :: N0_graupel = 4.0e4_rk
 
-  ! ---- fall-speed params: V = av*D^bv  (sedimentation.py) ---------
+  ! ---- fall-speed params: V = av*D^bv ---------
   real(rk), parameter :: av(NCAT) = (/ 3.0e7_rk, 841.99_rk, 700.0_rk, 11.72_rk, 19.3_rk /)
   real(rk), parameter :: bv(NCAT) = (/ 2.0_rk,   0.8_rk,    1.0_rk,   0.41_rk,  0.37_rk /)
 
@@ -209,7 +189,7 @@ contains
   end function
 
   !=================================================================
-  ! PSD diagnostics (== micro/psd.py::diagnose_all)
+  ! PSD diagnostics 
   !=================================================================
 
   ! Temperature-dependent snow intercept N0 [m-4] (Houze et al. 1979),
@@ -409,7 +389,7 @@ contains
 
   !-----------------------------------------------------------------
   !-----------------------------------------------------------------
-  ! nucleation  (== micro/nucleation.py)
+  ! nucleation  
   !   Birth of new hydrometeors from vapour/aerosol:
   !     - CCN activation (Twomey): vapour supersaturation + water-friendly
   !       aerosol nwfa -> new cloud droplets (nc,qc).
@@ -449,7 +429,7 @@ contains
       Tsc = max(T0+0.01_rk - T0k, 0.0_rk)            ! 273.16 - T
       if (T0k > T_HOM .and. T0k < T_FREEZE .and. Tsc > 0.0_rk) then
         na_cm3 = max(nifa(k)*rho(k)*1.0e-6_rk, 1.0e-6_rk)
-        Ninp_L = a_dm*(Tsc**b_dm)*(na_cm3**(c_dm*Tsc+d_dm))
+        Ninp_L = a_dm*(Tsc**b_dm)*(na_cm3**(c_dm*Tsc+d_dm))     ! the actual parameterization
         Ninp   = Ninp_L*1.0e3_rk/max(rho(k),1.0e-3_rk)
         dNi    = max(Ninp-ni0,0.0_rk)/dt
         dqi    = dNi*M_ICE_MIN
@@ -471,7 +451,7 @@ contains
 
   !-----------------------------------------------------------------
   !-----------------------------------------------------------------
-  ! warm  (== micro/warm.py)
+  ! warm  
   !   Liquid-only processes that make and shape rain:
   !     - autoconversion (KK2000): cloud droplets coalesce into rain.
   !     - accretion (KK2000): rain sweeps up cloud droplets.
@@ -532,7 +512,7 @@ contains
 
   !-----------------------------------------------------------------
   !-----------------------------------------------------------------
-  ! cold  (== micro/cold.py)
+  ! cold  
   !   Ice-phase processes that exchange mass with vapour and between ice
   !   species:
   !     - vapour deposition/sublimation on ice, snow, graupel (qv<->qx),
@@ -639,7 +619,7 @@ contains
 
   !-----------------------------------------------------------------
   !-----------------------------------------------------------------
-  ! collection  (== micro/collection.py)
+  ! collection  
   !   Mixed-phase collision-collection (riming and wet growth), active
   !   only below 0 C. A faster-falling "collector" sweeps up a slower
   !   "collected" species; the differential fall speed sets the rate:
@@ -714,7 +694,7 @@ contains
 
   !-----------------------------------------------------------------
   !-----------------------------------------------------------------
-  ! sedimentation  (== micro/sedimentation.py)
+  ! sedimentation  
   !   Gravitational settling of every category through the column via the
   !   upwind scheme above. 2-moment species (cloud,rain,ice) settle mass
   !   and number separately (mass- vs number-weighted fall speed); snow
@@ -752,7 +732,7 @@ contains
 
   !-----------------------------------------------------------------
   !-----------------------------------------------------------------
-  ! saturation_adjustment  (== micro/satadj.py)
+  ! saturation_adjustment
   !   Final warm-phase cleanup: where T>=0 C, condense excess vapour to
   !   cloud (or evaporate cloud) so qv relaxes to qsat_liquid, updating T
   !   for the latent heat. Three Newton iterations handle qsat's own
@@ -784,7 +764,7 @@ contains
   end subroutine saturation_adjustment
 
   !-----------------------------------------------------------------
-  ! column_diag  (== micro/diagnostics.py)
+  ! column_diag  
   !   Optional radiation/radar diagnostics for one column:
   !     re_qc,re_qi,re_qs  effective radii [m] (clamped to WRF bounds)
   !                        Reff = (mu+3)/(2*lam); re_qs extends the

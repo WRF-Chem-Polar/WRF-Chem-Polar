@@ -384,20 +384,22 @@ call wrf_message("**************************************************************
        if ( config_flags%mp_physics /= LINSCHEME &
             .and. config_flags%mp_physics /= THOMPSON &
             .and. config_flags%mp_physics /= THOMPSONAERO &
+            .and. config_flags%mp_physics /= MICROWCP&
             .and. config_flags%mp_physics /= MORR_TWO_MOMENT &
             .and. config_flags%mp_physics /= CAMMGMPSCHEME  &
             .and. .not. ( config_flags%mp_physics == NSSL_2MOM &
                           .and. config_flags%nssl_2moment_on == 1 ) ) then
          call wrf_error_fatal("ERROR: wet scavenging option requires &
-                & mp_physics = 2 (Lin et al.) or 8,28 (Thompson) or &
-                & 10 (Morrison) or 11 (CAMMGMP) or 18 (NSSL_2mom) to &
-                & function.")
+                & mp_physics = 2 (Lin et al.) or 8,28 (Thompson), or &
+                & 60 (microWCP), or 10 (Morrison) or 11 (CAMMGMP) or &
+                & 18 (NSSL_2mom) to function.")
        endif
      ! MOZART options and domain id = 1
      elseif( id == 1 ) then
        if ( config_flags%mp_physics /= WSM6SCHEME &
             .and. config_flags%mp_physics /= THOMPSON &
             .and. config_flags%mp_physics /= THOMPSONAERO &
+            .and. config_flags%mp_physics /= MICROWCP&
             .and. config_flags%mp_physics /= MORR_TWO_MOMENT &
             .and. .not. ( config_flags%mp_physics == NSSL_2MOM &
                           .and. config_flags%nssl_2moment_on == 1 ) ) then
@@ -426,12 +428,13 @@ call wrf_message("**************************************************************
    IF (config_flags%wetscav_onoff == 1 .AND. aer_is_gocart) THEN
      IF(config_flags%mp_physics == THOMPSON &
         .OR. config_flags%mp_physics == THOMPSONAERO &
+        .OR. config_flags%mp_physics == MICROWCP &
         .OR. config_flags%mp_physics == MORR_TWO_MOMENT) THEN
        CALL wrf_debug( 15, 'Chemics_init: Calling aer_wetscav_simple_init' )
        CALL aer_wetscav_simple_init(config_flags%chem_opt)
      ELSE
        CALL wrf_error_fatal("ERROR: wet scavenging option for GOCART &
-            & requires mp_phys = THOMPSON, THOMPSONAERO, or MORR_TWO_MOMENT")
+            & requires mp_phys = THOMPSON, THOMPSONAERO, MICROWCP or MORR_TWO_MOMENT")
      ENDIF
    ENDIF
 
@@ -480,7 +483,8 @@ call wrf_message("**************************************************************
       endif
       if ( config_flags%mp_physics /= 2 .and. config_flags%mp_physics /= 10 .and. config_flags%mp_physics /= 11  &
                .and. config_flags%mp_physics /= 17 .and. config_flags%mp_physics /= 18 .and. config_flags%mp_physics /= 22 &
-               .and. (config_flags%mp_physics /= THOMPSONAERO .or. config_flags%aci_wrfchem_opt  <= 0) ) then
+               .and. (config_flags%mp_physics /= THOMPSONAERO .or. config_flags%aci_wrfchem_opt  <= 0) &
+               .and. (config_flags%mp_physics /= MICROWCP .or. config_flags%aci_wrfchem_opt  <= 0) ) then
         call wrf_error_fatal("ERROR: cloud chemistry option requires mp_phys = 2 (Lin et al.) or 10 (Morrison) or 11 (CAMMGMP) or &
                               & 17/18/22 (NSSL_2mom) or 28(THOMPSONAERO)+aci_wrfchem_opt>0 to function.")
       endif
@@ -2180,9 +2184,9 @@ ENDIF ghg_block
 
    ! Check THOMPSONAERO aerosol-cloud options
    IF(config_flags%aci_wrfchem_opt>0) THEN
-     IF(config_flags%mp_physics /= THOMPSONAERO) THEN
+     IF(config_flags%mp_physics /= THOMPSONAERO .or. config_flags%mp_physics /= MICROWCP) THEN
        CALL wrf_error_fatal("chemics_init: aci_wrfchem_opt>0 requires&
-       & THOMPSONAERO microphysics")
+       & THOMPSONAERO microphysics or MICROWCP microphysics")
      ELSEIF(config_flags%aci_wrf_opt > 0) THEN
        CALL wrf_error_fatal("chemics_init: aci_wrf_opt and aci_wrfchem_opt cannot be&
        & enabled at the same time")
