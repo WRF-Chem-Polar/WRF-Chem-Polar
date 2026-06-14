@@ -938,10 +938,13 @@ contains
 
         ! ---- DIAGNOSTIC: trap NaN/Inf/absurd values PRODUCED by this scheme ----
         do k = kts, kte
-          if ( th(i,k,j) /= th(i,k,j) .or. abs(th(i,k,j)) > 1.0e6 .or. &
-               qv(i,k,j) /= qv(i,k,j) .or. qc(i,k,j) /= qc(i,k,j) .or. &
-               qr(i,k,j) /= qr(i,k,j) .or. qi(i,k,j) /= qi(i,k,j) .or. &
-               qs(i,k,j) /= qs(i,k,j) .or. qg(i,k,j) /= qg(i,k,j) .or. &
+          if ( th(i,k,j) /= th(i,k,j) .or. th(i,k,j) < 50.0 .or. th(i,k,j) > 1.0e4 .or. &
+               qv(i,k,j) /= qv(i,k,j) .or. qv(i,k,j) < 0.0 .or. &
+               qc(i,k,j) /= qc(i,k,j) .or. qc(i,k,j) < 0.0 .or. &
+               qr(i,k,j) /= qr(i,k,j) .or. qr(i,k,j) < 0.0 .or. &
+               qi(i,k,j) /= qi(i,k,j) .or. qi(i,k,j) < 0.0 .or. &
+               qs(i,k,j) /= qs(i,k,j) .or. qs(i,k,j) < 0.0 .or. &
+               qg(i,k,j) /= qg(i,k,j) .or. qg(i,k,j) < 0.0 .or. &
                nr(i,k,j) /= nr(i,k,j) .or. ni(i,k,j) /= ni(i,k,j) ) then
             write(0,*) 'MICROWCP BAD OUTPUT  i,k,j=',i,k,j,' step=',itimestep
             write(0,*) '   th,qv,qc,qr,qi,qs,qg,nr,ni=', &
