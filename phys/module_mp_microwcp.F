@@ -909,13 +909,25 @@ contains
           end if
         end do
 
-        ! ---- DIAGNOSTIC: trap NaN/Inf in the INPUT to this scheme ----
+        ! ---- DIAGNOSTIC: trap bad INPUT to this scheme (all fields + dynamics) ----
         do k = kts, kte
-          if ( t1d(k) /= t1d(k) .or. qv1d(k) /= qv1d(k) .or. &
-               qc1d(k) /= qc1d(k) .or. qi1d(k) /= qi1d(k) ) then
+          if ( t1d(k)  /= t1d(k)  .or. t1d(k) < 100.0_rk .or. t1d(k) > 400.0_rk .or. &
+               p1d(k)  /= p1d(k)  .or. p1d(k) <= 0.0_rk  .or. &
+               rho(k)  /= rho(k)  .or. rho(k) <= 0.0_rk  .or. rho(k) > 2.0_rk .or. &
+               w1d(k)  /= w1d(k)  .or. abs(w1d(k)) > 100.0_rk .or. &
+               dz1d(k) /= dz1d(k) .or. dz1d(k) <= 0.0_rk .or. &
+               qv1d(k) /= qv1d(k) .or. qv1d(k) < 0.0_rk .or. &
+               qc1d(k) /= qc1d(k) .or. qc1d(k) < 0.0_rk .or. &
+               qr1d(k) /= qr1d(k) .or. qr1d(k) < 0.0_rk .or. &
+               qi1d(k) /= qi1d(k) .or. qi1d(k) < 0.0_rk .or. &
+               qs1d(k) /= qs1d(k) .or. qs1d(k) < 0.0_rk .or. &
+               qg1d(k) /= qg1d(k) .or. qg1d(k) < 0.0_rk .or. &
+               nc1d(k) /= nc1d(k) .or. nr1d(k) /= nr1d(k) .or. ni1d(k) /= ni1d(k) ) then
             write(0,*) 'MICROWCP BAD INPUT  i,k,j=',i,k,j,' step=',itimestep
-            write(0,*) '   t1d,qv1d,qc1d,qi1d=',t1d(k),qv1d(k),qc1d(k),qi1d(k)
-            call wrf_error_fatal('MICROWCP got NaN/Inf input (corruption upstream)')
+            write(0,*) '   t,p,rho,w,dz =',t1d(k),p1d(k),rho(k),w1d(k),dz1d(k)
+            write(0,*) '   qv,qc,qr,qi,qs,qg =',qv1d(k),qc1d(k),qr1d(k),qi1d(k),qs1d(k),qg1d(k)
+            write(0,*) '   nc,nr,ni =',nc1d(k),nr1d(k),ni1d(k)
+            call wrf_error_fatal('MICROWCP bad input (corruption upstream)')
           end if
         end do
 
@@ -939,13 +951,14 @@ contains
         ! ---- DIAGNOSTIC: trap NaN/Inf/absurd values PRODUCED by this scheme ----
         do k = kts, kte
           if ( th(i,k,j) /= th(i,k,j) .or. th(i,k,j) < 50.0 .or. th(i,k,j) > 1.0e4 .or. &
-               qv(i,k,j) /= qv(i,k,j) .or. qv(i,k,j) < 0.0 .or. &
-               qc(i,k,j) /= qc(i,k,j) .or. qc(i,k,j) < 0.0 .or. &
-               qr(i,k,j) /= qr(i,k,j) .or. qr(i,k,j) < 0.0 .or. &
-               qi(i,k,j) /= qi(i,k,j) .or. qi(i,k,j) < 0.0 .or. &
-               qs(i,k,j) /= qs(i,k,j) .or. qs(i,k,j) < 0.0 .or. &
-               qg(i,k,j) /= qg(i,k,j) .or. qg(i,k,j) < 0.0 .or. &
-               nr(i,k,j) /= nr(i,k,j) .or. ni(i,k,j) /= ni(i,k,j) ) then
+               qv(i,k,j) /= qv(i,k,j) .or. qv(i,k,j) < 0.0 .or. qv(i,k,j) > 0.1  .or. &
+               qc(i,k,j) /= qc(i,k,j) .or. qc(i,k,j) < 0.0 .or. qc(i,k,j) > 0.05 .or. &
+               qr(i,k,j) /= qr(i,k,j) .or. qr(i,k,j) < 0.0 .or. qr(i,k,j) > 0.05 .or. &
+               qi(i,k,j) /= qi(i,k,j) .or. qi(i,k,j) < 0.0 .or. qi(i,k,j) > 0.05 .or. &
+               qs(i,k,j) /= qs(i,k,j) .or. qs(i,k,j) < 0.0 .or. qs(i,k,j) > 0.05 .or. &
+               qg(i,k,j) /= qg(i,k,j) .or. qg(i,k,j) < 0.0 .or. qg(i,k,j) > 0.05 .or. &
+               nr(i,k,j) /= nr(i,k,j) .or. nr(i,k,j) < 0.0 .or. nr(i,k,j) > 1.0e13 .or. &
+               ni(i,k,j) /= ni(i,k,j) .or. ni(i,k,j) < 0.0 .or. ni(i,k,j) > 1.0e13 ) then
             write(0,*) 'MICROWCP BAD OUTPUT  i,k,j=',i,k,j,' step=',itimestep
             write(0,*) '   th,qv,qc,qr,qi,qs,qg,nr,ni=', &
                th(i,k,j),qv(i,k,j),qc(i,k,j),qr(i,k,j),qi(i,k,j), &
@@ -953,6 +966,26 @@ contains
             call wrf_error_fatal('MICROWCP produced NaN/Inf (see rsl.error)')
           end if
         end do
+
+        ! ---- DIAGNOSTIC: trap bad cloud-number / aerosol output (guarded) ----
+        if (has_nc) then
+          do k = kts, kte
+            if (nc(i,k,j) /= nc(i,k,j) .or. nc(i,k,j) < 0.0 .or. nc(i,k,j) > 1.0e13) then
+              write(0,*) 'MICROWCP BAD nc OUTPUT i,k,j=',i,k,j,' step=',itimestep,' nc=',nc(i,k,j)
+              call wrf_error_fatal('MICROWCP bad nc output')
+            end if
+          end do
+        end if
+        if (has_aero) then
+          do k = kts, kte
+            if (nwfa(i,k,j) /= nwfa(i,k,j) .or. nwfa(i,k,j) < 0.0 .or. nwfa(i,k,j) > 1.0e15 .or. &
+                nifa(i,k,j) /= nifa(i,k,j) .or. nifa(i,k,j) < 0.0 .or. nifa(i,k,j) > 1.0e15) then
+              write(0,*) 'MICROWCP BAD aero OUTPUT i,k,j=',i,k,j,' step=',itimestep, &
+                         ' nwfa,nifa=',nwfa(i,k,j),nifa(i,k,j)
+              call wrf_error_fatal('MICROWCP bad aerosol output')
+            end if
+          end do
+        end if
 
         ! ---- optional diagnostics ----
         if (want_re .or. want_refl) then
