@@ -909,6 +909,16 @@ contains
           end if
         end do
 
+        ! ---- DIAGNOSTIC: trap NaN/Inf in the INPUT to this scheme ----
+        do k = kts, kte
+          if ( t1d(k) /= t1d(k) .or. qv1d(k) /= qv1d(k) .or. &
+               qc1d(k) /= qc1d(k) .or. qi1d(k) /= qi1d(k) ) then
+            write(0,*) 'MICROWCP BAD INPUT  i,k,j=',i,k,j,' step=',itimestep
+            write(0,*) '   t1d,qv1d,qc1d,qi1d=',t1d(k),qv1d(k),qc1d(k),qi1d(k)
+            call wrf_error_fatal('MICROWCP got NaN/Inf input (corruption upstream)')
+          end if
+        end do
+
         ! ---- advance the column ----
         call mp_microwcp_column(nz, t1d,p1d,rho,w1d,dz1d, &
              qv1d,qc1d,qr1d,qi1d,qs1d,qg1d, nc1d,nr1d,ni1d, nwfa1d,nifa1d, &
@@ -923,6 +933,21 @@ contains
           if (has_nc)   nc(i,k,j)   = real(nc1d(k))
           if (has_aero) then
             nwfa(i,k,j) = real(nwfa1d(k)); nifa(i,k,j) = real(nifa1d(k))
+          end if
+        end do
+
+        ! ---- DIAGNOSTIC: trap NaN/Inf/absurd values PRODUCED by this scheme ----
+        do k = kts, kte
+          if ( th(i,k,j) /= th(i,k,j) .or. abs(th(i,k,j)) > 1.0e6 .or. &
+               qv(i,k,j) /= qv(i,k,j) .or. qc(i,k,j) /= qc(i,k,j) .or. &
+               qr(i,k,j) /= qr(i,k,j) .or. qi(i,k,j) /= qi(i,k,j) .or. &
+               qs(i,k,j) /= qs(i,k,j) .or. qg(i,k,j) /= qg(i,k,j) .or. &
+               nr(i,k,j) /= nr(i,k,j) .or. ni(i,k,j) /= ni(i,k,j) ) then
+            write(0,*) 'MICROWCP BAD OUTPUT  i,k,j=',i,k,j,' step=',itimestep
+            write(0,*) '   th,qv,qc,qr,qi,qs,qg,nr,ni=', &
+               th(i,k,j),qv(i,k,j),qc(i,k,j),qr(i,k,j),qi(i,k,j), &
+               qs(i,k,j),qg(i,k,j),nr(i,k,j),ni(i,k,j)
+            call wrf_error_fatal('MICROWCP produced NaN/Inf (see rsl.error)')
           end if
         end do
 
