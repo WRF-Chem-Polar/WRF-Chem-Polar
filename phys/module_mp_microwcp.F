@@ -148,8 +148,12 @@ contains
     do c = 1, NCAT
       Gb1(c) = gamma(mu(c) + bm(c) + 1.0_rk)
       G1(c)  = gamma(mu(c) + 1.0_rk)
-      Gq(c)  = gamma(mu(c) + bv(c) + 1.0_rk) / gamma(mu(c) + 1.0_rk)
-      GN(c)  = gamma(mu(c) + bv(c) + 1.0_rk) / gamma(mu(c) + 2.0_rk)
+      ! mass-weighted bulk fall speed: weight V(D)=av*D^bv by mass m(D)=am*D^bm,
+      ! so the gamma ratio must include the mass-diameter exponent bm.
+      ! (Previously used gamma(mu+bv+1)/gamma(mu+1), the NUMBER-weighted factor,
+      !  which made q sediment ~3x too slow for rain -> surface accumulation.)
+      Gq(c)  = gamma(mu(c) + bm(c) + bv(c) + 1.0_rk) / gamma(mu(c) + bm(c) + 1.0_rk)
+      GN(c)  = gamma(mu(c) + bv(c) + 1.0_rk) / gamma(mu(c) + 1.0_rk)
       G6(c)  = gamma(mu(c) + 7.0_rk)
     end do
     initialized = .true.
