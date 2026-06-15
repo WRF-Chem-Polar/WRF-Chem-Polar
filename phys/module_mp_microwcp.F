@@ -541,7 +541,7 @@ contains
       aqg=0.0_rk; anr=0.0_rk; ani=0.0_rk; aT=0.0_rk
       ! --- deposition/sublimation on ice/snow/graupel ---
       dqi = dep_rate(qi0,Nb(k,II),Dm(k,II),lam(k,II),qv0,T0k,P(k),rho(k),QI_MIN,dt,II)
-      if (dqi < 0.0_rk) ani = ani + ni0*dqi/max(qi0,Q_MIN)
+      if (dqi < -1.0e-8_rk) ani = ani + ni0*dqi/max(qi0,Q_MIN)
       aqi=aqi+dqi; aqv=aqv-dqi; aT=aT+L_SUB/CP*dqi
       dqs = dep_rate(qs0,Nb(k,IS),Dm(k,IS),lam(k,IS),qv0,T0k,P(k),rho(k),QS_MIN,dt,IS)
       aqs=aqs+dqs; aqv=aqv-dqs; aT=aT+L_SUB/CP*dqs
@@ -611,7 +611,7 @@ contains
       den = rhx*(Ad+Bd)
       r   = fv*(Si-1.0_rk)*Nbx*Dmx*PI*D_V*esi/max(den,1.0e-30_rk)
       if (qx <= qmin) r = 0.0_rk
-      if (r < 0.0_rk) r = max(r, -qx/dtl)
+      if (r < -1.0e-8_rk) r = max(r, -qx/dtl)
       if (r > 0.0_rk) r = min(r,  qvx/dtl)
       dep_rate = r
     end function
@@ -916,12 +916,12 @@ contains
                rho(k)  /= rho(k)  .or. rho(k) <= 0.0_rk  .or. rho(k) > 2.0_rk .or. &
                w1d(k)  /= w1d(k)  .or. abs(w1d(k)) > 100.0_rk .or. &
                dz1d(k) /= dz1d(k) .or. dz1d(k) <= 0.0_rk .or. &
-               qv1d(k) /= qv1d(k) .or. qv1d(k) < 0.0_rk .or. &
-               qc1d(k) /= qc1d(k) .or. qc1d(k) < 0.0_rk .or. &
-               qr1d(k) /= qr1d(k) .or. qr1d(k) < 0.0_rk .or. &
-               qi1d(k) /= qi1d(k) .or. qi1d(k) < 0.0_rk .or. &
-               qs1d(k) /= qs1d(k) .or. qs1d(k) < 0.0_rk .or. &
-               qg1d(k) /= qg1d(k) .or. qg1d(k) < 0.0_rk .or. &
+               qv1d(k) /= qv1d(k) .or. qv1d(k) < -1.0e-8_rk .or. &
+               qc1d(k) /= qc1d(k) .or. qc1d(k) < -1.0e-8_rk .or. &
+               qr1d(k) /= qr1d(k) .or. qr1d(k) < -1.0e-8_rk .or. &
+               qi1d(k) /= qi1d(k) .or. qi1d(k) < -1.0e-8_rk .or. &
+               qs1d(k) /= qs1d(k) .or. qs1d(k) < -1.0e-8_rk .or. &
+               qg1d(k) /= qg1d(k) .or. qg1d(k) < -1.0e-8_rk .or. &
                nc1d(k) /= nc1d(k) .or. nr1d(k) /= nr1d(k) .or. ni1d(k) /= ni1d(k) ) then
             write(0,*) 'MICROWCP BAD INPUT  i,k,j=',i,k,j,' step=',itimestep
             write(0,*) '   t,p,rho,w,dz =',t1d(k),p1d(k),rho(k),w1d(k),dz1d(k)
@@ -951,14 +951,14 @@ contains
         ! ---- DIAGNOSTIC: trap NaN/Inf/absurd values PRODUCED by this scheme ----
         do k = kts, kte
           if ( th(i,k,j) /= th(i,k,j) .or. th(i,k,j) < 50.0 .or. th(i,k,j) > 1.0e4 .or. &
-               qv(i,k,j) /= qv(i,k,j) .or. qv(i,k,j) < 0.0 .or. qv(i,k,j) > 0.1  .or. &
-               qc(i,k,j) /= qc(i,k,j) .or. qc(i,k,j) < 0.0 .or. qc(i,k,j) > 0.05 .or. &
-               qr(i,k,j) /= qr(i,k,j) .or. qr(i,k,j) < 0.0 .or. qr(i,k,j) > 0.05 .or. &
-               qi(i,k,j) /= qi(i,k,j) .or. qi(i,k,j) < 0.0 .or. qi(i,k,j) > 0.05 .or. &
-               qs(i,k,j) /= qs(i,k,j) .or. qs(i,k,j) < 0.0 .or. qs(i,k,j) > 0.05 .or. &
-               qg(i,k,j) /= qg(i,k,j) .or. qg(i,k,j) < 0.0 .or. qg(i,k,j) > 0.05 .or. &
-               nr(i,k,j) /= nr(i,k,j) .or. nr(i,k,j) < 0.0 .or. nr(i,k,j) > 1.0e13 .or. &
-               ni(i,k,j) /= ni(i,k,j) .or. ni(i,k,j) < 0.0 .or. ni(i,k,j) > 1.0e13 ) then
+               qv(i,k,j) /= qv(i,k,j) .or. qv(i,k,j) < -1.0e-8 .or. qv(i,k,j) > 0.1  .or. &
+               qc(i,k,j) /= qc(i,k,j) .or. qc(i,k,j) < -1.0e-8 .or. qc(i,k,j) > 0.05 .or. &
+               qr(i,k,j) /= qr(i,k,j) .or. qr(i,k,j) < -1.0e-8 .or. qr(i,k,j) > 0.05 .or. &
+               qi(i,k,j) /= qi(i,k,j) .or. qi(i,k,j) < -1.0e-8 .or. qi(i,k,j) > 0.05 .or. &
+               qs(i,k,j) /= qs(i,k,j) .or. qs(i,k,j) < -1.0e-8 .or. qs(i,k,j) > 0.05 .or. &
+               qg(i,k,j) /= qg(i,k,j) .or. qg(i,k,j) < -1.0e-8 .or. qg(i,k,j) > 0.05 .or. &
+               nr(i,k,j) /= nr(i,k,j) .or. nr(i,k,j) < -1.0e3 .or. nr(i,k,j) > 1.0e13 .or. &
+               ni(i,k,j) /= ni(i,k,j) .or. ni(i,k,j) < -1.0e3 .or. ni(i,k,j) > 1.0e13 ) then
             write(0,*) 'MICROWCP BAD OUTPUT  i,k,j=',i,k,j,' step=',itimestep
             write(0,*) '   th,qv,qc,qr,qi,qs,qg,nr,ni=', &
                th(i,k,j),qv(i,k,j),qc(i,k,j),qr(i,k,j),qi(i,k,j), &
@@ -970,7 +970,7 @@ contains
         ! ---- DIAGNOSTIC: trap bad cloud-number / aerosol output (guarded) ----
         if (has_nc) then
           do k = kts, kte
-            if (nc(i,k,j) /= nc(i,k,j) .or. nc(i,k,j) < 0.0 .or. nc(i,k,j) > 1.0e13) then
+            if (nc(i,k,j) /= nc(i,k,j) .or. nc(i,k,j) < -1.0e3 .or. nc(i,k,j) > 1.0e13) then
               write(0,*) 'MICROWCP BAD nc OUTPUT i,k,j=',i,k,j,' step=',itimestep,' nc=',nc(i,k,j)
               call wrf_error_fatal('MICROWCP bad nc output')
             end if
@@ -978,8 +978,8 @@ contains
         end if
         if (has_aero) then
           do k = kts, kte
-            if (nwfa(i,k,j) /= nwfa(i,k,j) .or. nwfa(i,k,j) < 0.0 .or. nwfa(i,k,j) > 1.0e15 .or. &
-                nifa(i,k,j) /= nifa(i,k,j) .or. nifa(i,k,j) < 0.0 .or. nifa(i,k,j) > 1.0e15) then
+            if (nwfa(i,k,j) /= nwfa(i,k,j) .or. nwfa(i,k,j) < -1.0e3 .or. nwfa(i,k,j) > 1.0e15 .or. &
+                nifa(i,k,j) /= nifa(i,k,j) .or. nifa(i,k,j) < -1.0e3 .or. nifa(i,k,j) > 1.0e15) then
               write(0,*) 'MICROWCP BAD aero OUTPUT i,k,j=',i,k,j,' step=',itimestep, &
                          ' nwfa,nifa=',nwfa(i,k,j),nifa(i,k,j)
               call wrf_error_fatal('MICROWCP bad aerosol output')
