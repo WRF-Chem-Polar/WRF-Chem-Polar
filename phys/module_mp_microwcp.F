@@ -610,10 +610,15 @@ contains
       end if
       Si  = qvx/max(qsat_ice(Tx,Px),Q_MIN)
       esi = es_ice(Tx)
-      Ad  = RV*Tx**2/max(K_A*esi,1.0e-30_rk)
-      Bd  = RV*Tx/max(D_V*esi,1.0e-30_rk)
+      ! psychrometric denominator (Pruppacher & Klett 1997, Eq. 13-28):
+      !   Ad = latent-heat conduction term ; Bd = vapour diffusion term
+      Ad  = L_SUB**2/max(K_A*RV*Tx**2, 1.0e-30_rk)
+      Bd  = RV*Tx/max(D_V*esi, 1.0e-30_rk)
       den = rhx*(Ad+Bd)
-      r   = fv*(Si-1.0_rk)*Nbx*Dmx*PI*D_V*esi/max(den,1.0e-30_rk)
+      ! capacitance integral int((D/2) n(D) dD) = Nb*(mu+1)/(2*lam)
+      r   = 4.0_rk*PI*(Si-1.0_rk)*fv &
+            *(0.5_rk*Nbx*(mu(c)+1.0_rk)/max(lamx,1.0_rk)) &
+            /max(den,1.0e-30_rk)
       if (qx <= qmin) r = 0.0_rk
       if (r < -1.0e-8_rk) r = max(r, -qx/dtl)
       if (r > 0.0_rk) r = min(r,  qvx/dtl)
@@ -639,7 +644,7 @@ contains
     integer  :: k
     real(rk) :: T0k,qc0,qr0,qi0,qs0,qg0,nc0,nr0,ni0
     real(rk) :: aqc,aqr,aqi,aqs,aqg,anc,anr,ani,aT
-    real(rk) :: Vrel,rate,rate_qi,rate_qr,rate_qs
+    real(rk) :: Vrel,rate,rate_qi,rate_qr
     do k = 1, nz
       if (T(k) >= T_FREEZE) cycle
       T0k=T(k); qc0=qc(k); qr0=qr(k); qi0=qi(k); qs0=qs(k); qg0=qg(k)
@@ -654,12 +659,12 @@ contains
         ani=ani + ni0*(-rate)/max(qi0,Q_MIN)
         aqc=aqc-rate; aqs=aqs+rate; aT=aT+L_FUS/CP*rate
       end if
-      ! --- 2. cloud-snow riming: qc+qs -> qg ---
+      ! --- 2. cloud-snow riming: qc+qs -> qs (riming grows snow) ---
       if (qc0 > QC_MIN .and. qs0 > QS_MIN) then
         Vrel = abs(fall_speed_q(lam(k,IS),IS)-fall_speed_q(lam(k,IC),IC))
         rate = min(max(0.8_rk*(PI/4.0_rk)*Dm(k,IS)**2*Nb(k,IS)*Vrel*qc0,0.0_rk), qc0/dt)
         anc=anc + nc0*(-rate)/max(qc0,Q_MIN)
-        aqc=aqc-rate; aqg=aqg+rate; aT=aT+L_FUS/CP*rate
+        aqc=aqc-rate; aqs=aqs+rate; aT=aT+L_FUS/CP*rate
       end if
       ! --- 3. cloud-graupel riming: qc+qg -> qg ---
       if (qc0 > QC_MIN .and. qg0 > QG_MIN) then
@@ -678,13 +683,12 @@ contains
         aqi=aqi-rate_qi; aqr=aqr-rate_qr; aqg=aqg+(rate_qi+rate_qr)
         aT=aT+L_FUS/CP*rate_qr
       end if
-      ! --- 5. snow-rain wet growth: qs+qr -> qg ---
+      ! --- 5. snow collects rain: qr -> qg (rain freezes; snow is collector) ---
       if (qr0 > QR_MIN .and. qs0 > QS_MIN) then
         Vrel = abs(fall_speed_q(lam(k,IR),IR)-fall_speed_q(lam(k,IS),IS))
         rate_qr = min(max(1.0_rk*(PI/4.0_rk)*Dm(k,IS)**2*Nb(k,IS)*Vrel*qr0,0.0_rk), qr0/dt)
-        rate_qs = min(qs0*rate_qr/max(qr0,Q_MIN), qs0/dt)
         anr=anr + nr0*(-rate_qr)/max(qr0,Q_MIN)
-        aqr=aqr-rate_qr; aqs=aqs-rate_qs; aqg=aqg+(rate_qr+rate_qs)
+        aqr=aqr-rate_qr; aqg=aqg+rate_qr
         aT=aT+L_FUS/CP*rate_qr
       end if
       ! --- apply once ---
