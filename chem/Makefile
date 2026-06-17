@@ -93,6 +93,7 @@ MODULES =                                 \
         module_seaspray_emis.o            \
         module_dms_emis.o                 \
         module_pbap_emis.o                \
+        module_inp_diag.o                 \
         module_blowing_snow_emis.o        \
         module_mineraldust_emis.o         \
         module_mosaic_addemiss.o          \

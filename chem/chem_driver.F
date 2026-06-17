@@ -35,6 +35,7 @@
   USE module_ctrans_grell
   USE module_data_soa_vbs, only: ldrog_vbs
   USE module_dust_load
+  USE module_inp_diag, only: inp_diag_driver
   USE module_chem_cup, only: chem_cup_driver !BSINGH - For WRFCuP scheme
   USE module_dry_dep_driver
   USE module_emissions_driver
@@ -1822,6 +1823,21 @@ end if !Chemistry time step check
            ids,ide, jds,jde, kds,kde,                                                 &
            ims,ime, jms,jme, kms,kme,                                                 &
            its,ite, jts,jte, kts, kte                                                 )
+
+!
+! Diagnose ice nucleating particle (INP) number concentrations from the
+! current aerosol field, at the prescribed activation temperatures. Like
+! sum_pm_driver this runs every time step (depends on emissions/deposition).
+!
+     if (config_flags%inp_diag_opt > 0) then
+       call inp_diag_driver ( chem, t_phy, rho, config_flags%chem_opt,              &
+            config_flags%inp_dust_param,                                            &
+            grid%inp_dust, grid%inp_marine, grid%inp_bio, grid%inp_soot,            &
+            grid%inp_total,                                                         &
+            ids,ide, jds,jde, kds,kde,                                              &
+            ims,ime, jms,jme, kms,kme,                                              &
+            its,ite, jts,jte, kts,kte                                              )
+     endif
 
 
 ! Fill top level to prevent spurious interpolation results (no extrapolation)

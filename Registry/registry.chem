@@ -3698,6 +3698,9 @@ state   real   bc1          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_
 state   real   bc2          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "BC2"       "Hydrophilic Black Carbon"     "ug/kg-dryair"
 state   real   oc1          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "OC1"       "Hydrophobic Black Carbon"     "ug/kg-dryair"
 state   real   oc2          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "OC2"       "Hydrophilic Black Carbon"     "ug/kg-dryair"
+# PBAP number tracers for INP (Anderson Da Silva). Emitted in module_pbap_emis.
+state   real   bact1        ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "BACT1"     "Bacteria aerosol number (PBAP)"      "#/kg-dryair"
+state   real   spore1       ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "SPORE1"    "Fungal spore aerosol number (PBAP)"  "#/kg-dryair"
 state   real   p25        ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "P25"       "other gocart primary pm25"     "ug/kg-dryair"
 state   real   p10        ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "P10"       "other gocart primary pm10"     "ug/kg-dryair"
 state   real   dust_1       ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "DUST_1"    "dust size bin 1: 0.5um effective radius"     "ug/kg-dryair"
@@ -3947,6 +3950,18 @@ rconfig   integer     seas_leads_opt      namelist,chem          max_domains    
 rconfig   integer     seas_so4_opt        namelist,chem          max_domains    0       rh    "seas_so4_opt"        ""      ""
 rconfig   integer     seas_oa_opt         namelist,chem          max_domains    0       rh    "seas_oa_opt"         ""      ""
 rconfig   integer     pbap_opt            namelist,chem          1              0       rh    "pbap_opt"            ""      ""
+# INP diagnostic options (Anderson Da Silva). inp_dust_param: 1=Tobo2019,
+# 2=Niemand2012, 3=DeMott2015, 4=Ullrich2017. Default 2 (Niemand, verified);
+# switch to 1 (Tobo) once its n_s coefficients are set in module_inp_diag.F.
+# Activation temperatures are a module constant (INP_ACT_TEMP_C), not a namelist.
+rconfig   integer     inp_diag_opt        namelist,chem          1              0       rh    "inp_diag_opt"        ""      ""
+rconfig   integer     inp_dust_param      namelist,chem          1              2       rh    "inp_dust_param"      ""      ""
+# INP diagnostic output fields (4D: i,k,j,inpt=11), # kg-1, immersion
+state real inp_dust    ikj{inpt} misc 1 - rh "INP_DUST"   "Dust immersion INP number concentration"       "# kg-1"
+state real inp_marine  ikj{inpt} misc 1 - rh "INP_MARINE" "Sea-spray immersion INP number concentration"  "# kg-1"
+state real inp_bio     ikj{inpt} misc 1 - rh "INP_BIO"    "Biological immersion INP number concentration" "# kg-1"
+state real inp_soot    ikj{inpt} misc 1 - rh "INP_SOOT"   "Soot immersion INP number concentration"       "# kg-1"
+state real inp_total   ikj{inpt} misc 1 - rh "INP_TOTAL"  "Total immersion INP number concentration"      "# kg-1"
 rconfig   integer     nuc_sulf_opt        namelist,chem          max_domains    2       rh    "nuc_sulf_opt"         ""      ""
 rconfig   integer     nuc_msa_opt         namelist,chem          max_domains    0       rh    "nuc_msa_opt"         ""      ""
 rconfig   real        nuc_msa_fac         namelist,chem          max_domains    1.0     rh    "nuc_msa_fac"         ""      ""
@@ -4084,10 +4099,10 @@ package   cbm4_kpp          chem_opt==110                  -          chem:no,no
 package   mozart_kpp        chem_opt==111                  -          chem:o3,o1d_cb4,o,no,no2,no3,n2o5,hno3,hno4,so2,ho,ho2,h2o2,sulf,co,hcho,ch3ooh,ch3o2,ch4,h2,eo2,ch3cooh,c2h4,n2o,ch3oh,aco3,acet,mgly,paa,gly,c3h6ooh,pan,mpan,macr,mvk,c3h6,etooh,prooh,acetp,xooh,onitr,isooh,acetol,glyald,mek,eto2,open,alkooh,mekooh,tolooh,terpooh,ald,mco3,c2h5oh,eo,c2h6,c3h8,pro2,po2,aceto2,bigene,bigalk,eneo2,alko2,isopr,iso2,mvko2,mvkooh,hydrald,xo2,c10h16,terpo2,tol,cres,to2,xoh,onit,isopn,dms,nh3,meko2
 
 # KPP mechanism from mozart + gocart
-package   mozcart_kpp       chem_opt==112                  -          chem:o3,o1d_cb4,o,no,no2,no3,n2o5,hno3,hno4,so2,ho,ho2,h2o2,sulf,co,hcho,ch3ooh,ch3o2,ch4,h2,eo2,ch3cooh,c2h4,n2o,ch3oh,aco3,acet,mgly,paa,gly,c3h6ooh,pan,mpan,macr,mvk,c3h6,etooh,prooh,acetp,xooh,onitr,isooh,acetol,glyald,mek,eto2,open,alkooh,mekooh,tolooh,terpooh,ald,mco3,c2h5oh,eo,c2h6,c3h8,pro2,po2,aceto2,bigene,bigalk,eneo2,alko2,isopr,iso2,mvko2,mvkooh,hydrald,xo2,c10h16,terpo2,tol,cres,to2,xoh,onit,isopn,dms,nh3,meko2,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10
+package   mozcart_kpp       chem_opt==112                  -          chem:o3,o1d_cb4,o,no,no2,no3,n2o5,hno3,hno4,so2,ho,ho2,h2o2,sulf,co,hcho,ch3ooh,ch3o2,ch4,h2,eo2,ch3cooh,c2h4,n2o,ch3oh,aco3,acet,mgly,paa,gly,c3h6ooh,pan,mpan,macr,mvk,c3h6,etooh,prooh,acetp,xooh,onitr,isooh,acetol,glyald,mek,eto2,open,alkooh,mekooh,tolooh,terpooh,ald,mco3,c2h5oh,eo,c2h6,c3h8,pro2,po2,aceto2,bigene,bigalk,eneo2,alko2,isopr,iso2,mvko2,mvkooh,hydrald,xo2,c10h16,terpo2,tol,cres,to2,xoh,onit,isopn,dms,nh3,meko2,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10,bact1,spore1
 
 # KPP mechanism for t1 mozart + gocart
-package  t1_mozcart_kpp     chem_opt==114                  -          chem:alknit,alkooh,apin,bcary,benzene,benzooh,bepomuc,open,bigald1,bigald2,bigald3,bigald4,bigalk,bigene,bpin,bzald,bzooh,c2h2,c2h4,c2h5oh,etooh,c2h6,c3h6,prooh,c3h8,c6h5ooh,hcho,ald,ch3cn,acet,mgly,ch3cooh,paa,ch3oh,ch3ooh,ch4,co,cres,dms,eooh,glyald,gly,h2,h2o2,hcn,hcooh,hmprop,hmpropo2,hno3,hno4,honitr,hpald,acetol,hydrald,iepox,isopr,isopnita,isopnitb,isopn,isopnooh,isooh,limon,macr,mvkooh,malo2,mbo,mbono3o2,mboo2,mboooh,mek,mekooh,mpan,mvk,myrc,n2o,n2o5,nc4ch2oh,nc4cho,nh3,no,no2,no3,noa,nterpooh,o,o3,onitr,pan,pbznit,pheno,phenol,phenooh,c3h6ooh,acetp,so2,sulf,tepomuc,terp2ooh,terpnit,terpooh,terprod1,terprod2,tolooh,tol,xooh,xylenes,xylenooh,xylol,xylolooh,acbzo2,alko2,benzo2,bzoo,eto2,pro2,c6h5o2,aco3,ch3o2,dicarbo2,eneo2,eo,eo2,ho2,hoch2oo,isopao2,isopbo2,mvko2,mco3,mdialo2,meko2,nterpo2,o1d,ho,pheno2,po2,aceto2,terp2o2,terpo2,to2,xo2,xyleno2,xylolo2,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10
+package  t1_mozcart_kpp     chem_opt==114                  -          chem:alknit,alkooh,apin,bcary,benzene,benzooh,bepomuc,open,bigald1,bigald2,bigald3,bigald4,bigalk,bigene,bpin,bzald,bzooh,c2h2,c2h4,c2h5oh,etooh,c2h6,c3h6,prooh,c3h8,c6h5ooh,hcho,ald,ch3cn,acet,mgly,ch3cooh,paa,ch3oh,ch3ooh,ch4,co,cres,dms,eooh,glyald,gly,h2,h2o2,hcn,hcooh,hmprop,hmpropo2,hno3,hno4,honitr,hpald,acetol,hydrald,iepox,isopr,isopnita,isopnitb,isopn,isopnooh,isooh,limon,macr,mvkooh,malo2,mbo,mbono3o2,mboo2,mboooh,mek,mekooh,mpan,mvk,myrc,n2o,n2o5,nc4ch2oh,nc4cho,nh3,no,no2,no3,noa,nterpooh,o,o3,onitr,pan,pbznit,pheno,phenol,phenooh,c3h6ooh,acetp,so2,sulf,tepomuc,terp2ooh,terpnit,terpooh,terprod1,terprod2,tolooh,tol,xooh,xylenes,xylenooh,xylol,xylolooh,acbzo2,alko2,benzo2,bzoo,eto2,pro2,c6h5o2,aco3,ch3o2,dicarbo2,eneo2,eo,eo2,ho2,hoch2oo,isopao2,isopbo2,mvko2,mco3,mdialo2,meko2,nterpo2,o1d,ho,pheno2,po2,aceto2,terp2o2,terpo2,to2,xo2,xyleno2,xylolo2,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10,bact1,spore1
 # KPP mechanism from CBMZ
 package   cbmz_bb_kpp       chem_opt==120                -             chem:so2,sulf,no2,no,o3,hno3,h2o2,ald,hcho,op1,op2,ora1,ora2,nh3,n2o5,no3,pan,eth,co,ol2,olt,oli,tol,xyl,hono,hno4,ket,mgly,onit,csl,iso,ho,ho2,ch4,hcl,ch3o2,ethp,ch3oh,c2h5oh,par,to2,cro,open,op3,c2o3,ro2,ano2,nap,xo2,xpar,isoprd,isopp,isopn,isopo2
 
@@ -4123,11 +4138,11 @@ package   mozart_mosaic_4bin_dms_aq_kpp  chem_opt==212           -             c
 package   nmhc9_kpp     chem_opt==200                   -             chem:o3,h2o2,ch4,op1,hcho,ch3oh,co,hno3,no3,n2o5,hno4,no,no2,isopr,mvk,iso2,isooh,mvko2,mvkooh,ison,aca,acol,hcooh,mpan,naca,pan,pa,paa,mglo,c2h6,eTooh,ald,c3h8,pRooh,acet,acooh,eTo2,pRo2,aco2,c3h6,c3h6ooh,c2h4,c4h10,buooh,mek,mekooh,mEcoco,c3h6o2,c4h9o2,meko2,onit,pRono2,ch3o2,acetol,acetp,aceto2,ch3cooh,c4h9ooh,mEoh,ho,ho2,mEo2,mEo2no2
 
 # GOCART Packages (no Ozone chemistry in this choice)
-package   gocart_simple     chem_opt==300                   -             chem:so2,sulf,dms,msa,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10
+package   gocart_simple     chem_opt==300                   -             chem:so2,sulf,dms,msa,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10,bact1,spore1
 
-package   gocartracm_kpp     chem_opt==301                   -             chem:so2,sulf,no2,no,o3,hno3,h2o2,ald,hcho,op1,op2,paa,ora1,ora2,nh3,n2o5,no3,pan,hc3,hc5,hc8,eth,co,ete,olt,oli,tol,xyl,aco3,tpan,hono,hno4,ket,gly,mgly,dcb,onit,csl,iso,co2,ch4,udd,hket,api,lim,dien,macr,ho,ho2,dms,msa,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10
+package   gocartracm_kpp     chem_opt==301                   -             chem:so2,sulf,no2,no,o3,hno3,h2o2,ald,hcho,op1,op2,paa,ora1,ora2,nh3,n2o5,no3,pan,hc3,hc5,hc8,eth,co,ete,olt,oli,tol,xyl,aco3,tpan,hono,hno4,ket,gly,mgly,dcb,onit,csl,iso,co2,ch4,udd,hket,api,lim,dien,macr,ho,ho2,dms,msa,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10,bact1,spore1
 
-package   gocartradm2     chem_opt==303                   -             chem:so2,sulf,no2,no,o3,hno3,h2o2,ald,hcho,op1,op2,paa,ora1,ora2,nh3,n2o5,no3,pan,hc3,hc5,hc8,eth,co,ol2,olt,oli,tol,xyl,aco3,tpan,hono,hno4,ket,gly,mgly,dcb,onit,csl,iso,hcl,ho,ho2,dms,msa,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10
+package   gocartradm2     chem_opt==303                   -             chem:so2,sulf,no2,no,o3,hno3,h2o2,ald,hcho,op1,op2,paa,ora1,ora2,nh3,n2o5,no3,pan,hc3,hc5,hc8,eth,co,ol2,olt,oli,tol,xyl,aco3,tpan,hono,hno4,ket,gly,mgly,dcb,onit,csl,iso,hcl,ho,ho2,dms,msa,p25,bc1,bc2,oc1,oc2,dust_1,dust_2,dust_3,dust_4,dust_5,seas_1,seas_2,seas_3,seas_4,p10,bact1,spore1
 
 # volcanic ash for ash-fall and conc prediction, not other aerosols in this option (so for other "400" options)
 package   chem_vash   chem_opt==400              -             chem:vash_1,vash_2,vash_3,vash_4,vash_5,vash_6,vash_7,vash_8,vash_9,vash_10

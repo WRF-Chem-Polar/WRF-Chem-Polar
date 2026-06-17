@@ -126,6 +126,9 @@ dimspec    tt      -     namelist=track_tuv_num            c     track_tuv_num
 dimspec    tz      -     namelist=track_tuv_lev            c     track_tuv_lev
 dimspec   nmode    4     namelist=cam_mam_mode             c     cam_mam_mode
 dimspec   nspecmam 4     namelist=cam_mam_nspec            c     cam_mam_nspec
+# INP diagnostic: activation-temperature dimension (4th, category axis).
+# MUST equal NUM_INP_ACT_TEMPS in chem/module_inp_diag.F.
+dimspec   inpt     4     constant=11                       c     inp_activation_temperatures
 endif
 dimspec    tl      -     namelist=track_loc_in             c     track_loc_in
 

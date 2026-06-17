@@ -99,7 +99,8 @@ MODULE module_pbap_emis
     !  e_spore = accumulated spore emission flux (mg m-2)
 
     !TODO Should include all explicit ONLY: associations for module_state_description
-    USE module_state_description, ONLY: NUM_CHEM, P_OC1, PARAM_FIRST_SCALAR
+    USE module_state_description, ONLY: NUM_CHEM, P_OC1, P_BACT1, P_SPORE1, &
+                                        PARAM_FIRST_SCALAR
     USE module_model_constants, ONLY: PICONST
     USE module_data_gocartchem, only: OC_MFAC
 
@@ -216,6 +217,19 @@ MODULE module_pbap_emis
             IF (P_OC1 >= PARAM_FIRST_SCALAR) THEN
               chem(i,kts,j,P_OC1) = chem(i,kts,j,P_OC1) &
                                      + spore_mass_emiss * conv / OC_MFAC
+            ENDIF
+            ! PBAP number tracers for the INP diagnostic (module_inp_diag).
+            ! Least-invasive: the OC1 mass emission above is unchanged; here we
+            ! additionally carry the bacteria/spore NUMBER (m-2 s-1 -> #/kg via
+            ! conv) so species-specific bio INP can be diagnosed. These advect
+            ! and deposit as standard chem tracers.
+            IF (P_BACT1 >= PARAM_FIRST_SCALAR) THEN
+              chem(i,kts,j,P_BACT1) = chem(i,kts,j,P_BACT1) &
+                                     + bact_num_emiss * conv
+            ENDIF
+            IF (P_SPORE1 >= PARAM_FIRST_SCALAR) THEN
+              chem(i,kts,j,P_SPORE1) = chem(i,kts,j,P_SPORE1) &
+                                     + spore_num_emiss * conv
             ENDIF
           !---- Other chem_opt cases are not supported
           ELSE
