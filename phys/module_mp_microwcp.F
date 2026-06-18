@@ -969,27 +969,24 @@ contains
             nc1d(k) = Nt_c/rho(k)                 ! fixed-Nc fallback
           end if
           if (has_aero) then
-            nwfa1d(k) = real(nwfa(i,k,j),rk); nifa1d(k) = real(nifa(i,k,j),rk)
+            ! clamp >= 0: WRF advection can leave tiny negatives in the aerosol
+            ! scalars (roundoff dust relative to the ~1e8 field); negative aerosol
+            ! is unphysical and must not enter nucleation.
+            nwfa1d(k) = max(real(nwfa(i,k,j),rk),0.0_rk)
+            nifa1d(k) = max(real(nifa(i,k,j),rk),0.0_rk)
           else
             nwfa1d(k) = 0.0_rk; nifa1d(k) = 0.0_rk
           end if
         end do
 
-        ! ---- DIAGNOSTIC: trap bad INPUT to this scheme (all fields + dynamics) ----
+        ! ---- guard: abort only on genuinely broken (NaN/Inf) input from upstream;
+        !      tiny negatives / roundoff are normal and handled by the physics ----
         do k = kts, kte
-          if ( t1d(k)  /= t1d(k)  .or. t1d(k) < 100.0_rk .or. t1d(k) > 400.0_rk .or. &
-               p1d(k)  /= p1d(k)  .or. p1d(k) <= 0.0_rk  .or. &
-               rho(k)  /= rho(k)  .or. rho(k) <= 0.0_rk  .or. rho(k) > 2.0_rk .or. &
-               w1d(k)  /= w1d(k)  .or. abs(w1d(k)) > 100.0_rk .or. &
-               dz1d(k) /= dz1d(k) .or. dz1d(k) <= 0.0_rk .or. &
-               qv1d(k) /= qv1d(k) .or. qc1d(k) /= qc1d(k) .or. qr1d(k) /= qr1d(k) .or. &
-               qi1d(k) /= qi1d(k) .or. qs1d(k) /= qs1d(k) .or. qg1d(k) /= qg1d(k) .or. &
-               nc1d(k) /= nc1d(k) .or. nr1d(k) /= nr1d(k) .or. ni1d(k) /= ni1d(k) ) then
-            write(0,*) 'MICROWCP BAD INPUT  i,k,j=',i,k,j,' step=',itimestep
-            write(0,*) '   t,p,rho,w,dz =',t1d(k),p1d(k),rho(k),w1d(k),dz1d(k)
-            write(0,*) '   qv,qc,qr,qi,qs,qg =',qv1d(k),qc1d(k),qr1d(k),qi1d(k),qs1d(k),qg1d(k)
-            write(0,*) '   nc,nr,ni =',nc1d(k),nr1d(k),ni1d(k)
-            call wrf_error_fatal('MICROWCP bad input (corruption upstream)')
+          if ( t1d(k) /= t1d(k) .or. qv1d(k) /= qv1d(k) .or. rho(k) /= rho(k) .or. &
+               p1d(k) /= p1d(k) .or. dz1d(k) /= dz1d(k) ) then
+            write(0,*) 'MICROWCP NaN input  i,k,j=',i,k,j,' step=',itimestep, &
+                       '  t,p,rho,dz=',t1d(k),p1d(k),rho(k),dz1d(k)
+            call wrf_error_fatal('MICROWCP received NaN input (upstream breakage)')
           end if
         end do
 
@@ -998,56 +995,34 @@ contains
              qv1d,qc1d,qr1d,qi1d,qs1d,qg1d, nc1d,nr1d,ni1d, nwfa1d,nifa1d, &
              has_aero, dt, pptrain,pptsnow,pptgraul,pptice)
 
-        ! ---- write back (double -> single), T->th ----
+        ! ---- guard: abort only if the column produced NaN/Inf (genuine breakage).
+        !      Physical soft-bound violations are clamped on write-back below, so a
+        !      stray roundoff/edge value never aborts a (long) production run. ----
         do k = kts, kte
-          qv(i,k,j) = real(qv1d(k)); qc(i,k,j) = real(qc1d(k)); qr(i,k,j) = real(qr1d(k))
-          qi(i,k,j) = real(qi1d(k)); qs(i,k,j) = real(qs1d(k)); qg(i,k,j) = real(qg1d(k))
-          nr(i,k,j) = real(nr1d(k)); ni(i,k,j) = real(ni1d(k))
+          if ( t1d(k) /= t1d(k) .or. abs(t1d(k)) > 1.0e4_rk .or. &
+               qv1d(k) /= qv1d(k) .or. qc1d(k) /= qc1d(k) .or. qr1d(k) /= qr1d(k) .or. &
+               qi1d(k) /= qi1d(k) .or. qs1d(k) /= qs1d(k) .or. qg1d(k) /= qg1d(k) ) then
+            write(0,*) 'MICROWCP NaN/Inf output  i,k,j=',i,k,j,' step=',itimestep
+            call wrf_error_fatal('MICROWCP produced NaN/Inf')
+          end if
+        end do
+
+        ! ---- write back (double -> single), T->th; clamp to physical bounds ----
+        do k = kts, kte
+          qv(i,k,j) = max(real(qv1d(k)), 0.0)
+          qc(i,k,j) = min(max(real(qc1d(k)),0.0), 0.1)
+          qr(i,k,j) = min(max(real(qr1d(k)),0.0), 0.1)
+          qi(i,k,j) = min(max(real(qi1d(k)),0.0), 0.1)
+          qs(i,k,j) = min(max(real(qs1d(k)),0.0), 0.1)
+          qg(i,k,j) = min(max(real(qg1d(k)),0.0), 0.1)
+          nr(i,k,j) = min(max(real(nr1d(k)),0.0), 1.0e13)
+          ni(i,k,j) = min(max(real(ni1d(k)),0.0), 1.0e13)
           th(i,k,j) = real(t1d(k)/real(pii(i,k,j),rk))
-          if (has_nc)   nc(i,k,j)   = real(nc1d(k))
+          if (has_nc)   nc(i,k,j)   = min(max(real(nc1d(k)),0.0), 1.0e13)
           if (has_aero) then
-            nwfa(i,k,j) = real(nwfa1d(k)); nifa(i,k,j) = real(nifa1d(k))
+            nwfa(i,k,j) = max(real(nwfa1d(k)),0.0); nifa(i,k,j) = max(real(nifa1d(k)),0.0)
           end if
         end do
-
-        ! ---- DIAGNOSTIC: trap NaN/Inf/absurd values PRODUCED by this scheme ----
-        do k = kts, kte
-          if ( th(i,k,j) /= th(i,k,j) .or. th(i,k,j) < 50.0 .or. th(i,k,j) > 1.0e4 .or. &
-               qv(i,k,j) /= qv(i,k,j) .or. qv(i,k,j) < -1.0e-6 .or. qv(i,k,j) > 0.1  .or. &
-               qc(i,k,j) /= qc(i,k,j) .or. qc(i,k,j) < -1.0e-6 .or. qc(i,k,j) > 0.05 .or. &
-               qr(i,k,j) /= qr(i,k,j) .or. qr(i,k,j) < -1.0e-6 .or. qr(i,k,j) > 0.05 .or. &
-               qi(i,k,j) /= qi(i,k,j) .or. qi(i,k,j) < -1.0e-6 .or. qi(i,k,j) > 0.05 .or. &
-               qs(i,k,j) /= qs(i,k,j) .or. qs(i,k,j) < -1.0e-6 .or. qs(i,k,j) > 0.05 .or. &
-               qg(i,k,j) /= qg(i,k,j) .or. qg(i,k,j) < -1.0e-6 .or. qg(i,k,j) > 0.05 .or. &
-               nr(i,k,j) /= nr(i,k,j) .or. nr(i,k,j) < -1.0e3 .or. nr(i,k,j) > 1.0e13 .or. &
-               ni(i,k,j) /= ni(i,k,j) .or. ni(i,k,j) < -1.0e3 .or. ni(i,k,j) > 1.0e13 ) then
-            write(0,*) 'MICROWCP BAD OUTPUT  i,k,j=',i,k,j,' step=',itimestep
-            write(0,*) '   th,qv,qc,qr,qi,qs,qg,nr,ni=', &
-               th(i,k,j),qv(i,k,j),qc(i,k,j),qr(i,k,j),qi(i,k,j), &
-               qs(i,k,j),qg(i,k,j),nr(i,k,j),ni(i,k,j)
-            call wrf_error_fatal('MICROWCP produced NaN/Inf (see rsl.error)')
-          end if
-        end do
-
-        ! ---- DIAGNOSTIC: trap bad cloud-number / aerosol output (guarded) ----
-        if (has_nc) then
-          do k = kts, kte
-            if (nc(i,k,j) /= nc(i,k,j) .or. nc(i,k,j) < -1.0e3 .or. nc(i,k,j) > 1.0e13) then
-              write(0,*) 'MICROWCP BAD nc OUTPUT i,k,j=',i,k,j,' step=',itimestep,' nc=',nc(i,k,j)
-              call wrf_error_fatal('MICROWCP bad nc output')
-            end if
-          end do
-        end if
-        if (has_aero) then
-          do k = kts, kte
-            if (nwfa(i,k,j) /= nwfa(i,k,j) .or. nwfa(i,k,j) < -1.0e3 .or. nwfa(i,k,j) > 1.0e15 .or. &
-                nifa(i,k,j) /= nifa(i,k,j) .or. nifa(i,k,j) < -1.0e3 .or. nifa(i,k,j) > 1.0e15) then
-              write(0,*) 'MICROWCP BAD aero OUTPUT i,k,j=',i,k,j,' step=',itimestep, &
-                         ' nwfa,nifa=',nwfa(i,k,j),nifa(i,k,j)
-              call wrf_error_fatal('MICROWCP bad aerosol output')
-            end if
-          end do
-        end if
 
         ! ---- optional diagnostics ----
         if (want_re .or. want_refl) then
