@@ -53,7 +53,7 @@ module module_mp_microwcp
   implicit none
   private
 
-  public :: mp_microwcp_init, mp_microwcp_column, mp_microwcp_driver
+  public :: mp_microwcp_init, mp_microwcp_aero_init, mp_microwcp_column, mp_microwcp_driver
 
   integer, parameter :: rk = kind(1.0d0)   ! work in double precision
 
@@ -158,6 +158,64 @@ contains
     end do
     initialized = .true.
   end subroutine mp_microwcp_init
+
+  !=================================================================
+  ! mp_microwcp_aero_init
+  !   Fill a default background aerosol profile (water-friendly nwfa,
+  !   ice-friendly nifa) when the input fields are essentially zero, so
+  !   the scheme has CCN/INP to nucleate from even when real/met_em
+  !   provides none. Mirrors Thompson's thompson_init exactly (same
+  !   exponential, boundary-layer-following profile and constants), so
+  !   MICROWCP and Thompson start from the same aerosol field.
+  !   Default values are used per gridpoint; existing (nonzero) input is
+  !   left untouched. Arrays are WRF default REAL (single precision).
+  !=================================================================
+  subroutine mp_microwcp_aero_init(hgt, nwfa, nifa,                    &
+       ids,ide,jds,jde, kds,kde, ims,ime,jms,jme, kms,kme,             &
+       its,ite,jts,jte, kts,kte)
+    integer, intent(in) :: ids,ide,jds,jde,kds,kde
+    integer, intent(in) :: ims,ime,jms,jme,kms,kme
+    integer, intent(in) :: its,ite,jts,jte,kts,kte
+    real, intent(in)    :: hgt(ims:ime,kms:kme,jms:jme)
+    real, intent(inout) :: nwfa(ims:ime,kms:kme,jms:jme)
+    real, intent(inout) :: nifa(ims:ime,kms:kme,jms:jme)
+    ! background aerosol constants (== module_mp_thompson.F)
+    real, parameter :: naCCN0=300.0e6, naCCN1=50.0e6
+    real, parameter :: naIN0 =  1.5e6, naIN1 = 0.5e6
+    real, parameter :: aero_eps = 1.0e-15
+    real    :: h_01, niCCN3, niIN3
+    integer :: i,j,k
+
+    ! ---- water-friendly (CCN) ----
+    if (maxval(nwfa(its:min(ide-1,ite),:,jts:min(jde-1,jte))) < aero_eps) then
+      do j = jts, min(jde-1,jte)
+      do i = its, min(ide-1,ite)
+        if      (hgt(i,1,j) <= 1000.0) then ; h_01 = 0.8
+        else if (hgt(i,1,j) >= 2500.0) then ; h_01 = 0.01
+        else ; h_01 = 0.8*cos(hgt(i,1,j)*0.001 - 1.0) ; end if
+        niCCN3 = -1.0*log(naCCN1/naCCN0)/h_01
+        do k = kts, kte
+          nwfa(i,k,j) = naCCN1 + naCCN0*exp(-((hgt(i,k,j)-hgt(i,1,j))/1000.)*niCCN3)
+        end do
+      end do
+      end do
+    end if
+
+    ! ---- ice-friendly (INP) ----
+    if (maxval(nifa(its:min(ide-1,ite),:,jts:min(jde-1,jte))) < aero_eps) then
+      do j = jts, min(jde-1,jte)
+      do i = its, min(ide-1,ite)
+        if      (hgt(i,1,j) <= 1000.0) then ; h_01 = 0.8
+        else if (hgt(i,1,j) >= 2500.0) then ; h_01 = 0.01
+        else ; h_01 = 0.8*cos(hgt(i,1,j)*0.001 - 1.0) ; end if
+        niIN3 = -1.0*log(naIN1/naIN0)/h_01
+        do k = kts, kte
+          nifa(i,k,j) = naIN1 + naIN0*exp(-((hgt(i,k,j)-hgt(i,1,j))/1000.)*niIN3)
+        end do
+      end do
+      end do
+    end if
+  end subroutine mp_microwcp_aero_init
 
   !=================================================================
   ! Thermodynamics (== micro/thermo.py).  All elemental: act on scalars
