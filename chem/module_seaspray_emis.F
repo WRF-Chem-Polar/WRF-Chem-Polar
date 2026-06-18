@@ -124,6 +124,7 @@ MODULE module_seaspray_emis
     REAL :: seaspray_vol_emiss, seaspray_num_emiss
     ! Sea salt, sulfate, organic emission fluxes, microg/m2/s
     REAL :: nacl_mass_emiss, so4_mass_emiss, org_mass_emiss
+    REAL :: leads_nacl_emiss
     ! 10-m wind (m/s), sea surface temperature (celsius)
     REAL :: w10, sst
     ! Open ocean fraction in grid cell (0-1)
@@ -270,8 +271,12 @@ MODULE module_seaspray_emis
           !  open ocean <= SEAICE_LEADS_CRIT
           IF(seas_leads_opt == 1) THEN
             lead_frac = leadfrac(i,j)
-          ELSEIF(seas_leads_opt == 2 .AND. open_ocean_frac <= SEAICE_LEADS_CRIT) THEN
-            lead_frac = open_ocean_frac
+          ELSEIF(seas_leads_opt == 2) THEN
+            IF(open_ocean_frac <= SEAICE_LEADS_CRIT) THEN
+              lead_frac = open_ocean_frac
+            ELSE
+              lead_frac = 0.0
+            ENDIF
           ENDIF
           IF ((seas_leads_opt == 1 .OR. seas_leads_opt == 2) .AND. lead_frac > 0.0) THEN
              ! oo flux versus lead flux in Nilsson 2001
@@ -327,6 +332,7 @@ MODULE module_seaspray_emis
             !---- Correct sea-spray flux by open ocean fraction or open leads
             !  fraction
             IF((seas_leads_opt == 1 .OR. seas_leads_opt == 2) .AND. lead_frac > 0.) THEN
+              leads_nacl_emiss = seaspray_vol_emiss*leads_to_oo_ratio*lead_frac*nacl_vol_frac*NACL_AERDEN
               seaspray_vol_emiss = seaspray_vol_emiss*open_ocean_frac &
                               + seaspray_vol_emiss*leads_to_oo_ratio*lead_frac
             ELSE
@@ -351,6 +357,9 @@ MODULE module_seaspray_emis
             seaspray_num_emiss = MAX(seaspray_num_emiss, 0.0)
             !---- Accumulate sea-spray nacl emissions from open ocean, output diagnosis
             e_nacl_ocean(i, j) = e_nacl_ocean(i, j) + nacl_mass_emiss * dtstep
+            IF((seas_leads_opt == 1 .OR. seas_leads_opt == 2) .AND. lead_frac > 0.) THEN
+              e_nacl_leads(i,j) = e_nacl_leads(i,j) + leads_nacl_emiss*dtstep
+            ENDIF
 
 
             !-------- Emit sea spray emissions (add them to chem(i,k,j,l)) --------
