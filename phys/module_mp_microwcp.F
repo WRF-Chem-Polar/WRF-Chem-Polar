@@ -594,8 +594,12 @@ contains
     real(rk) :: aqv,aqc,aqr,aqi,aqs,aqg,anr,ani,aT
     real(rk) :: dqi,dqs,dqg,dqr_f,dqs_a,dNi_h,dqi_h
     real(rk) :: fT,rim,coeff,rate_s,rate_g
-    real(rk) :: K_bigg, dTf
-    K_bigg=(PI/6.0_rk)*RHO_W*100.0_rk
+    real(rk) :: C_bigg, dTf
+    ! Bigg immersion freezing of rain -> graupel, bulk-integrated over the
+    ! rain PSD: dqr/dt = C_bigg*(exp(0.66*dT)-1)*nr*Dm^6.  The Dm^6 (6th moment)
+    ! makes small drizzle drops freeze slowly so supercooled rain persists.
+    ! C_bigg = rho_w*(pi/6)^2 * B_bigg * Gamma(7)/4^6  (720/4096 = 0.17578).
+    C_bigg=RHO_W*(PI/6.0_rk)**2*100.0_rk*(720.0_rk/4096.0_rk)
     do k = 1, nz
       T0k=T(k); qv0=qv(k); qc0=qc(k); qr0=qr(k)
       qi0=qi(k); qs0=qs(k); qg0=qg(k); nr0=nr(k); ni0=ni(k)
@@ -612,7 +616,7 @@ contains
       ! --- rain freezing (Bigg) -> graupel ---
       if (T0k < T_FREEZE .and. qr0 > QR_MIN) then
         dTf = max(T_FREEZE-T0k,0.0_rk)
-        dqr_f = min(K_bigg*exp(0.66_rk*dTf)*nr0*Dm(k,IR)**3, qr0/dt)
+        dqr_f = min(C_bigg*(exp(0.66_rk*dTf)-1.0_rk)*nr0*Dm(k,IR)**6, qr0/dt)
         aqr=aqr-dqr_f; aqg=aqg+dqr_f
         anr=anr - nr0*dqr_f/max(qr0,Q_MIN); aT=aT+L_FUS/CP*dqr_f
       end if
