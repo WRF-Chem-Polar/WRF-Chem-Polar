@@ -726,7 +726,8 @@ CONTAINS
               MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP, RACM_SOA_VBS_AQCHEM_KPP, &
               SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP,                                             &
               CB05_SORG_AQ_KPP, CB05_SORG_VBS_AQ_KPP)
-            IF(config_flags%mp_physics == THOMPSONAERO &
+            IF((config_flags%mp_physics == THOMPSONAERO .OR. &
+                config_flags%mp_physics == MICROWCP) &
                .AND. config_flags%aci_wrfchem_opt > 0) THEN
               if (.not.config_flags%mynn_chem_vertmx) then
                   call vertmx(dtstep,pblst,ekmfull,dryrho_1d, &
@@ -788,7 +789,8 @@ CONTAINS
 
       ! Make sure cloudborne (cw) aerosols are not present out of clouds after
       ! mixing
-      IF(config_flags%mp_physics == THOMPSONAERO &
+      IF((config_flags%mp_physics == THOMPSONAERO .OR. &
+          config_flags%mp_physics == MICROWCP) &
          .AND. config_flags%aci_wrfchem_opt > 0 &
          .AND. (config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
                 .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP &
@@ -1232,7 +1234,8 @@ CONTAINS
          CRI_MOSAIC_8BIN_AQ_KPP, CRI_MOSAIC_4BIN_AQ_KPP, &
          MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP, &
          SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP)!BSINGH(12/03/2013): Added SAPRC 8 bin)
-      IF( config_flags%mp_physics == THOMPSONAERO .AND. &
+      IF( (config_flags%mp_physics == THOMPSONAERO .OR. &
+           config_flags%mp_physics == MICROWCP) .AND. &
           (config_flags%aci_wrfchem_opt > 0) ) THEN
         CALL wrf_debug(15,'do not call mixactivate for mosaic aerosol +&
             & thompsonaero ACI')

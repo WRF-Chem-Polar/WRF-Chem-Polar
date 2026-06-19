@@ -724,7 +724,7 @@ contains
       ! --- 2. cloud-snow riming: qc+qs -> qs (riming grows snow) ---
       if (qc0 > QC_MIN .and. qs0 > QS_MIN) then
         Vrel = abs(fall_speed_q(lam(k,IS),IS)-fall_speed_q(lam(k,IC),IC))
-        rate = min(max(0.8_rk*(PI/4.0_rk)*Dm(k,IS)**2*Nb(k,IS)*Vrel*qc0,0.0_rk), qc0/dt)
+        rate = min(max(0.5_rk*(PI/4.0_rk)*Dm(k,IS)**2*Nb(k,IS)*Vrel*qc0,0.0_rk), qc0/dt)
         anc=anc + nc0*(-rate)/max(qc0,Q_MIN)
         aqc=aqc-rate; aqs=aqs+rate; aT=aT+L_FUS/CP*rate
       end if

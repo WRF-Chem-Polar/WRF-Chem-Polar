@@ -1513,6 +1513,20 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.  &
                   PRESENT( QNR_CURR) .AND. PRESENT ( QNI_CURR) .AND.  &
                   PRESENT( RAINNC  ) .AND. PRESENT ( RAINNCV ) ) THEN
+#if ( WRF_CHEM == 1 )
+                ! aci_wrfchem_opt>0: set NWFA/NIFA from live WRF-Chem aerosols
+                ! (GOCART or MOSAIC-4bin), so the scheme nucleates on the
+                ! prognostic aerosol instead of the background profile.
+                ! Same call Thompson uses; MICROWCP then consumes NWFA/NIFA.
+                IF(aci_wrfchem_opt > 0) THEN
+                   CALL calc_chem_nwfa_nifa(NWFA=qnwfa_curr, NIFA=qnifa_curr, &
+                          NWFA_2D=qnwfa2d, NIFA_2D=qnifa2d,    &
+                          CHEM=chem, RHO=rho, CHEM_OPT=chem_opt, &
+                          IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde, &
+                          IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme, &
+                          ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte)
+                ENDIF
+#endif
                 CALL mp_microwcp_driver(                       &
                      QV=qv_curr, QC=qc_curr, QR=qr_curr,         &
                      QI=qi_curr, QS=qs_curr, QG=qg_curr,         &
