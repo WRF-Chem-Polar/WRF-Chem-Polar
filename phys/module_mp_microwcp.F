@@ -420,7 +420,7 @@ contains
     if (.not. initialized) call mp_microwcp_init()
 
     ! ---- 1. nucleation ----
-    if (has_aero) call nucleation(nz, T,P,rho, qv,qc,qi, nc,ni, nwfa,nifa, dt)
+    if (has_aero) call nucleation(nz, T,P,rho,w, qv,qc,qi, nc,ni, nwfa,nifa, dt)
 
     ! ---- 2. warm phase ----
     call diagnose(nz,T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb,N0s,N0g)
@@ -461,16 +461,16 @@ contains
   !   Seed condensate is drawn from vapour (qv) so water is conserved.
   !   Only runs when aerosols are present (has_aero in the column routine).
   !-----------------------------------------------------------------
-  subroutine nucleation(nz, T,P,rho, qv,qc,qi, nc,ni, nwfa,nifa, dt)
+  subroutine nucleation(nz, T,P,rho,w, qv,qc,qi, nc,ni, nwfa,nifa, dt)
     integer,  intent(in)    :: nz
-    real(rk), intent(in)    :: P(nz),rho(nz),nwfa(nz),nifa(nz),dt
+    real(rk), intent(in)    :: P(nz),rho(nz),w(nz),nwfa(nz),nifa(nz),dt
     real(rk), intent(inout) :: T(nz),qv(nz),qc(nz),qi(nz),nc(nz),ni(nz)
     ! All sub-process rates are evaluated from the FROZEN input state and
     ! accumulated, then applied once (matches stepper.step's tendency sum).
     integer  :: k
     real(rk) :: T0k,qv0,qc0,qi0,nc0,ni0
     real(rk) :: aqv,aqc,aqi,anc,ani,aT
-    real(rk) :: qsat,S,Nact,dNc,m_drop,dqc
+    real(rk) :: qsat,Nact,dNc,m_drop,dqc,C_cm3,weff,f_hf
     real(rk) :: na_cm3,Tsc,Ninp_L,Ninp,dNi,dqi
     real(rk) :: a_dm,b_dm,c_dm,d_dm
     a_dm=0.0000594_rk; b_dm=3.33_rk; c_dm=0.0264_rk; d_dm=0.0827_rk
@@ -478,13 +478,19 @@ contains
     do k = 1, nz
       T0k=T(k); qv0=qv(k); qc0=qc(k); qi0=qi(k); nc0=nc(k); ni0=ni(k)
       aqv=0.0_rk; aqc=0.0_rk; aqi=0.0_rk; anc=0.0_rk; ani=0.0_rk; aT=0.0_rk
-      ! --- CCN activation (Twomey) ---
+      ! --- CCN activation (Twomey 1959, updraft-based) ---
+      ! Activated number is set by the updraft peak supersaturation (scales with
+      ! w), NOT the post-saturation-adjustment S (which is ~0, so Nc collapses ->
+      ! giant droplets -> runaway autoconversion -> no liquid cloud). For a Twomey
+      ! spectrum N=C*S^k:  N_act = P*C^(2/(k+2))*w^(3k/(2(k+2))), P=1.36, k=0.462.
       qsat = qsat_liquid(T0k,P(k))
-      S = max((qv0-qsat)/max(qsat,Q_MIN), 0.0_rk)
-      if (S > 0.0_rk) then
-        Nact = min(nwfa(k)*S**0.462_rk, nwfa(k))
-        dNc  = max(Nact-nc0,0.0_rk)/dt
-        dqc  = dNc*m_drop
+      if (qv0 >= 0.99_rk*qsat .or. qc0 > Q_MIN) then
+        C_cm3 = max(nwfa(k)*rho(k)*1.0e-6_rk, 1.0e-3_rk)        ! CCN [cm-3]
+        weff  = max(w(k), 0.1_rk)                              ! m/s; turbulent floor
+        Nact  = 1.36_rk * C_cm3**0.8127_rk * weff**0.2815_rk    ! [cm-3]
+        Nact  = min(Nact*1.0e6_rk/max(rho(k),1.0e-3_rk), nwfa(k))  ! -> [kg-1]
+        dNc   = max(Nact-nc0,0.0_rk)/dt
+        dqc   = dNc*m_drop
         anc=anc+dNc; aqc=aqc+dqc; aqv=aqv-dqc; aT=aT+L_VAP/CP*dqc
       end if
       ! --- heterogeneous ice nucleation (DeMott 2010) ---
@@ -497,10 +503,12 @@ contains
         dqi    = dNi*M_ICE_MIN
         ani=ani+dNi; aqi=aqi+dqi; aqv=aqv-dqi; aT=aT+L_SUB/CP*dqi
       end if
-      ! --- homogeneous freezing (qc->qi, nc->ni) ---
-      if (T0k < T_HOM) then
-        dqi = qc0/dt; dNi = nc0/dt
-        aqi=aqi+dqi; ani=ani+dNi; aqc=aqc-qc0/dt; anc=anc-nc0/dt
+      ! --- homogeneous freezing (qc->qi, nc->ni): smooth temperature ramp,
+      !     not an instant cutoff. Onset ~-35 C, effectively complete ~-40 C. ---
+      f_hf = 1.0_rk - exp(-max((T_HOM+3.0_rk-T0k)/2.0_rk, 0.0_rk))
+      if (f_hf > 0.0_rk) then
+        dqi = f_hf*qc0/dt; dNi = f_hf*nc0/dt
+        aqi=aqi+dqi; ani=ani+dNi; aqc=aqc-dqi; anc=anc-dNi
         aT=aT+L_FUS/CP*dqi
       end if
       ! --- apply once ---
@@ -1014,11 +1022,11 @@ contains
         ! ---- write back (double -> single), T->th; clamp to physical bounds ----
         do k = kts, kte
           qv(i,k,j) = max(real(qv1d(k)), 0.0)
-          qc(i,k,j) = min(max(real(qc1d(k)),0.0), 0.1)
-          qr(i,k,j) = min(max(real(qr1d(k)),0.0), 0.1)
-          qi(i,k,j) = min(max(real(qi1d(k)),0.0), 0.1)
-          qs(i,k,j) = min(max(real(qs1d(k)),0.0), 0.1)
-          qg(i,k,j) = min(max(real(qg1d(k)),0.0), 0.1)
+          qc(i,k,j) = min(max(real(qc1d(k)),0.0), 0.03)
+          qr(i,k,j) = min(max(real(qr1d(k)),0.0), 0.03)
+          qi(i,k,j) = min(max(real(qi1d(k)),0.0), 0.03)
+          qs(i,k,j) = min(max(real(qs1d(k)),0.0), 0.03)
+          qg(i,k,j) = min(max(real(qg1d(k)),0.0), 0.03)
           nr(i,k,j) = min(max(real(nr1d(k)),0.0), 1.0e13)
           ni(i,k,j) = min(max(real(ni1d(k)),0.0), 1.0e13)
           th(i,k,j) = real(t1d(k)/real(pii(i,k,j),rk))
