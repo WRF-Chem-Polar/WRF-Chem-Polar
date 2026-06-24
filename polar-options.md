@@ -1,6 +1,6 @@
 # New namelist.input options in the polar version
 
-This file describes the new namelist.input options in the WRF-Chem-Polar version. 
+This file describes the new namelist.input options in the WRF-Chem-Polar version.
 
 *Many of these options are not specific to polar regions and can be used for modeling outside the poles.  The main polar specific developments are related to sea ice, which shoudl not negatively impact the results outside the polar regions.*
 
@@ -17,6 +17,20 @@ This option controls the mechanism for gas-phase chemistry and aerosols.
 
 ## Emission options (&chem namelist)
 
+### dust_opt (0, 1, 3, 4, 5, 6, 7, 13)
+This option controls mineral dust aerosol emissions.
+  - 0 (default): Disables dust emissions
+  - 1 (GOCART-only, not recommended): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in gocart_dust_driver
+  - 3 (GOCART-only, untested): AFWA dust emissions following Legrand et al. (2019), calculated in gocart_dust_afwa_driver
+  - 4 (untested): UoC dust emissions following Shao (2001), calculated in uoc_dust_driver
+  - 5 (GOCART and MOSAIC, not recommended): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in mineraldust_emis. Should be identical to options 1 and 13.
+  - 6 (recommended, GOCART and MOSAIC): WRF-Chem-Polar (WCP) dust emissions based on Ginoux (2004), with updates from Legrand et al. (2019) and additional corrections to allow for emissions from high-latitude regions.
+  - 7 (GOCART and MOSAIC, not recommended): FLEXDUST dust emissions following Groot Zwaaftink et al. (2016) and the FLEXDUST model, not including specific treatment for emissions of Icelandic dust.
+  - 13 (MOSAIC-only, not recommended): WRF-GOCART dust emissions following Ginoux (2004) and the GOCART model, calculated in mosaic_dust_gocartemis in mosaic_addemiss.
+### dust_erod_opt (0, 1)
+This option controls the source of the soil erodibility fraction used for dust emissions.
+  - 0 (default): Uses the default EROD from WPS, read from wrfinput
+  - 1 (recommended for high-latitude dust): Uses EROD_HL read from wrfinput. EROD_HL needs to be included in the wrfinput file with an additional preprocessor.
 ### seas_opt (5, 6, 7, 8)
 This option controls the sea spray emissions source function.
   - 0 (default): Disables aerosol emissions from sea-spray.
@@ -32,14 +46,17 @@ This option controls the primary sulfate emission in sea-spray. Only compatible 
 This option controls the primary marine organic emissions in sea-spray. Only compatible with seas_opt 5,6,7,8
   - 0 (default): No marine organic emissions from sea-spray
   - 1 (recommended): Marine organic emissions from Vignati et al. (2010). Requires chlorophyll-a input in the wrflowinp file in variable CHLOROA
-### seas_leads_opt (0, 1)
+### seas_leads_opt (0, 1, 2)
 This option controls the sea-spray emissions from sea ice leads. Only compatible with seas_opt 5,6,7,8
   - 0 (default): Sea-spray emissions from leads use the seas_opt source function weighted by the open ocean fraction (1-seaice_concentration)
   - 1: Sea-spray emissions from leads use the seas_opt source function weighted by the leads fraction, also applying a correction factor to reduce the emissions to account for the reduced wind fetch over leads (Lapere et al., 2024). Requires lead fraction input in the wrflowinp file in variable LEADFRAC
-### dms_opt (0, 1, previoulsy dmsemis_opt)
-This option controls the treatment of dimethyl sulfide (DMS) emissions from the surface ocean in the model. This replaces the old option dmsemis_opt (deprecated but can still be used if needed).
+  - 2: Sea-spray emissions from leads use the seas_opt source function weighted by the leads fraction, also applying a correction factor to reduce the emissions to account for the reduced wind fetch over leads (Lapere et al., 2024). Lead fraction is calculated online as 1-seaice where seaice is above 80%, ignoring LEADFRAC even if it is available.
+### dms_opt (0, 1, 2, 3; previoulsy dmsemis_opt)
+This option controls the treatment of dimethyl sulfide (DMS) emissions from the surface ocean in the model. This replaces the old option dmsemis_opt (deprecated but can still be used if needed). Options 1, 2, and 3 require oceanic DMS concentration input in the wrflowinp file in variable DMS_OCEAN. DMS_OCEAN can be taken from the climatologies of [Lana 2011](https://doi.org/10.1029/2010GB003850), [Hulswar 2021](https://doi.org/10.5194/essd-14-2963-2022) or the CSIB model [(Hayashida et al., 2019)](https://doi.org/10.5194/gmd-12-1965-2019). For options 1, 2, and 3, emissions from sea ice regions are scaled by the open ocean fraction to the power of 0.4 (Loose et al., 2009).
   - 0 (default): No DMS emissions from the ocean surface.
-  - 1 (recommended): DMS emissions from the surface ocean are activated for the open ocean grid cell fraction, using the Nightingale et al. (2000) air–sea flux parameterization. In sea ice, emissions are scaled by the open ocean fraction to the power of 0.4 (Loose et al., 2009). Requires oceanic DMS concentration input in the wrflowinp file in variable DMS_OCEAN. DMS_OCEAN can be taken from the climatologies of [Lana 2011](https://doi.org/10.1029/2010GB003850), [Hulswar 2021](https://doi.org/10.5194/essd-14-2963-2022) or the CSIB model [(Hayashida et al., 2019)](https://doi.org/10.5194/gmd-12-1965-2019).
+  - 1 (recommended): DMS emissions using the Nightingale et al. (2000) sea-air flux parameterization.
+  - 2: DMS emissions using the Liss and Merlivat (1986) sea-air flux parameterization.
+  - 3: DMS emissions using the Wanninkhof (2014) sea-air flux parameterization.
 ### nuc_msa_opt (0, 1)
 This option controls the activation of new particle formation from gas MSA
   - 0 (default): No nucleation of MSA aerosols
@@ -63,6 +80,10 @@ This option controls which scheme is used for the nucleation of sulfate aerosols
 ### surface_snow_opt (0, 1): This option controls halogen emissions and recycling from surface snow in the halogens and mercury branches.
   - 0 (default): Disables halogen emissions and recycling from surface snow.
   - 1: Halogen emissions and recycling from surface snow, following Toyota et al. (2011).
+
+### pbap_opt (0, 1): This option controls Primary Biological Aerosol Particle (PBAP) emissions from land surfaces
+  - 0 (default): Disables PBAP emissions
+  - 1: Emissions of fungal spores and bacteria from land surfaces following Hummel et al. (2015) and Burrows et al. (2009) respectively. The option is only active for GOCART aerosols, and PBAP are emitted as OC1 (hydrophobic organic carbon).
 
 ## Aerosol-cloud interaction options
 ### aci_wrfchem_opt (0, 1, 2): This option controls the aerosol-cloud interactions for liquid droplets in WRF-Chem.

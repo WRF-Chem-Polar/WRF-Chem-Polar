@@ -5552,141 +5552,300 @@
 !+---+-----------------------------------------------------------------+
 
 #if ( WRF_CHEM == 1 )
-      SUBROUTINE ccn_actfrac_arg02(actfrac_arg, Pp, Tt, Ww, aernum, &
-          aerkappa, naerbins)
-        ! 2024/04/30, Louis Marelle, LATMOS
+      SUBROUTINE ccn_actfrac_arg02(actfrac_num_arg, pp, tt, ww, aernum, &
+                                   aerkappa, naerbins)
         !
         ! Purpose:
         !  Calculate aerosol activation fraction for internally mixed
-        !  sectional aerosols, following Abdul-Razzak and Ghan (1998, 2000,
-        !  2002)
+        !  sectional aerosols, following Abdul-Razzak and Ghan (2002)
         !
         ! Arguments:
         !  Input:
-        !   - Pp: Air pressure (Pa)
-        !   - Tt: Air temperature (K)
-        !   - Ww: Updraft speed in cloud (m/s)
+        !   - pp: Air pressure (Pa)
+        !   - tt: Air temperature (K)
+        !   - ww: Vertical wind speed in updraft (m/s)
         !   - aernum: Aerosol number concentration in size bins (m-3)
         !   - aerkappa: Aerosol kappa coefficient in size bins (dimensionless)
         !   - naerbins: Number of aerosol size bins
         !  Output:
-        !   - actfrac_arg: aerosol activation fraction in each size bin (dimensionless, 0-1)
-        !
-        ! Remarks:
-        !  - Sometimes follows the existing implementation in activate()
-        !    rather than the original publications
+        !   - actfrac_num_arg: aerosol number activation fraction in each size
+        !     bin (dimensionless, 0-1)
         !
         ! References:
-        !  - Abdul‐Razzak, H., Ghan, S. J., & Rivera‐Carpio, C. (1998). A
-        !  parameterization of aerosol activation: 1. Single aerosol type.
-        !  Journal of Geophysical Research: Atmospheres, 103(D6), 6123-6131.
-        !  - Abdul‐Razzak, H., & Ghan, S. J. (2000). A parameterization of
-        !  aerosol activation: 2. Multiple aerosol types. Journal of
-        !  Geophysical Research: Atmospheres, 105(D5), 6837-6844.
-        !  - Abdul‐Razzak, H., & Ghan, S. J. (2002). A parameterization of
-        !  aerosol activation 3. Sectional representation. Journal of
-        !  Geophysical Research: Atmospheres, 107(D3), AAC-1.
+        !  - [ARG2002]: Abdul‐Razzak, H., & Ghan, S. J. (2002). A
+        !    parameterization of aerosol activation 3. Sectional
+        !    representation. Journal of Geophysical Research: Atmospheres,
+        !    107(D3), AAC-1.
+        !  - [ARG2000]: Abdul‐Razzak, H., & Ghan, S. J. (2000). A
+        !    parameterization of aerosol activation: 2. Multiple aerosol
+        !    types. Journal of Geophysical Research: Atmospheres, 105(D5),
+        !    6837-6844.
+        !  - [ARG1998]: Abdul‐Razzak, H., Ghan, S. J., & Rivera‐Carpio, C.
+        !    (1998). A parameterization of aerosol activation: 1. Single
+        !    aerosol type.  Journal of Geophysical Research: Atmospheres,
+        !    103(D6), 6123-6131.
+        !  - [Ghan2011]: Ghan, S. J., H. Abdul-Razzak, A. Nenes, Y. Ming, X.
+        !    Liu, M. Ovchinnikov, B. Shipway, N. Meskhidze, J. Xu, and X. Shi
+        !    (2011), Droplet nucleation: Physically-based parameterizations and
+        !    comparative evaluation, J. Adv. Model. Earth Syst., 3, M10001,
+        !    doi:10.1029/2011MS000074.
+        !
+        ! Remarks:
+        !  - Should add output for rcrit, the critical aer radius for activation
+        !  - Should add output for actfrac_mass_arg
+        !  - Sizes are hardcoded for the default MOSAIC 4bin, center and limit
+        !    sizes should instead be arguments and this should also work for
+        !    8-bin MOSAIC
 
         ! Model physical constants
-        !TODO For consistency it might be better to use values from thompson
-        ! MP for lvap:lvap qs:qvs, dv:diffu, mu:visco (first making sure that
-        ! values are similar and units are the same)
-        USE module_model_constants, only: g,rhowater,xlv0,xlv1,cp,r_d,r_v,svp1,svp2,svp3,svpt0,ep_2,piconst
+        USE module_model_constants, only: PICONST, G, RHOWATER, XLV0, XLV1, &
+              CP, R_D, R_V, SVP1, SVP2, SVP3, SVPT0, EP_2
+        ! PICONST Pi
+        ! G acceleration due to gravity (m s-2)
+        ! RHOWATER density of liquid water at 0 degC (kg m-3)
+        ! XLV0 Constant defined for calculation of latent heating
+        ! XLV1 Constant defined for calculation of latent heating
+        ! CP Specific heat of dry air at constant pressure (J K-1 kg-1)
+        ! R_D gas constant of dry air (J K-1 kg-1)
+        ! R_V gas constant for water vapor (J K-1 kg-1)
+        ! SVP1 constant for saturation vapor pressure calculation (dimensionless)
+        ! SVP2 constant for saturation vapor pressure calculation (dimensionless)
+        ! SVP3 constant for saturation vapor pressure calculation (K)
+        ! SVPT0 constant for saturation vapor pressure calculation (K)
+        ! EP_2 constant for specific humidity calculation (dimensionless)
 
         IMPLICIT NONE
 
-        ! Arguments
+        !-- Arguments
         INTEGER, INTENT(IN) :: naerbins
-        ! Temperature (K), Updraft speed (m/s), pressure (Pa)
-        REAL, INTENT(IN):: Tt, Ww, Pp ! Temperature (K), Updraft speed (m/s),
-        REAL, DIMENSION(naerbins), INTENT(IN):: aernum,aerkappa
-        REAL, DIMENSION(naerbins), INTENT(OUT):: actfrac_arg
-        REAL, PARAMETER :: surften = 76.E-3 ! J m-2 surface tension of air-water interface
-        ! Local
+        REAL, INTENT(IN):: tt, ww, pp
+        REAL, DIMENSION(naerbins), INTENT(IN):: aernum, aerkappa
+        REAL, DIMENSION(naerbins), INTENT(OUT):: actfrac_num_arg
+
+        !-- Local variables
         INTEGER :: ibin
-        ! Abdul-Razzak & Ghan parameters, names and units are given below in
-        ! module, additional information in ARG1998
-        REAL :: smax, sil, siu, se, zeta, eta, dvprime,dv,kaprime,ka,gg,alpha,gammafac,afac,qs,es,rhoair,mu,Ww2
-        REAL :: aernumtot
-        REAL, DIMENSION(naerbins) :: si_cen,si_low,si_high
-        REAL, DIMENSION(naerbins) :: rad_bins_l,rad_bins,rad_bins_h
+        ! Saturation vapor pressure (Pa)
+        REAL :: es
+        ! Latent heat of vaporization (J kg-1)
         REAL :: lvap
-        ! Parameters TODO hardcoded for the default MOSAIC 4bin, should at least get values from MOSAIC
-        rad_bins_l = (/0.0390625, 0.15625, 0.6250, 2.5000/)/2.0 * 1.E-6 ! Lower bin radius, m
-        rad_bins_h = (/0.15625, 0.6250, 2.5000, 10.000/)/2.0 * 1.E-6 ! Higher bin radius, m
-        rad_bins = (/0.0781, 0.3125, 1.2500, 5.0000/) / 2.0 * 1.E-6 ! Center bin radius, m
+        ! Mass diffusivity of water in air (m2 s-1)
+        REAL :: dvprime
+        ! Thermal conductivity of air (m2 s-1)
+        REAL :: kaprime
+        ! Supersaturations: 1) maximum, 2) min in bin, 3) max in bin,
+        ! and 4) effective bulk supersaturation (unitless)
+        REAL :: smax, sil, siu, se
+        ! Supersaturation balance equation coefficient for velocity (m-1)
+        REAL :: alphafac
+        ! Supersaturation balance equation coefficient for condensation (m3 kg-1)
+        REAL :: gammafac
+        ! Surface tension coefficient of the curvature effect (m)
+        REAL :: afac
+        ! Growth coefficient (m2 s-1) and prefactors (s m-2)
+        REAL :: gfac, g_a, g_b
+        ! Dimensionless factors (unitless)
+        REAL :: zetafac, etafac
+        ! Supersaturations at bin centers and limits (unitless)
+        REAL, DIMENSION(naerbins) :: si_cen, si_low, si_high
+        ! Bin lower limit, center radius, upper radius (m)
+        REAL, DIMENSION(naerbins) :: rad_bins_l, rad_bins, rad_bins_h
 
-        ! lvap latent heat of vaporization (J kg-1)
-        lvap = xlv0 - xlv1*tt
-        ! dv mass diffusivity of water in air (m2/s)
-        dv = 8.794e-5*Tt**1.81/Pp ! from morrison mp
-        ! ka thermal conductivity of air (m2/s)
-        mu = 1.496e-6*Tt**1.5/(Tt+120.) ! viscosity, m2/s
-        ka = 1.414e3*mu ! from morrison mp
-        rhoair = Pp/(r_d*Tt) ! kg/m3
-        ! Saturation mixing ratio (kg/kg)
-        es = 1000.*svp1*EXP( svp2*(Tt-svpt0)/(Tt-svp3) ) ! Pa
-        qs = ep_2*es/(Pp-es)
+        !-- Parameters
+        ! Surface tension of air-water interface (J m-2)
+        REAL, PARAMETER :: SURFTEN = 76.E-3
+        ! Minimum vertical wind speed for the scheme (m/s)
+        REAL, PARAMETER :: WWCRIT = 1.E-12
+        ! MOSAIC bin radius
+        ! Lower bin radius, m
+        rad_bins_l = (/0.0390625, 0.15625, 0.6250, 2.5000/)/2.0 * 1.E-6
+        ! Higher bin radius, m
+        rad_bins_h = (/0.15625, 0.6250, 2.5000, 10.000/)/2.0 * 1.E-6
+        ! Center bin radius, m
+        rad_bins = (/0.0781, 0.3125, 1.2500, 5.0000/) / 2.0 * 1.E-6
 
-        ! ARG1998,ARG2000 calculations
-        ! Size invariant coefficients alpha (m-1) and gamma (m3 kg-1)
-        ! Units alpha = (m s-2) * 1/(J K-1 kg-1 * K) = m s-2 J-1 kg = (m s-2 kg) * (m-2 s2 kg-1) = m-1
-        ! Units gamma = 1/(kg m-3 * kg/kg) = m3 kg-1
-        alpha = (g*lvap/(cp*r_v*Tt**2.0)) - (g/(r_d*Tt))
-        gammafac = (1+lvap/cp*(lvap/(r_v*Tt*Tt)*qs))/(rhoair*qs)
-        ! afac surface tension coefficient of the curvature effect (m)
-        ! Unit = J m-2/((kg m-3)*(J K-1 kg-1)*K) = m-2 / m-3 = m
-        afac = 2*surften/(rhowater*r_v*Tt)
-        DO ibin = 1,naerbins
-          ! Sil, Siu, Sic are the critical surpersaturations at bin lower limit, upper
-          ! limit, center (unitless)
-          si_low(ibin) = 2. / (aerkappa(ibin)**1./2.) * (afac/(3*rad_bins_l(ibin))) ** (3./2.)
-          si_cen(ibin) = 2. / (aerkappa(ibin)**1./2.) * (afac/(3*rad_bins(ibin))) ** (3./2.)
-          si_high(ibin) = 2. / (aerkappa(ibin)**1./2.) * (afac/(3*rad_bins_h(ibin))) ** (3./2.)
-        ENDDO
-        actfrac_arg(:) = 0.0
-        DO ibin = 1,naerbins
-          ! Max and min supersaturation in bin
-          siu = max(si_low(ibin), si_high(ibin))
-          sil = min(si_low(ibin), si_high(ibin))
-          ! Modified diffusivity and thermal conductivity
-          ! Dvprime = Dv / (rad_bins[ibin]/(rad_bins[ibin]+deltav) + DV/(r*alphac)*(2*pi*Mw/(R*T))**(1./2.) )
-          ! Kaprime =  Ka / (rad_bins[ibin]/(rad_bins[ibin]+deltav) + Ka/(r*alphat*Cpa)*(2*pi*Mw/(R*T))**(1./2.) )
-          ! This is neglected in WRF-Chem, and alphac, deltav, alphat are not defined
-          ! in ARG1998. Use the base diffusivity/conductivity instead
-          dvprime = dv
-          kaprime = ka
-          ! gg growth coefficient (m2/s) (should be size dependent) if modified Ka' and Dv' were used
-          gg = 1. / ( (rhowater/(dvprime*rhoair*qs)) + (lvap*rhowater/(kaprime*Tt)*(lvap/(r_v*Tt) - 1.)) )
-          ! Prevent Ww<=0. This will cause issues with fog, see GT's note
-          ! about radiation fog in original Thompson and Eidhammer activation routine
-          Ww2 = MAX(Ww, 1.E-12)
-          aernumtot = SUM(aernum)
-          ! Eta and Zeta terms from ARG1998 (dimensionless)
-          ! Units: (m-2)**3/2 / (kg m-3 * m3 kg-1 * aernum) => dimensionless if aernumtot in kg/m3
-          eta = (alpha * Ww2 / gg) ** (3./2.) / (2*piconst * rhowater * gammafac * aernumtot)
-          zeta = 2. * afac / 3. * (alpha*Ww2/gg) ** (1./2.)
-          ! se is the effective critical supersaturation of the bulk model aerosol
-          se = ( aernumtot / sum(aernum/(si_cen**(2./3.))) )**(3./2.)
-          ! smax is the maximum critical supersaturation of the air parcel
-          smax = se / (0.5 * (zeta/eta)**(3./2.) + (se**2./(eta+3.*zeta))**3./4.) ** (1./2.)
-          ! Number fraction activated in section i. Aerosol is activated where s < smax
-          !TODO Should use the mass fraction for the aerosol MMR activation
-          IF(smax <= sil .OR. smax <= 0.) THEN
-            actfrac_arg(ibin) = 0.0
-          ELSEIF(siu <= smax) THEN
-            actfrac_arg(ibin) = 1.0
-          ELSE
-            actfrac_arg(ibin) =  LOG(smax/sil)/LOG(siu/sil)
-          ENDIF
-          ! Catch values out of 0-1
-          ! IF(actfrac_arg(ibin) > 1 .OR. actfrac_arg(ibin)<0.) THEN
-          !   WRITE(*,*) 'actfrac out of bounds:',actfrac_arg(ibin),Ww,Tt,Pp,SUM(aernum)
-          ! ENDIF
-        ENDDO ! ibin
+        ! Initialize activated fraction to 0
+        actfrac_num_arg(:) = 0.0
+
+        ! Prevent ww<=0. This might cause issues with fog, see GT's note about
+        ! radiation fog in original act routine
+        IF(ww > wwcrit) THEN
+          !-- Initialize physical parameters
+          ! Latent heat of vaporization
+          lvap = XLV0 - XLV1*tt
+          ! Saturation pressure and mixing ratio
+          es = 1000.*SVP1*EXP( SVP2*(tt-SVPT0)/(tt-SVP3) )
+
+          !-- Initialize ARG parameterization factors
+          ! Ghan2011 eq. A7
+          alphafac = (G*lvap/(CP*R_V*tt**2.0)) - (G/(R_D*tt))
+          ! Ghan2011 eq. A8
+          gammafac = pp/es/EP_2 + lvap**2.0/(CP*R_V*tt**2.0)
+          afac = 2*SURFTEN/(RHOWATER*R_V*tt)
+          ! Neglect size effects for the calculation of dv and ka, following
+          ! ARG2002
+          ! (including size effects requires calculating an effective critical
+          ! droplet size for these effects, see Ghan2011 and
+          ! doi:10.1029/2004JD005591)
+          dvprime = dv_approx(tt=tt, pp=pp)
+          kaprime = ka_approx(tt=tt)
+          ! Calculate the growth coefficient (ARG1998 eq. 16, Ghan2011 eq. A4)
+          g_a = (RHOWATER*R_V*tt ) / (es*dvprime)
+          g_b = (lvap*RHOWATER / (kaprime*tt)) * (lvap/(R_V*tt) - 1.)
+          gfac = 1. / (g_a + g_b)
+
+          !-- Calculate supersaturations
+          ! Calculate the supersaturations in the bins (ARG2002 eq. 4)
+          DO ibin = 1,naerbins
+            si_low(ibin) = 2./SQRT(aerkappa(ibin)) &
+                            * (afac/(3*rad_bins_l(ibin))) ** 1.5
+            si_cen(ibin) = 2./SQRT(aerkappa(ibin)) &
+                           * (afac/(3*rad_bins(ibin))) ** 1.5
+            si_high(ibin) = 2./SQRT(aerkappa(ibin)) &
+                            * (afac/(3*rad_bins_h(ibin))) ** 1.5
+          ENDDO
+          ! Calculate the effective critical supersaturation of the bulk
+          ! aerosol (ARG2002 eq. 8)
+          se = ( sum(aernum) / sum(aernum/(si_cen**0.66666666)) )**1.5
+          ! Calculate dimensionless parameters for the Smax calculation (ARG1998 Eq.
+          ! 22 and 23)
+          etafac = (alphafac * ww / gfac) ** 1.5 &
+                   / (2*PICONST * RHOWATER * gammafac * sum(aernum))
+          zetafac = 2. * afac / 3. * (alphafac*ww/gfac) ** 0.5
+          ! Calculate the maximum critical supersaturation of the air parcel
+          ! (ARG2002 eq. 9)
+          smax = se / (0.5 * (zetafac/etafac)**1.5 &
+                       + (se**2./(etafac+3.*zetafac))**0.75) ** 0.5
+
+          !-- Determine the number fraction activated in section ibin
+          ! Aerosol is activated where s < smax
+          DO ibin = 1,naerbins
+            ! Max and min supersaturation in bin
+            siu = MAX(si_low(ibin), si_high(ibin))
+            sil = MIN(si_low(ibin), si_high(ibin))
+            IF(smax < sil) THEN
+              actfrac_num_arg(ibin) = 0.0
+            ELSEIF(siu < smax) THEN
+              actfrac_num_arg(ibin) = 0.999
+            ELSE
+              ! Number fraction activated, ARG2002 eq. 13
+              actfrac_num_arg(ibin) =  LOG(smax/sil)/LOG(siu/sil)
+            ENDIF
+            ! Catch values out of 0-1
+            IF(actfrac_num_arg(ibin) > 1 .OR. actfrac_num_arg(ibin) < 0.) THEN
+              WRITE(*,*) 'actfrac oob:',actfrac_num_arg(ibin),ww,tt,pp,SUM(aernum)
+              actfrac_num_arg(ibin) = MAX(0., MIN(1., actfrac_num_arg(ibin)))
+            ENDIF
+          ENDDO ! ibin
+
+        ENDIF ! ww > wwcrit
+
       END SUBROUTINE ccn_actfrac_arg02
 
 #endif
+
+!------------------------------------------------------------------------
+
+      FUNCTION dv_approx(tt, pp)
+        ! Diffusivity of water vapor in air, neglecting droplet size dependence
+        !
+        ! References:
+        !   (1) Seinfeld, John H, and Spyros N Pandis. Atmospheric Chemistry and
+        !   Physics: From Air Pollution to Climate Change. Vol. 2nd. Wiley, 2006.
+        !
+        ! Arguments
+        !   tt = ambient air temperature (K)
+        !   pp = ambient pressure (Pa)
+        ! Output
+        !   dv_approx = Diffusivity of water vapor in air (m^2/s)
+        !
+        IMPLICIT NONE
+        ! Arguments
+        REAL, INTENT(IN) :: tt, pp
+        ! Local variables
+        REAL :: dv_approx
+        dv_approx = 1e-4 * (0.211 / (pp * 1.01325e-5)) * ((tt / 273.0) ** 1.94)
+        RETURN
+      END FUNCTION dv_approx
+
+!------------------------------------------------------------------------
+
+      FUNCTION dv_size(tt, pp, rdrop, accom)
+        ! Diffusivity of water vapor in air, including droplet size effects
+        !
+        ! Arguments
+        !   tt = ambient air temperature (K)
+        !   pp = ambient pressure (Pa)
+        !   rdrop = droplet radius (m)
+        !   accom = condensation accomodation coefficient (unitless)
+        ! Output
+        !   dv_size = Diffusivity of water vapor in air (m^2/s)
+        !
+        IMPLICIT NONE
+        ! Arguments
+        REAL, INTENT(IN) :: tt, rdrop, pp, accom
+        ! Local variables
+        REAL :: dv_size, dv_t, denom
+        ! Parameters
+        REAL, PARAMETER :: PI = 3.14159
+        REAL, PARAMETER :: R = 8.314  ! Universal gas constant, (J/K/mol)
+        REAL, PARAMETER :: MW = 18.0 / 1e3 ! Molecular weight of water (kg/mol)
+        dv_t = dv_approx(tt, pp)
+        denom = 1.0 + (dv_t / (accom * rdrop)) * SQRT((2.0 * PI * MW) / (R * tt))
+        dv_size = dv_t / denom
+        RETURN
+      END FUNCTION dv_size
+
+!------------------------------------------------------------------------
+
+      FUNCTION ka_approx(tt)
+        ! Thermal conductivity of air, neglecting droplet size effects
+        !
+        ! Arguments
+        !   tt = ambient air temperature (K)
+        ! Output
+        !   ka_approx = Thermal conductivity of air (J/m/s/K)
+        !
+        IMPLICIT NONE
+        ! Arguments
+        REAL, INTENT(IN) :: tt
+        ! Local variables
+        REAL :: ka_approx
+        ka_approx =  1e-3 * (4.39 + 0.071 * tt)
+        RETURN
+      END FUNCTION ka_approx
+
+!------------------------------------------------------------------------
+
+      FUNCTION ka_size(tt, rhoair, rdrop)
+        ! Thermal conductivity of air, including droplet size dependence
+        !
+        ! References:
+        !   (1) Seinfeld, John H, and Spyros N Pandis. Atmospheric Chemistry and
+        !   Physics: From Air Pollution to Climate Change. Vol. 2nd. Wiley, 2006.
+        !
+        ! Arguments
+        !   tt = ambient air temperature (K)
+        !   rhoair = ambient air density (kg m^-3)
+        !   rdrop = droplet radius (m)
+        ! Output
+        !   ka_size = Thermal conductivity of air (J/m/s/K)
+        !
+        IMPLICIT NONE
+        ! Arguments
+        REAL, INTENT(IN) :: tt, rhoair, rdrop
+        ! Local variables
+        REAL :: ka_size, ka_t, denom
+        ! Parameters
+        REAL, PARAMETER :: AT = 0.96 ! thermal accommodation coeff. (unitless)
+        REAL, PARAMETER :: CP = 1004.0 ! specific heat of dry air (J/kg)
+        REAL, PARAMETER :: PI = 3.14159
+        REAL, PARAMETER :: R = 8.314  ! Universal gas constant, (J/K/mol)
+        REAL, PARAMETER :: Ma = 28.9 / 1.E3 ! Molecular weight of dry air (kg/mol)
+        ka_t = ka_approx(tt)
+        denom = 1.0 + (ka_t / (AT*rdrop*rhoair*CP)) * SQRT((2.*PI*MA) / (R*tt))
+        ka_size = ka_t / denom
+        RETURN
+      END FUNCTION ka_size
 
 !+---+-----------------------------------------------------------------+
       SUBROUTINE GCF(GAMMCF,A,X,GLN)

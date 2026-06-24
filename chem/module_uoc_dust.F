@@ -22,9 +22,9 @@ MODULE uoc_dust
   CONTAINS
   subroutine uoc_dust_driver(dt,config_flags,                         &
          chem,rho_phy,dz8w,smois,ust,                                      &
-         isltyp,vegfra,g,emis_dust,                                        &
+         isltyp,vegfra,g,emis_dust,e_dust,                                 &
          ust_t_min, imod, rough_cor, smois_cor,                            &
-         soil_top_cat, erod,                                               &
+         soil_top_cat, erod, erod_hl,                                      &
          ids,ide, jds,jde, kds,kde,                                        &
          ims,ime, jms,jme, kms,kme,                                        &
          its,ite, jts,jte, kts,kte                                         )
@@ -56,10 +56,13 @@ MODULE uoc_dust
          INTENT(INOUT ) ::                                   chem
    REAL, DIMENSION( ims:ime, 1, jms:jme,num_emis_dust),OPTIONAL,           &
          INTENT(INOUT ) ::                              emis_dust
+   REAL, DIMENSION( ims:ime, jms:jme),                    &
+         INTENT(INOUT ) ::    e_dust
    REAL, DIMENSION( ims:ime, config_flags%num_soil_layers, jms:jme ) ,     &
          INTENT(INOUT) ::                               smois
    REAL,  DIMENSION( ims:ime , jms:jme )  ,                                &
           INTENT(IN   ) ::                            ust,                 &
+                                                      erod_hl,             &
                                                       vegfra
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme ),                        &
           INTENT(IN   ) ::                           dz8w,                 &
@@ -89,6 +92,7 @@ MODULE uoc_dust
   real(8)             :: gwet, cf
   real(8)             :: conver,converi
   real(8)             :: ust_min, rough_cor_in, smois_cor_in
+  real(8)             :: erod_in
   real, dimension(16) :: soilc
   real                :: tot_soilc
   integer             :: domsoilc
@@ -178,9 +182,15 @@ MODULE uoc_dust
 ! 
   do j=jts,jte
   do i=its,ite
+     IF(config_flags%dust_erod_opt == 1) THEN
+        ! Use erodibility from erod_hl, including high latitude sources
+        erod_in = erod_hl(i,j)
+     ELSE
+        erod_in = sum(erod(i,j,:))
+     ENDIF
 
 ! do dust over dust source area only
-     if (sum(erod(i,j,:)).gt.0.) then    !use fraction of erodible surface area as dust source indicator    
+     if (erod_in.gt.0.) then    !use fraction of erodible surface area as dust source indicator    
         tc(1)=chem(i,kts,j,p_dust_1)*conver   ![kg/kg-dryair]
         tc(2)=chem(i,kts,j,p_dust_2)*conver
         tc(3)=chem(i,kts,j,p_dust_3)*conver
@@ -248,6 +258,8 @@ MODULE uoc_dust
          emis_dust(i,1,j,p_edust3)=emis_dust(i,1,j,p_edust3)+bems(3)
          emis_dust(i,1,j,p_edust4)=emis_dust(i,1,j,p_edust4)+bems(4)
          emis_dust(i,1,j,p_edust5)=emis_dust(i,1,j,p_edust5)+bems(5)
+         ! Output total emissions in g m-2
+         e_dust(i,j) = e_dust(i,j) + SUM(bems)*1000.0
          
      else   ! no dust source
          emis_dust(i,1,j,p_edust1)=0.
