@@ -2,7 +2,7 @@
 !
 ! Purpose:
 !  Calculate the sedimentation velocities for aerosols and sediment the
-!  aerosols through the tmospheric column
+!  aerosols through the atmospheric column
 !
 ! Remarks:
 !  - Only compatible with GOCART for now
