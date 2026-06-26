@@ -69,6 +69,7 @@
    USE module_aer_aqchem_simple, only: aer_aqchem_simple_init
    USE module_aer_wetscav_simple, only: aer_wetscav_simple_init
    USE module_aer_drydep_simple, only: aer_drydep_simple_init
+   USE module_aer_settling_simple, only: aer_settling_simple_init
 
 !!! TUCCELLA (BUG)
    USE module_prep_wetscav_sorgam, only: aerosols_sorgam_init_aercld_ptrs, aerosols_soa_vbs_init_aercld_ptrs
@@ -437,9 +438,48 @@ call wrf_message("**************************************************************
 
    ! Simple aerosol dry deposition for GOCART aerosols
    ! - Can be enabled for any GOCART chem_opt
-   IF(config_flags%aer_drydep_opt > 0 .AND. aer_is_gocart) THEN
-      CALL wrf_debug( 15, 'Chemics_init: Calling aer_drydep_simple_init' )
-      CALL aer_drydep_simple_init(config_flags%chem_opt)
+   IF(config_flags%aer_drydep_opt == 2) THEN
+      IF(aer_is_gocart) THEN
+        CALL wrf_debug( 15, 'Chemics_init: Calling aer_drydep_simple_init' )
+        CALL aer_drydep_simple_init(config_flags%chem_opt)
+      ELSE
+        CALL wrf_error_fatal('Chemics_init: aer_drydep_simple is only compatible with GOCART')
+      ENDIF
+   ENDIF
+
+   ! Simple aerosol sedimentation for GOCART aerosols
+   ! - Can be enabled for any GOCART chem_opt
+   IF(config_flags%aer_settling_opt == 2 .OR. config_flags%aer_settling_opt == 3) THEN
+      IF(aer_is_gocart) THEN
+        CALL wrf_debug( 15, 'Chemics_init: Calling aer_settling_simple_init' )
+        CALL aer_settling_simple_init(config_flags%chem_opt)
+      ELSE
+        CALL wrf_error_fatal('Chemics_init: aer_settling_simple is only compatible with GOCART')
+      ENDIF
+   ELSEIF(config_flags%aer_settling_opt < 0 .OR. config_flags%aer_settling_opt > 3) THEN
+     CALL wrf_error_fatal('Chemics_init: Incorrect value for option aer_settling_opt')
+   ENDIF
+   ! Additional checks for aerosol sedimentation with gocart_drydep
+   IF(config_flags%aer_drydep_opt == 1 &
+       .AND. config_flags%aer_settling_opt /= 0 &
+       .AND. config_flags%aer_settling_opt /= 1 &
+       .AND. config_flags%aer_settling_opt /= 3) THEN
+     CALL wrf_error_fatal('Chemics_init: aer_drydep_opt = 1 can only be used &
+       & with aer_settling_opt = 1,3 or sedimentation at the surface will not &
+       & be performed. Use aer_settling_opt = 0 to explicitly turn off &
+       & sedimentation both at the surface and aloft')
+   ! Additional checks for aerosol sedimentation with aer_drydep_simple
+   ELSEIF(config_flags%aer_drydep_opt == 2) THEN
+     IF(config_flags%aer_settling_opt /= 0 &
+        .AND. config_flags%aer_settling_opt /= 2 ) THEN
+       CALL wrf_error_fatal('Chemics_init: aer_drydep_opt = 2 can only be used &
+         & with aer_settling_opt = 0,2 or sedimentation at the surface will be &
+         & double counted')
+     ELSEIF(config_flags%aer_settling_opt == 0) THEN
+       CALL wrf_message('Chemics_init: aer_drydep_opt = 2 and &
+         & aer_settling_opt = 0 selected, model will perform sedimentation &
+         & only at the surface, in aer_drydep_simple')
+     ENDIF
    ENDIF
 
    ! LMarelle - WRF-Chem aerosol aware ice nucleation, only coupled for now with

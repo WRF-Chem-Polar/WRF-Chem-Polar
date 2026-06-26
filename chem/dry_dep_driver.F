@@ -49,6 +49,7 @@ CONTAINS
 !LMarelle Add a module for aerosol sedimentation aloft in MOSAIC
   USE module_mosaic_settling
   USE module_aer_drydep_simple, only: aer_drydep_simple
+  USE module_aer_settling_simple, only: aer_settling_simple
   USE module_gocart_drydep
   USE module_mosaic_drydep, only:  mosaic_drydep_driver
   USE module_mixactivate_wrappers, only: mosaic_mixactivate, sorgam_mixactivate, &
@@ -300,18 +301,33 @@ CONTAINS
                config_flags%chem_opt == GOCART_SIMPLE .OR. &
                config_flags%chem_opt == GOCARTRACM_KPP .OR. &
                config_flags%chem_opt == GOCARTRADM2) THEN
-            CALL aer_drydep_simple(ddvel=ddvel, t_phy=t_phy, rho_phy=rho_phy,&
-                                   ust=ust, rh=rh, xlat=xlat,                &
-                                   snowh=snowh, xice=xice, ivgtyp=ivgtyp,    &
-                                   res_adyn=aer_res_def, julday=julday,      &
-                                   dtstep=dtstep,                            &
-                                   ids=ids,ide=ide, jds=jds,jde=jde,         &
-                                   kds=kds,kde=kde,                          &
-                                   ims=ims,ime=ime, jms=jms,jme=jme,         &
-                                   kms=kms,kme=kme,                          &
-                                   its=its,ite=ite, jts=jts,jte=jte,         &
-                                   kts=kts,kte=kte                           )
-
+            IF(config_flags%aer_drydep_opt == 1) THEN
+              CALL wrf_debug(15,'call gocart_drydep_driver')
+              CALL gocart_drydep_driver(dtstep,                                &
+                    config_flags,numgas,                                       &
+                    t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
+                    p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
+                    ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
+                    dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
+                    dustdrydep_4,dustdrydep_5,                                 &
+                    depvelocity,                                               &
+                    ids,ide, jds,jde, kds,kde,                                 &
+                    ims,ime, jms,jme, kms,kme,                                 &
+                    its,ite, jts,jte, kts,kte                                  )
+            ELSEIF(config_flags%aer_drydep_opt == 2) THEN
+              CALL wrf_debug(15,'call aer_drydep_simple')
+              CALL aer_drydep_simple(ddvel=ddvel, t_phy=t_phy, rho_phy=rho_phy,&
+                                     ust=ust, rh=rh, xlat=xlat,                &
+                                     snowh=snowh, xice=xice, ivgtyp=ivgtyp,    &
+                                     res_adyn=aer_res_def, julday=julday,      &
+                                     dtstep=dtstep,                            &
+                                     ids=ids,ide=ide, jds=jds,jde=jde,         &
+                                     kds=kds,kde=kde,                          &
+                                     ims=ims,ime=ime, jms=jms,jme=jme,         &
+                                     kms=kms,kme=kme,                          &
+                                     its=its,ite=ite, jts=jts,jte=jte,         &
+                                     kts=kts,kte=kte                           )
+            ENDIF
           ENDIF
 
          if( config_flags%diagnostic_chem == DEPVEL1 .and. &
@@ -1553,26 +1569,35 @@ CONTAINS
 !!! TUCCELLA
    CASE (DUST,GOCART_SIMPLE,GOCARTRACM_KPP,MOZCART_KPP,T1_MOZCART_KPP,RADM2SORG,RADM2SORG_AQ, &
          RADM2SORG_AQCHEM,RACMSORG_AQCHEM_KPP,RACM_ESRLSORG_AQCHEM_KPP,RACM_SOA_VBS_AQCHEM_KPP)
-       CALL wrf_debug(15,'call gocart settling routine')
-         call gocart_settling_driver(dtstep,config_flags,t_phy,moist,  &
-         chem,rho_phy,dz8w,p8w,p_phy,         &
-         dustin,seasin,dx,g, &
-         dustgraset_1,dustgraset_2,dustgraset_3,                           &
-         dustgraset_4,dustgraset_5,                                        &
-         setvel_1,setvel_2,setvel_3,setvel_4,setvel_5, imod,               &              
-         ids,ide, jds,jde, kds,kde,                                        &
-         ims,ime, jms,jme, kms,kme,                                        &
-         its,ite, jts,jte, kts,kte                                         )
+       IF(config_flags%aer_settling_opt == 1) THEN
+         CALL wrf_debug(15,'call gocart settling routine')
+         CALL gocart_settling_driver(dtstep,config_flags,t_phy,moist,  &
+          chem,rho_phy,dz8w,p8w,p_phy,         &
+          dustin,seasin,dx,g, &
+          dustgraset_1,dustgraset_2,dustgraset_3,                           &
+          dustgraset_4,dustgraset_5,                                        &
+          setvel_1,setvel_2,setvel_3,setvel_4,setvel_5, imod,               &
+          ids,ide, jds,jde, kds,kde,                                        &
+          ims,ime, jms,jme, kms,kme,                                        &
+          its,ite, jts,jte, kts,kte                                         )
+       ELSEIF(config_flags%aer_settling_opt == 2 .OR. config_flags%aer_settling_opt == 3) THEN
+         CALL wrf_debug(15,'call aer_settling_simple routine')
+         CALL aer_settling_simple(chem=chem, t_phy=t_phy, rho_phy=rho_phy,  &
+                         dz8w=dz8w, rh=rh, dtstep=dtstep,                   &
+                         aer_settling_opt=config_flags%aer_settling_opt,    &
+                         dd_dust=dd_dust, dd_seasalt=dd_seasalt,            &
+                         ids=ids,ide=ide, jds=jds,jde=jde, kds=kds,kde=kde, &
+                         ims=ims,ime=ime, jms=jms,jme=jme, kms=kms,kme=kme, &
+                         its=its,ite=ite, jts=jts,jte=jte, kts=kts,kte=kte )
+       ENDIF
    CASE (CHEM_VASH, CHEM_VOLC, CHEM_VOLC_4BIN)
-       CALL wrf_debug(15,'call vash settling routine')
+         CALL wrf_debug(15,'call vash settling routine')
          call vash_settling_driver(dtstep,config_flags,t_phy,moist,        &
          chem,rho_phy,dz8w,p8w,p_phy,                                      &
          ash_fall,dx,g,                                                    &
          ids,ide, jds,jde, kds,kde,                                        &
          ims,ime, jms,jme, kms,kme,                                        &
          its,ite, jts,jte, kts,kte                                         )
-!LMarelle Call the routine for aerosol sedimentation aloft (above level 1) for
-!MOSAIC schemes
    CASE (CBMZ_MOSAIC_4BIN, CBMZ_MOSAIC_KPP, &
          CBMZ_MOSAIC_8BIN,CBMZ_MOSAIC_4BIN_AQ, CBMZ_MOSAIC_8BIN_AQ, &
          MOZART_MOSAIC_4BIN_KPP,    &      !TO
@@ -1588,7 +1613,7 @@ CONTAINS
          SAPRC99_MOSAIC_8BIN_VBS2_AQ_KPP, &
          SAPRC99_MOSAIC_8BIN_VBS2_KPP)
    if(config_flags%mosaic_aer_settling_opt==1) then
-       CALL wrf_debug(15,'call mosaic settling routine')
+         CALL wrf_debug(15,'call mosaic settling routine')
          call mosaic_settling_driver(                                   &
          t_phy, rho_phy, dz8w, chem, dtstep,                            &
          ids,ide, jds,jde, kds,kde,                                     &

@@ -116,18 +116,25 @@ io_form_auxinput18                   = 2
 - 2 (in development, not recommended): Use classical nucleation theory (CNT) for deposition from Keita et al. (2020) and immersion from Hoose et al. (2010) to calculate heterogeneous freezing in Morrison microphysics. CNT aerosol parameters are calculated from WRF-Chem dust aerosols (MOSAIC-4bin only).
 
 ## Deposition options
-###  mosaic_aer_settling_opt (0, 1)
-This option controls aerosol sedimentation above the first vertical level for MOSAIC aerosols.
-   - 0 (default): No aerosol sedimentation above the first level in MOSAIC. Settling velocities are calculated in the first level and taken into account in the dry deposition velocity.
-   - 1: Includes aerosol sedimentation of MOSAIC aerosols at all vertical levels.
 ###  wetscav_onoff (0,1)
 This option controls wet scavenging of aerosols by precipitation.
   - 0 (default): No wet scavenging, unchanged from upstream WRF-Chem
   - 1 (recommended): For GOCART mechanisms, includes wet scavenging following Luo et al. (2019, 2020), whereas upstream WRF had no wet scavenging for GOCART aerosols. For other aerosol mechanisms, the behavior of this option is unchanged from upstream WRF.
-### aer_drydep_opt (0,1,301,311)
+### aer_drydep_opt (0, 1, 2, 301, 311)
 This option controls aerosol dry deposition
-  - 0 (default): No dry deposition, unchanged from upstream WRF-Chem
-  - 1 (MOSAIC aerosols, recommended): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Binkowski and Shankar (1995). Unchanged from upstream WRF-Chem.
-  - 1 (GOCART aerosols, recommended): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Emmerson et al. (2020).
+  - 0: No dry deposition, unchanged from upstream WRF-Chem
+  - 1 (default, MOSAIC aerosols): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Binkowski and Shankar (1995). Unchanged from upstream WRF-Chem.
+  - 1 (default, GOCART aerosols): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with the GOCART model formulation in gocart_drydep, not including the contribution of gravitational settling to dry deposition at the surface. Use with aer_settling_opt = 3 (recommended) or 1.
+  - 2 (GOCART aerosols): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Emmerson et al. (2020), including the contribution of gravitational settling to dry deposition at the surface. Use with aer_settling_opt = 2.
   - 301 (MOSAIC only): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Zhang (2001). Unchanged from upstream WRF except we added a mapping to allow using this option with MODIS land use.
   - 311 (MOSAIC only): Dry deposition is enabled for aerosols. Calculates dry deposition velocities with Zhang (2001), with updated parameters. Unchanged from upstream WRF except we added a mapping to allow using this option with MODIS land use.
+### aer_settling_opt (0, 1, 2, 3)
+This option controls aerosol sedimentation for GOCART aerosols.
+   - 0: No aerosol sedimentation in GOCART. If aer_drydep_opt=2 is also selected, the contribution of sedimentation to dry deposition at the surface is still included.
+   - 1 (default): Includes aerosol sedimentation for GOCART aerosols, using gocart_settling. Sedimentation is performed both at the surface and aloft. Not compatible with aer_drydep_opt=2.
+   - 2 (recommended with aer_drydep_opt=2): Includes aerosol sedimentation for GOCART aerosols, using aer_settling_simple. Sedimentation is performed only aloft. Not compatible with aer_drydep_opt=1
+   - 3 (recommended with aer_drydep_opt=1): Includes aerosol sedimentation for GOCART aerosols, using aer_settling_simple. Sedimentation is performed at the surface and aloft. Not compatible with aer_drydep_opt=2.
+###  mosaic_aer_settling_opt (0, 1)
+This option controls aerosol sedimentation above the first vertical level for MOSAIC aerosols.
+   - 0: No aerosol sedimentation above the first level in MOSAIC. Settling velocities are calculated in the first level and taken into account in the dry deposition velocity.
+   - 1 (default): Includes aerosol sedimentation of MOSAIC aerosols at all vertical levels.
