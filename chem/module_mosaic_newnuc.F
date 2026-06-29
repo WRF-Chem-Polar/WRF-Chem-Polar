@@ -1174,6 +1174,7 @@
            real, parameter :: k_m = 3.27e-21 ! cm6/s
 
            real, parameter :: qnh3_crit_h2019 = 10.0 ! threshold nh3 concentration from (2)
+           real, parameter :: rh_crit_h2019 = 90.0 ! threshold rel. hum. from (2)
            ! parameters for critical temperature formula from (2) - K
            real, parameter :: a_h = 252.0
            real, parameter :: b_h = 0.619
@@ -1221,8 +1222,14 @@
            ! and depends on the availability of bases, represented here by NH3 (Hodshire et al. (2019) - ref (2))
 
            ! In low base conditions, MSA acts as a Volatile or semivolatile organic compound, and does not contribute to new particle formation
+           ! RLA June 2026
+           ! this threshold on NH3 needs further discussion to interpret how it is formulated in (2), sect. 2.2
+           ! as it was it mostly prevented nucleation, perhaps because the simulated concentrations in the Arctic are too low compared to reality
+           ! for now we put it back to the way this was coded in Lapere et al. (2026) where low-base conditions matter only when RH<=90%
            if (qnh3_avg_ppt .le. qnh3_crit_h2019) then
-              j2_msa = 0.0
+				if (rh100 .le. rh_crit_h2019) then
+                    j2_msa = 0.0
+				end if
            else
            ! In excess-base conditions, MSA volatility depends on T and RH
            ! If t>t_trans, then MSA is treated as a semivolatile species that undergoes condensation but not nucleation 
