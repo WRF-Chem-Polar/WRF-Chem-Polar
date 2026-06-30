@@ -440,7 +440,13 @@ contains
                        dqr_sed,dqi_sed,dqs_sed,dqg_sed)
 
     ! ---- 6. saturation adjustment ----
-    call saturation_adjustment(nz, T,P, qv,qc,qi,qs,qg)
+    call saturation_adjustment(nz, T,P, qv,qc,qi,qs,qg, nc)
+
+    ! ---- 7. number<->mass consistency for frozen 2-moment categories ----
+    !      zero the number where mass is negligible so advected number cannot
+    !      strand in condensate-free cells (cloud droplets handled in satadj).
+    where (qi < QI_MIN) ni = 0.0_rk
+    where (qr < QR_MIN) nr = 0.0_rk
 
     ! ---- surface precip [kg m-2 == mm] = -integral(dq_sed*rho*dz)*dt ----
     pptrain  = max(-sum(dqr_sed*rho*dz)*dt, 0.0_rk)
@@ -473,6 +479,7 @@ contains
     real(rk) :: qsat,Nact,dNc,m_drop,dqc,C_cm3,weff,f_hf
     real(rk) :: na_cm3,Tsc,Ninp_L,Ninp,dNi,dqi
     real(rk) :: a_dm,b_dm,c_dm,d_dm
+    real(rk) :: Si,RHi_crit,N_hom
     a_dm=0.0000594_rk; b_dm=3.33_rk; c_dm=0.0264_rk; d_dm=0.0827_rk
     m_drop = (4.0_rk/3.0_rk)*PI*(1.0e-6_rk)**3*1000.0_rk
     do k = 1, nz
@@ -483,8 +490,16 @@ contains
       ! w), NOT the post-saturation-adjustment S (which is ~0, so Nc collapses ->
       ! giant droplets -> runaway autoconversion -> no liquid cloud). For a Twomey
       ! spectrum N=C*S^k:  N_act = P*C^(2/(k+2))*w^(3k/(2(k+2))), P=1.36, k=0.462.
+      ! Do NOT activate in the homogeneous-freezing regime (T < T_HOM+3 ~ -35C):
+      ! liquid cloud cannot persist there, so a droplet activated here is frozen
+      ! by homogeneous freezing the same/next step, and because activation is
+      ! deficit-based it immediately re-activates -> a vapour->tiny-droplet->
+      ! tiny-ice-crystal NUMBER pump that drives ni to ~1e10/kg with crystals
+      ! far below M_ICE_MIN (the QNICE runaway). Gating to T above the
+      ! homogeneous onset breaks the conveyor; warm/mixed-phase activation
+      ! (supercooled liquid) is unaffected.
       qsat = qsat_liquid(T0k,P(k))
-      if (qv0 >= 0.99_rk*qsat .or. qc0 > Q_MIN) then
+      if ((qv0 >= 0.99_rk*qsat .or. qc0 > Q_MIN) .and. T0k > T_HOM+3.0_rk) then
         C_cm3 = max(nwfa(k)*rho(k)*1.0e-6_rk, 1.0e-3_rk)        ! CCN [cm-3]
         weff  = max(w(k), 0.1_rk)                              ! m/s; turbulent floor
         Nact  = 1.36_rk * C_cm3**0.8127_rk * weff**0.2815_rk    ! [cm-3]
@@ -510,6 +525,24 @@ contains
         dqi = f_hf*qc0/dt; dNi = f_hf*nc0/dt
         aqi=aqi+dqi; ani=ani+dNi; aqc=aqc-dqi; anc=anc-dNi
         aT=aT+L_FUS/CP*dqi
+      end if
+      ! --- homogeneous aerosol (cirrus) freezing: T < T_HOM, clear-air ice ---
+      !     Solution/haze aerosol freezes once the ice supersaturation exceeds
+      !     the Koop (2000) threshold (Ren & MacKenzie 2005 fit). Crystal number
+      !     is updraft-scaled (Karcher & Lohmann 2002), capped, deficit-based and
+      !     bounded by aerosol -> makes cirrus ice where droplet freezing cannot,
+      !     WITHOUT a runaway. Aerosol not depleted (diagnostic field, as for
+      !     CCN activation and DeMott).
+      if (T0k < T_HOM) then
+        Si = qv0/max(qsat_ice(T0k,P(k)),Q_MIN)
+        RHi_crit = min(max(2.418_rk - T0k/245.68_rk, 1.4_rk), 1.7_rk)
+        if (Si > RHi_crit) then
+          N_hom = min(0.1_rk*max(w(k),0.05_rk)**1.5_rk, 1.0_rk)       ! [cm-3]
+          N_hom = min(N_hom*1.0e6_rk/max(rho(k),1.0e-3_rk), nwfa(k))  ! [kg-1]
+          dNi = max(N_hom-ni0,0.0_rk)/dt
+          dqi = dNi*M_ICE_MIN
+          ani=ani+dNi; aqi=aqi+dqi; aqv=aqv-dqi; aT=aT+L_SUB/CP*dqi
+        end if
       end if
       ! --- apply once ---
       qc(k)=max(qc0+aqc*dt,0.0_rk); qv(k)=max(qv0+aqv*dt,0.0_rk)
@@ -811,33 +844,47 @@ contains
   !-----------------------------------------------------------------
   !-----------------------------------------------------------------
   ! saturation_adjustment
-  !   Final warm-phase cleanup: where T>=0 C, condense excess vapour to
-  !   cloud (or evaporate cloud) so qv relaxes to qsat_liquid, updating T
-  !   for the latent heat. Three Newton iterations handle qsat's own
-  !   T-dependence. The ice phase is deliberately NOT adjusted here -- it
-  !   is left to the diffusion-limited rates in `cold` (see satadj.py).
+  !   Final liquid-phase cleanup: where T>T_HOM (i.e. wherever liquid water
+  !   can exist, SUPERCOOLED LIQUID INCLUDED, not just T>=0 C), condense excess
+  !   vapour to cloud (or evaporate cloud) so qv relaxes to qsat_liquid,
+  !   updating T for the latent heat. Three Newton iterations handle qsat's own
+  !   T-dependence. Running this below 0 C lets supercooled liquid cloud form
+  !   (pins RHw<=1 and feeds the Bergeron process via cold's deposition); the
+  !   old T>=0 C guard suppressed supercooled liquid and let RHw/RHi run away
+  !   (see the parcel toy model). Below T_HOM there is no liquid: homogeneous
+  !   freezing has already glaciated any qc. The ice phase is deliberately NOT
+  !   adjusted here -- it is left to the diffusion-limited rates in `cold`.
   !-----------------------------------------------------------------
-  subroutine saturation_adjustment(nz, T,P, qv,qc,qi,qs,qg)
+  subroutine saturation_adjustment(nz, T,P, qv,qc,qi,qs,qg, nc)
     integer,  intent(in)    :: nz
     real(rk), intent(in)    :: P(nz)
-    real(rk), intent(inout) :: T(nz),qv(nz),qc(nz),qi(nz),qs(nz),qg(nz)
+    real(rk), intent(inout) :: T(nz),qv(nz),qc(nz),qi(nz),qs(nz),qg(nz),nc(nz)
     integer  :: k, it
-    real(rk) :: ql,excess,denom,dq
+    real(rk) :: ql,excess,denom,dq,qc_old
     do k = 1, nz
       do it = 1, 3
-        if (T(k) >= T_FREEZE) then
+        if (T(k) > T_HOM) then
           ql = qsat_liquid(T(k),P(k))
           excess = qv(k) - ql
           denom  = 1.0_rk + L_VAP**2*ql/(RV*CP*T(k)**2)
           dq = excess/denom
           dq = max(dq, -qc(k))
+          qc_old = qc(k)
           qc(k) = qc(k) + dq
           qv(k) = qv(k) - dq
           T(k)  = T(k) + L_VAP/CP*dq
+          ! shed droplet number in proportion to cloud water evaporated (dq<0);
+          ! condensation only grows existing droplets, so nc is unchanged.
+          ! Stops activation-created nc from being stranded where the cloud
+          ! evaporates (the spurious "QNCLOUD ~1e7 everywhere" field).
+          if (dq < 0.0_rk .and. qc_old > Q_MIN) &
+               nc(k) = nc(k)*max(qc(k),0.0_rk)/qc_old
         end if
         qc(k)=max(qc(k),0.0_rk); qi(k)=max(qi(k),0.0_rk)
         qs(k)=max(qs(k),0.0_rk); qg(k)=max(qg(k),0.0_rk); qv(k)=max(qv(k),0.0_rk)
       end do
+      ! number<->mass consistency: no droplets where there is no cloud water
+      if (qc(k) < QC_MIN) nc(k) = 0.0_rk
     end do
   end subroutine saturation_adjustment
 
