@@ -1837,6 +1837,29 @@ end if !Chemistry time step check
             ids,ide, jds,jde, kds,kde,                                              &
             ims,ime, jms,jme, kms,kme,                                              &
             its,ite, jts,jte, kts,kte                                              )
+       ! Copy the requested activation temperatures from the 4D arrays (which
+       ! WRF history cannot write) into named 3D fields for wrfout output.
+       ! Indices into INP_ACT_TEMP_C: 3=-10C, 5=-15C, 7=-20C, 9=-25C.
+       grid%inp_dust_m10   = grid%inp_dust(:,:,:,3)
+       grid%inp_dust_m15   = grid%inp_dust(:,:,:,5)
+       grid%inp_dust_m20   = grid%inp_dust(:,:,:,7)
+       grid%inp_dust_m25   = grid%inp_dust(:,:,:,9)
+       grid%inp_marine_m10 = grid%inp_marine(:,:,:,3)
+       grid%inp_marine_m15 = grid%inp_marine(:,:,:,5)
+       grid%inp_marine_m20 = grid%inp_marine(:,:,:,7)
+       grid%inp_marine_m25 = grid%inp_marine(:,:,:,9)
+       grid%inp_bio_m10    = grid%inp_bio(:,:,:,3)
+       grid%inp_bio_m15    = grid%inp_bio(:,:,:,5)
+       grid%inp_bio_m20    = grid%inp_bio(:,:,:,7)
+       grid%inp_bio_m25    = grid%inp_bio(:,:,:,9)
+       grid%inp_soot_m10   = grid%inp_soot(:,:,:,3)
+       grid%inp_soot_m15   = grid%inp_soot(:,:,:,5)
+       grid%inp_soot_m20   = grid%inp_soot(:,:,:,7)
+       grid%inp_soot_m25   = grid%inp_soot(:,:,:,9)
+       grid%inp_total_m10  = grid%inp_total(:,:,:,3)
+       grid%inp_total_m15  = grid%inp_total(:,:,:,5)
+       grid%inp_total_m20  = grid%inp_total(:,:,:,7)
+       grid%inp_total_m25  = grid%inp_total(:,:,:,9)
      endif
 
 

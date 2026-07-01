@@ -3698,11 +3698,39 @@ state   real   bc1          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_
 state   real   bc2          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "BC2"       "Hydrophilic Black Carbon"     "ug/kg-dryair"
 state   real   oc1          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "OC1"       "Hydrophobic Black Carbon"     "ug/kg-dryair"
 state   real   oc2          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "OC2"       "Hydrophilic Black Carbon"     "ug/kg-dryair"
-# PBAP number tracers for INP (Anderson Da Silva). Emitted in module_pbap_emis.
+# PBAP number tracers for INP (ADS). Emitted in module_pbap_emis.
 state   real   bact1        ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "BACT1"     "Bacteria aerosol number (PBAP)"      "#/kg-dryair"
+# INP diagnostic output fields (4D: i,k,j,inpt=11), # kg-1, immersion
+state 	real   inp_dust    ikj{inpt} misc		1 		  -   i0{12}rhusdf=(bdy_interp:dt)  "INP_DUST"   "Dust immersion INP number concentration"       "# kg-1"
+state 	real   inp_marine  ikj{inpt} misc	 	1 		  -   i0{12}rhusdf=(bdy_interp:dt)  "INP_MARINE" "Sea-spray immersion INP number concentration"  "# kg-1"
+state 	real   inp_bio     ikj{inpt} misc	 	1 		  -   i0{12}rhusdf=(bdy_interp:dt)  "INP_BIO"    "Biological immersion INP number concentration" "# kg-1"
+state 	real   inp_soot    ikj{inpt} misc	 	1 		  -   i0{12}rhusdf=(bdy_interp:dt)  "INP_SOOT"   "Soot immersion INP number concentration"       "# kg-1"
+state 	real   inp_total   ikj{inpt} misc	 	1 		  -   i0{12}rhusdf=(bdy_interp:dt)  "INP_TOTAL"  "Total immersion INP number concentration"      "# kg-1"
+# INP diagnostic 3D history fields, per activation temperature (-10,-15,-20,-25 C).
+# 3,5,7,9 of INP_ACT_TEMP_C) carry the spectrum into wrfout.
+state 	real inp_dust_t10    ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_DUST_T10"    "Dust immersion INP number, -10 C"      "# kg-1"
+state 	real inp_dust_t15    ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_DUST_T15"    "Dust immersion INP number, -15 C"      "# kg-1"
+state 	real inp_dust_t20    ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_DUST_T20"    "Dust immersion INP number, -20 C"      "# kg-1"
+state 	real inp_dust_t25    ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_DUST_T25"    "Dust immersion INP number, -25 C"      "# kg-1"
+state 	real inp_marine_t10  ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_MARINE_T10"  "Sea-spray immersion INP number, -10 C" "# kg-1"
+state 	real inp_marine_t15  ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_MARINE_T15"  "Sea-spray immersion INP number, -15 C" "# kg-1"
+state 	real inp_marine_t20  ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_MARINE_T20"  "Sea-spray immersion INP number, -20 C" "# kg-1"
+state 	real inp_marine_t25  ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_MARINE_T25"  "Sea-spray immersion INP number, -25 C" "# kg-1"
+state 	real inp_bio_t10     ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_BIO_T10"     "Biological immersion INP number, -10 C" "# kg-1"
+state 	real inp_bio_t15     ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_BIO_T15"     "Biological immersion INP number, -15 C" "# kg-1"
+state 	real inp_bio_t20     ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_BIO_T20"     "Biological immersion INP number, -20 C" "# kg-1"
+state 	real inp_bio_t25     ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_BIO_T25"     "Biological immersion INP number, -25 C" "# kg-1"
+state 	real inp_soot_t10    ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_SOOT_T10"    "Soot immersion INP number, -10 C"      "# kg-1"
+state 	real inp_soot_t15    ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_SOOT_T15"    "Soot immersion INP number, -15 C"      "# kg-1"
+state 	real inp_soot_t20    ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_SOOT_T20"    "Soot immersion INP number, -20 C"      "# kg-1"
+state 	real inp_soot_t25    ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_SOOT_T25"    "Soot immersion INP number, -25 C"      "# kg-1"
+state 	real inp_total_t10   ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_TOTAL_T10"   "Total immersion INP number, -10 C"     "# kg-1"
+state 	real inp_total_t15   ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_TOTAL_T15"   "Total immersion INP number, -15 C"     "# kg-1"
+state 	real inp_total_t20   ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_TOTAL_T20"   "Total immersion INP number, -20 C"     "# kg-1"
+state 	real inp_total_t25   ikj 	 misc 		1 		  -   i0{12}rhusdf=(bdy_interp:dt) "INP_TOTAL_T25"   "Total immersion INP number, -25 C"     "# kg-1"
 state   real   spore1       ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "SPORE1"    "Fungal spore aerosol number (PBAP)"  "#/kg-dryair"
-state   real   p25        ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "P25"       "other gocart primary pm25"     "ug/kg-dryair"
-state   real   p10        ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "P10"       "other gocart primary pm10"     "ug/kg-dryair"
+state   real   p25          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "P25"       "other gocart primary pm25"     "ug/kg-dryair"
+state   real   p10          ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "P10"       "other gocart primary pm10"     "ug/kg-dryair"
 state   real   dust_1       ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "DUST_1"    "dust size bin 1: 0.5um effective radius"     "ug/kg-dryair"
 state   real   dust_2       ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "DUST_2"    "dust size bin 2: 1.4um effective radius"     "ug/kg-dryair "
 state   real   dust_3       ikjftb   chem       1         -   i0{12}rhusdf=(bdy_interp:dt)  "DUST_3"    "dust size bin 3: 2.4um effective radius"     "ug/kg-dryair "
@@ -3950,18 +3978,11 @@ rconfig   integer     seas_leads_opt      namelist,chem          max_domains    
 rconfig   integer     seas_so4_opt        namelist,chem          max_domains    0       rh    "seas_so4_opt"        ""      ""
 rconfig   integer     seas_oa_opt         namelist,chem          max_domains    0       rh    "seas_oa_opt"         ""      ""
 rconfig   integer     pbap_opt            namelist,chem          1              0       rh    "pbap_opt"            ""      ""
-# INP diagnostic options (Anderson Da Silva). inp_dust_param: 1=Tobo2019,
+# INP diagnostic options (ADS). inp_dust_param: 1=Tobo2019,
 # 2=Niemand2012, 3=DeMott2015, 4=Ullrich2017. Default 2 (Niemand, verified);
 # switch to 1 (Tobo) once its n_s coefficients are set in module_inp_diag.F.
-# Activation temperatures are a module constant (INP_ACT_TEMP_C), not a namelist.
 rconfig   integer     inp_diag_opt        namelist,chem          1              0       rh    "inp_diag_opt"        ""      ""
 rconfig   integer     inp_dust_param      namelist,chem          1              2       rh    "inp_dust_param"      ""      ""
-# INP diagnostic output fields (4D: i,k,j,inpt=11), # kg-1, immersion
-state real inp_dust    ikj{inpt} misc 1 - rh "INP_DUST"   "Dust immersion INP number concentration"       "# kg-1"
-state real inp_marine  ikj{inpt} misc 1 - rh "INP_MARINE" "Sea-spray immersion INP number concentration"  "# kg-1"
-state real inp_bio     ikj{inpt} misc 1 - rh "INP_BIO"    "Biological immersion INP number concentration" "# kg-1"
-state real inp_soot    ikj{inpt} misc 1 - rh "INP_SOOT"   "Soot immersion INP number concentration"       "# kg-1"
-state real inp_total   ikj{inpt} misc 1 - rh "INP_TOTAL"  "Total immersion INP number concentration"      "# kg-1"
 rconfig   integer     nuc_sulf_opt        namelist,chem          max_domains    2       rh    "nuc_sulf_opt"         ""      ""
 rconfig   integer     nuc_msa_opt         namelist,chem          max_domains    0       rh    "nuc_msa_opt"         ""      ""
 rconfig   real        nuc_msa_fac         namelist,chem          max_domains    1.0     rh    "nuc_msa_fac"         ""      ""
