@@ -91,6 +91,9 @@ module module_mp_microwcp
   real(rk), parameter :: K_A  = 2.43e-2_rk
   real(rk), parameter :: NU_AIR = 1.5e-5_rk
   real(rk), parameter :: M_ICE_MIN = 1.0e-12_rk
+  ! ice -> snow autoconversion (aggregation): size threshold + timescale
+  real(rk), parameter :: D_I2S   = 150.0e-6_rk   ! mean-diam. ice->snow [m]
+  real(rk), parameter :: TAU_AGG = 120.0_rk      ! aggregation timescale [s]
 
   ! Deposition ventilation mass-weighted Gamma ratio, matching the
   ! Only ice/snow/graupel deposit; cloud/rain entries unused.
@@ -635,7 +638,7 @@ contains
     real(rk) :: aqv,aqc,aqr,aqi,aqs,aqg,anr,ani,aT
     real(rk) :: dqi,dqs,dqg,dqr_f,dqs_a,dNi_h,dqi_h
     real(rk) :: fT,rim,coeff,rate_s,rate_g
-    real(rk) :: C_bigg, dTf
+    real(rk) :: C_bigg, dTf, E_agg
     ! Bigg immersion freezing of rain -> graupel, bulk-integrated over the
     ! rain PSD: dqr/dt = C_bigg*(exp(0.66*dT)-1)*nr*Dm^6.  The Dm^6 (6th moment)
     ! makes small drizzle drops freeze slowly so supercooled rain persists.
@@ -661,9 +664,16 @@ contains
         aqr=aqr-dqr_f; aqg=aqg+dqr_f
         anr=anr - nr0*dqr_f/max(qr0,Q_MIN); aT=aT+L_FUS/CP*dqr_f
       end if
-      ! --- snow aggregation: ice -> snow ---
-      if (T0k < T_FREEZE .and. qi0 > QI_MIN .and. qs0 > QS_MIN) then
-        dqs_a = min(0.1_rk*0.25_rk*Nb(k,II)*qi0, qi0/dt)
+      ! --- ice -> snow autoconversion: only crystals grown past a snow-size
+      !     threshold (Dm > D_I2S) convert; small pristine ice PERSISTS as
+      !     suspended cloud ice (sustains IWP). Rate E_agg(T)*qi/TAU_AGG with a
+      !     T-dependent sticking efficiency (weak in the cold). The old
+      !     0.025*Nb(II)*qi form treated Nb (~1e4/m3) as a rate -> ~250/s, i.e.
+      !     it flushed ALL cloud ice to snow every step whenever snow existed
+      !     -> QICE~0, IWP~0 (the missing Neumayer ice cloud). ---
+      if (T0k < T_FREEZE .and. qi0 > QI_MIN .and. Dm(k,II) > D_I2S) then
+        E_agg = min(max(exp(0.09_rk*(T0k-T_FREEZE)), 0.05_rk), 1.0_rk)
+        dqs_a = min(E_agg*qi0/TAU_AGG, qi0/dt)
         aqs=aqs+dqs_a; aqi=aqi-dqs_a
         ani=ani - ni0*dqs_a/max(qi0,Q_MIN)
       end if
