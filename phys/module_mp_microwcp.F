@@ -36,9 +36,9 @@
 ! Local tendency bookkeeping inside each process subroutine:
 !   <x>0   a FROZEN copy of field x at entry (e.g. qc0, T0k). Every
 !          sub-process rate is computed from these frozen values, so the
-!          order of sub-processes does not matter (matches the prototype's
-!          "sum all tendencies, then apply once" design; Thompson does the
-!          same with its prr_*/prv_* accumulators).
+!          order of sub-processes does not matter (the "sum all tendencies,
+!          then apply once" design; Thompson does the same with its
+!          prr_*/prv_* accumulators).
 !   a<x>   the ACCUMULATED tendency for field x [unit s-1] (e.g. aqc, aT,
 !          anr). After all sub-processes: x = max(x0 + a<x>*dt, 0).
 !   d<x>   a single-process rate contribution before it is added into a<x>.
@@ -48,7 +48,48 @@
 !
 ! Thresholds:  Q*_MIN / N_MIN are floors below which a category is treated
 !   as absent (skip the process) or clamped, to avoid divide-by-zeros.
+
 !=======================================================================
+! PARAMETER CATEGORIES  —  where to tune, and what not to touch
+!-----------------------------------------------------------------------
+! (A) PHYSICAL CONSTANTS — fundamental; NEVER change these to alter behaviour.
+!     PI, CP, RD, RV, P00, L_VAP, L_SUB, L_FUS, E0, T0, T_FREEZE,
+!     T_HOM (-38 C, homogeneous-freezing limit), RHO_W/I/S/G, D_V, K_A, NU_AIR.
+!
+! (B) PSD / PARTICLE DEFINITION — set the assumed size distributions and fall
+!     speeds. Semi-fundamental: change only with a physical basis, not to tune.
+!       mu, bm, am  (mass = am*D^bm) ;  av, bv (V = av*D^bv) ;  vent_Gq ;
+!       N0_graupel ;  snow_N0 (Houze et al. 1979).
+!     Gb1, G1, Gq, GN, G6 are DERIVED from these in mp_microwcp_init (not knobs).
+!
+! (C) PHYSICS TUNING KNOBS — these SET CLOUD AMOUNTS; this is where to tune the
+!     scheme against observations. Each lives in the named subroutine:
+!       nucleation : CCN activation Twomey P=1.36, k=0.462        -> droplet number
+!                    DeMott a/b/c/d ; cirrus coeff 0.1, cap 1 cm-3,
+!                      RHi_crit fit (Koop)                         -> ice number
+!                    homogeneous-freezing ramp: onset T_HOM+3, width 2 K
+!       cold       : ice->snow autoconv. D_I2S=150 um, TAU_AGG=120 s,
+!                      sticking E_agg=exp(0.09*Tc)                 -> cloud ice / IWP
+!                    Bigg rain freezing C_bigg (exponent 0.66)     -> supercooled rain
+!                    Hallett-Mossop 3.5e8 (active -8..-3 C)        -> secondary ice
+!       warm       : autoconv. 1350 / qc^2.47 / Nc^-1.79 ; accretion 67 /1.15 ;
+!                    rain evap Cev ; self-collection ; breakup     -> rain, LWP
+!       collection : riming efficiencies 0.7 / 0.5 / 1.0           -> riming rates
+!
+! (D) SECURITY / NUMERICAL THRESHOLDS — guards, NOT physics. Changing them must
+!     not alter a well-resolved solution; do NOT use them to tune cloud amounts.
+!       Q_MIN=1e-12, N_MIN=1     : floors that prevent divide-by-zero
+!       QC/QR/QI/QS/QG_MIN       : below this a category is treated as absent
+!       M_ICE_MIN=1e-12          : seed mass of a freshly nucleated crystal
+!       D_I2S, TAU_AGG live in (C) but also gate ice->snow — tune there
+!       DT_MAX=2 K               : max latent-heat T change per process per step
+!                                  (energy-conserving spike limiter; sits ~500x
+!                                  above normal heating, so it only ever bites a
+!                                  pathological cell that would crash the host)
+!       write-back clamps (driver): q in [0,0.03], N in [0,1e13]; aerosols >= 0
+!       NaN/Inf guards (driver)  : fatal — genuine upstream/scheme breakage only
+!=======================================================================
+
 module module_mp_microwcp
   implicit none
   private
@@ -97,9 +138,10 @@ module module_mp_microwcp
   ! Robustness: max latent-heat T change a single process may apply per step [K].
   ! If a process would heat/cool a cell by more than this, its WHOLE tendency
   ! (mass + heat) is scaled back by the same factor -> conserving; the residual
-  ! super/subsaturation relaxes next step. Stops a phase-change spike (e.g.
-  ! depositing all vapour in one 180 s step) from shocking the host dynamics
-  ! into a CFL blow-up. Ordinary clouds (<< 1 K/step) are untouched.
+  ! super/subsaturation relaxes on the next step. Stops a phase-change spike
+  ! (e.g. depositing all available vapour in a single step) from handing the
+  ! host dynamics a buoyancy shock it cannot integrate (CFL blow-up). Ordinary
+  ! clouds heat far below this, so the limiter only bites pathological cells.
   real(rk), parameter :: DT_MAX = 2.0_rk
 
   ! Deposition ventilation mass-weighted Gamma ratio, matching the
@@ -228,8 +270,7 @@ contains
   end subroutine mp_microwcp_aero_init
 
   !=================================================================
-  ! Thermodynamics (== micro/thermo.py).  All elemental: act on scalars
-  ! or whole arrays.
+  ! Thermodynamics.  All elemental: act on scalars or whole arrays.
   !=================================================================
 
   ! Saturation vapour pressure over liquid water [Pa]  (Bolton 1980).
@@ -360,7 +401,6 @@ contains
   !   loses mass to the surface (that loss is what becomes precip). The
   !   explicit scheme is only CFL-stable for Courant<=1, so the routine
   !   sub-steps internally (nsub) using this column's own V_max.
-  !   == micro/sedimentation.py::_upstream_flux
   !=================================================================
   subroutine upstream_flux(nz, q, V, rho, dz, dt, dq)
     integer,  intent(in)  :: nz
@@ -410,7 +450,6 @@ contains
   !   precip is returned per category as depth [mm].
   !   Temperature is carried as FULL T here; the th<->T conversion lives
   !   in the driver (matching Thompson).
-  !   == micro/column.py::step_column + micro/stepper.py::step
   !=================================================================
   subroutine mp_microwcp_column(nz, T, P, rho, w, dz, &
        qv,qc,qr,qi,qs,qg, nc,nr,ni, nwfa,nifa, has_aero, dt, &
@@ -505,9 +544,9 @@ contains
       ! by homogeneous freezing the same/next step, and because activation is
       ! deficit-based it immediately re-activates -> a vapour->tiny-droplet->
       ! tiny-ice-crystal NUMBER pump that drives ni to ~1e10/kg with crystals
-      ! far below M_ICE_MIN (the QNICE runaway). Gating to T above the
-      ! homogeneous onset breaks the conveyor; warm/mixed-phase activation
-      ! (supercooled liquid) is unaffected.
+      ! far below M_ICE_MIN (an unphysical ice-number runaway). Gating to T
+      ! above the homogeneous onset breaks the conveyor; warm/mixed-phase
+      ! activation (supercooled liquid) is unaffected.
       qsat = qsat_liquid(T0k,P(k))
       if ((qv0 >= 0.99_rk*qsat .or. qc0 > Q_MIN) .and. T0k > T_HOM+3.0_rk) then
         C_cm3 = max(nwfa(k)*rho(k)*1.0e-6_rk, 1.0e-3_rk)        ! CCN [cm-3]
@@ -690,7 +729,7 @@ contains
       !     T-dependent sticking efficiency (weak in the cold). The old
       !     0.025*Nb(II)*qi form treated Nb (~1e4/m3) as a rate -> ~250/s, i.e.
       !     it flushed ALL cloud ice to snow every step whenever snow existed
-      !     -> QICE~0, IWP~0 (the missing Neumayer ice cloud). ---
+      !     -> negligible cloud ice and near-zero ice water path. ---
       if (T0k < T_FREEZE .and. qi0 > QI_MIN .and. Dm(k,II) > D_I2S) then
         E_agg = min(max(exp(0.09_rk*(T0k-T_FREEZE)), 0.05_rk), 1.0_rk)
         dqs_a = min(E_agg*qi0/TAU_AGG, qi0/dt)
@@ -892,8 +931,8 @@ contains
   !   updating T for the latent heat. Three Newton iterations handle qsat's own
   !   T-dependence. Running this below 0 C lets supercooled liquid cloud form
   !   (pins RHw<=1 and feeds the Bergeron process via cold's deposition); the
-  !   old T>=0 C guard suppressed supercooled liquid and let RHw/RHi run away
-  !   (see the parcel toy model). Below T_HOM there is no liquid: homogeneous
+  !   old T>=0 C guard suppressed supercooled liquid and let RHw/RHi run away.
+  !   Below T_HOM there is no liquid: homogeneous
   !   freezing has already glaciated any qc. The ice phase is deliberately NOT
   !   adjusted here -- it is left to the diffusion-limited rates in `cold`.
   !-----------------------------------------------------------------
@@ -923,8 +962,8 @@ contains
           T(k)  = T(k) + L_VAP/CP*dq
           ! shed droplet number in proportion to cloud water evaporated (dq<0);
           ! condensation only grows existing droplets, so nc is unchanged.
-          ! Stops activation-created nc from being stranded where the cloud
-          ! evaporates (the spurious "QNCLOUD ~1e7 everywhere" field).
+          ! Stops activation-created nc from being stranded (as spurious cloud
+          ! droplet number in cloud-free air) where the cloud has evaporated.
           if (dq < 0.0_rk .and. qc_old > Q_MIN) &
                nc(k) = nc(k)*max(qc(k),0.0_rk)/qc_old
         end if
@@ -940,9 +979,8 @@ contains
   ! column_diag  
   !   Optional radiation/radar diagnostics for one column:
   !     re_qc,re_qi,re_qs  effective radii [m] (clamped to WRF bounds)
-  !                        Reff = (mu+3)/(2*lam); re_qs extends the
-  !                        prototype (which defines only cloud & ice) with
-  !                        the same form so RRTMG has a snow radius.
+  !                        Reff = (mu+3)/(2*lam); re_qs uses the same form as
+  !                        cloud & ice so RRTMG also gets a snow radius.
   !     dbz                equivalent 10-cm reflectivity [dBZ], the linear
   !                        sum of per-category 6th moments (Rayleigh).
   !-----------------------------------------------------------------
