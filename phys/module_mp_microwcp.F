@@ -1,6 +1,9 @@
 !=======================================================================
 ! module_mp_microwcp
+! Author: Anderson Da Silva, EERL-EPFL, anderson.dasilva@epfl.ch
+! Last modified: 14 Jul 2026
 !=======================================================================
+
 ! HOW TO READ THE VARIABLE NAMES
 !-----------------------------------------------------------------------
 ! Prognostic fields:
@@ -135,6 +138,63 @@ module module_mp_microwcp
   ! ice -> snow autoconversion (aggregation): size threshold + timescale
   real(rk), parameter :: D_I2S   = 150.0e-6_rk   ! mean-diam. ice->snow [m]
   real(rk), parameter :: TAU_AGG = 120.0_rk      ! aggregation timescale [s]
+
+  ! ---- DeMott (2010) humidity gate (see `nucleation`) --------------
+  ! DeMott measures how many INP are ACTIVE at a temperature, not that they
+  ! nucleate in any parcel. Firing it in every subsaturated cell pinned ni at
+  ! N_INP(T) everywhere and each crystal then drained the supercooled liquid by
+  ! deposition (Wegener-Bergeron-Findeisen). Thompson gates it to
+  ! ssati >= 0.25 .or. (ssatw > 0 .and. T < 253.15) [module_mp_thompson.F:2745].
+  ! Same structure here, but the water-saturated branch opens at -10 C rather
+  ! than Thompson's -20 C: Thompson makes NO DeMott ice between 0 and -20 C in
+  ! water-saturated cloud, a large part of why it under-produces ice, and
+  ! MICROWCP deliberately wants more mixed-phase ice than Thompson.
+  real(rk), parameter :: DEMOTT_SI_GATE = 1.25_rk    ! RHi threshold [-]
+  real(rk), parameter :: DEMOTT_T_GATE  = 263.15_rk  ! -10 C          [K]
+
+  ! ---- Bigg (1953) immersion freezing of CLOUD DROPLETS ------------
+  ! Rain already had Bigg freezing; cloud droplets did not, so once DeMott is
+  ! gated there would be no primary ice source left in warm mixed-phase cloud.
+  ! Thompson carries this as the tpi_qcfz lookup [module_mp_thompson.F:2733].
+  ! The D^6 weighting makes it negligible above ~-25 C and dominant by -35 C,
+  ! which is what lets observed supercooled liquid survive to -25 C.
+  real(rk), parameter :: B_BIGG = 100.0_rk     ! freezing rate per volume [m-3 s-1]
+  real(rk), parameter :: A_BIGG = 0.66_rk      ! supercooling exponent    [K-1]
+  real(rk), parameter :: G3_C   = 120.0_rk     ! gamma(mu+4)/gamma(mu+1), cloud mu=3
+  real(rk), parameter :: G6_C   = 60480.0_rk   ! gamma(mu+7)/gamma(mu+1), cloud mu=3
+
+  ! ---- snow capacitance (see dep_rate use in `cold`) ---------------
+  ! Snow is not a sphere: its capacitance runs from ~0.15*D for the warm
+  ! dendritic/aggregate habit to 0.5*D (the sphere value) below about -30 C
+  ! [module_mp_thompson.F:2809]. Using the sphere value at ALL temperatures
+  ! overestimated the vapour sink competing with the supercooled liquid.
+  real(rk), parameter :: C_SNOW_PLATE = 0.15_rk
+  real(rk), parameter :: C_SNOW_SPH   = 0.50_rk
+  real(rk), parameter :: T_C_SNOW_LO  = -1.5_rk    ! [C] plate habit here
+  real(rk), parameter :: T_C_SNOW_HI  = -30.0_rk   ! [C] sphere value by here
+
+  ! ---- Stokes-number riming efficiencies (see `collection`) --------
+  ! A droplet is only collected if its inertia carries it across the
+  ! streamlines going round the collector, so the efficiency is a function of
+  ! the Stokes number and collapses to ZERO for the small droplets of a polar
+  ! cloud. Snow: Wang & Ji (2000) [module_mp_thompson.F:5218]; graupel:
+  ! [module_mp_thompson.F:2548]. The previous fixed values (0.5 snow, 1.0
+  ! graupel) rimed 9-12 um polar droplets several times too fast.
+  real(rk), parameter :: MU_AIR   = 1.718e-5_rk  ! dynamic viscosity [kg m-1 s-1]
+  real(rk), parameter :: D_S_RIME = 300.0e-6_rk  ! snow below this cannot rime [m]
+  real(rk), parameter :: D_C_RIME = 6.0e-6_rk    ! droplets below this not collected [m]
+
+  ! ---- Berry & Reinhardt (1974) autoconversion (see `warm`) --------
+  ! Replaced KK2000, a stratocumulus-DRIZZLE fit (calibrated qc <~ 1 g/kg) that
+  ! could not drain a thick frontal/orographic cloud: at qc = 1 g/kg it is 10x
+  ! slower than B-R and at 2 g/kg 30-49x slower, so condensate piled up as
+  ! cloud instead of raining out. B-R is SLOWER than KK below qc ~ 0.3 g/kg and
+  ! much faster above it, i.e. regime-selective - it does not thin weak clouds.
+  real(rk), parameter :: BR_D0C = 1.0e-6_rk    ! smallest cloud droplet  [m]
+  real(rk), parameter :: BR_D0R = 50.0e-6_rk   ! smallest rain drop      [m]
+  integer,  parameter :: BR_NU_MIN = 2, BR_NU_MAX = 15
+  real(rk) :: BR_G2_G1(BR_NU_MIN:BR_NU_MAX)    ! gamma(nu+4)/gamma(nu+1)
+  real(rk) :: BR_G3_G2(BR_NU_MIN:BR_NU_MAX)    ! gamma(nu+7)/gamma(nu+4)
   ! Robustness: max latent-heat T change a single process may apply per step [K].
   ! If a process would heat/cool a cell by more than this, its WHOLE tendency
   ! (mass + heat) is scaled back by the same factor -> conserving; the residual
@@ -196,7 +256,14 @@ contains
   !     GN  = gamma(mu+bv+1)/gamma(mu+2)  (number-weighted bulk fall speed)
   !=================================================================
   subroutine mp_microwcp_init()
-    integer :: c
+    integer :: c, n
+    ! Berry-Reinhardt cloud-droplet shape nu_c is an INTEGER 2..15, so the two
+    ! gamma ratios it needs are a 14-entry table rather than a runtime gamma
+    ! call on every grid point (this mirrors Thompson's ccg/ocg tables).
+    do n = BR_NU_MIN, BR_NU_MAX
+      BR_G2_G1(n) = gamma(real(n,rk)+4.0_rk) / gamma(real(n,rk)+1.0_rk)
+      BR_G3_G2(n) = gamma(real(n,rk)+7.0_rk) / gamma(real(n,rk)+4.0_rk)
+    end do
     do c = 1, NCAT
       Gb1(c) = gamma(mu(c) + bm(c) + 1.0_rk)
       G1(c)  = gamma(mu(c) + 1.0_rk)
@@ -477,7 +544,7 @@ contains
 
     ! ---- 3. cold phase ----
     call diagnose(nz,T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb,N0s,N0g)
-    call cold(nz, T,P,rho, qv,qc,qr,qi,qs,qg, nr,ni, lam,Dm,Nb, dt)
+    call cold(nz, T,P,rho, qv,qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb, dt)
 
     ! ---- 4. collection ----
     call diagnose(nz,T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb,N0s,N0g)
@@ -518,8 +585,12 @@ contains
   !-----------------------------------------------------------------
   subroutine nucleation(nz, T,P,rho,w, qv,qc,qi, nc,ni, nwfa,nifa, dt)
     integer,  intent(in)    :: nz
-    real(rk), intent(in)    :: P(nz),rho(nz),w(nz),nwfa(nz),nifa(nz),dt
-    real(rk), intent(inout) :: T(nz),qv(nz),qc(nz),qi(nz),nc(nz),ni(nz)
+    real(rk), intent(in)    :: P(nz),rho(nz),w(nz),nwfa(nz),dt
+    ! nifa is INOUT: an activated INP is locked inside an ice crystal and cannot
+    ! nucleate again, so the reservoir must be consumed (Thompson :3100).
+    ! Without depletion the deficit-based form below makes NIFA a floor that
+    ! can never be exhausted.
+    real(rk), intent(inout) :: T(nz),qv(nz),qc(nz),qi(nz),nc(nz),ni(nz),nifa(nz)
     ! All sub-process rates are evaluated from the FROZEN input state and
     ! accumulated, then applied once (matches stepper.step's tendency sum).
     integer  :: k
@@ -529,11 +600,15 @@ contains
     real(rk) :: na_cm3,Tsc,Ninp_L,Ninp,dNi,dqi
     real(rk) :: a_dm,b_dm,c_dm,d_dm
     real(rk) :: Si,RHi_crit,N_hom,scal
+    real(rk) :: nifa0,anifa,RHi,ssatw
+    logical  :: fires
     a_dm=0.0000594_rk; b_dm=3.33_rk; c_dm=0.0264_rk; d_dm=0.0827_rk
     m_drop = (4.0_rk/3.0_rk)*PI*(1.0e-6_rk)**3*1000.0_rk
     do k = 1, nz
       T0k=T(k); qv0=qv(k); qc0=qc(k); qi0=qi(k); nc0=nc(k); ni0=ni(k)
+      nifa0=nifa(k)
       aqv=0.0_rk; aqc=0.0_rk; aqi=0.0_rk; anc=0.0_rk; ani=0.0_rk; aT=0.0_rk
+      anifa=0.0_rk
       ! --- CCN activation (Twomey 1959, updraft-based) ---
       ! Activated number is set by the updraft peak supersaturation (scales with
       ! w), NOT the post-saturation-adjustment S (which is ~0, so Nc collapses ->
@@ -551,21 +626,36 @@ contains
       if ((qv0 >= 0.99_rk*qsat .or. qc0 > Q_MIN) .and. T0k > T_HOM+3.0_rk) then
         C_cm3 = max(nwfa(k)*rho(k)*1.0e-6_rk, 1.0e-3_rk)        ! CCN [cm-3]
         weff  = max(w(k), 0.1_rk)                              ! m/s; turbulent floor
-        Nact  = 1.36_rk * C_cm3**0.8127_rk * weff**0.2815_rk    ! [cm-3]
+        ! exponents written as the exact Twomey expressions (k = 0.462), not as
+        ! rounded literals: 0.8127/0.2815 differed from 2/(k+2)=0.81235 and
+        ! 3k/(2(k+2))=0.28148 enough to shift N_act by ~0.1-0.2% vs the prototype
+        Nact  = 1.36_rk * C_cm3**(2.0_rk/(0.462_rk+2.0_rk)) &
+                        * weff**(3.0_rk*0.462_rk/(2.0_rk*(0.462_rk+2.0_rk)))  ! [cm-3]
         Nact  = min(Nact*1.0e6_rk/max(rho(k),1.0e-3_rk), nwfa(k))  ! -> [kg-1]
         dNc   = max(Nact-nc0,0.0_rk)/dt
         dqc   = dNc*m_drop
         anc=anc+dNc; aqc=aqc+dqc; aqv=aqv-dqc; aT=aT+L_VAP/CP*dqc
       end if
-      ! --- heterogeneous ice nucleation (DeMott 2010) ---
+      ! --- heterogeneous ice nucleation (DeMott 2010), humidity-gated ---
+      !     Gate (see DEMOTT_*_GATE): nucleate only where the air is
+      !     ice-supersaturated past RHi=1.25, or water-saturated and colder than
+      !     -10 C. Ungated, this fired in every cell of the mixed-phase zone and
+      !     pinned ni at N_INP(T) permanently, glaciating supercooled cloud.
       Tsc = max(T0+0.01_rk - T0k, 0.0_rk)            ! 273.16 - T
       if (T0k > T_HOM .and. T0k < T_FREEZE .and. Tsc > 0.0_rk) then
-        na_cm3 = max(nifa(k)*rho(k)*1.0e-6_rk, 1.0e-6_rk)
-        Ninp_L = a_dm*(Tsc**b_dm)*(na_cm3**(c_dm*Tsc+d_dm))     ! the actual parameterization
-        Ninp   = Ninp_L*1.0e3_rk/max(rho(k),1.0e-3_rk)
-        dNi    = max(Ninp-ni0,0.0_rk)/dt
-        dqi    = dNi*M_ICE_MIN
-        ani=ani+dNi; aqi=aqi+dqi; aqv=aqv-dqi; aT=aT+L_SUB/CP*dqi
+        RHi   = qv0/max(qsat_ice(T0k,P(k)),Q_MIN)
+        ssatw = qv0/max(qsat_liquid(T0k,P(k)),Q_MIN) - 1.0_rk
+        fires = (RHi >= DEMOTT_SI_GATE) .or. &
+                (ssatw > 0.0_rk .and. T0k < DEMOTT_T_GATE)
+        if (fires) then
+          na_cm3 = max(nifa0*rho(k)*1.0e-6_rk, 1.0e-6_rk)
+          Ninp_L = a_dm*(Tsc**b_dm)*(na_cm3**(c_dm*Tsc+d_dm))   ! the actual parameterization
+          Ninp   = Ninp_L*1.0e3_rk/max(rho(k),1.0e-3_rk)
+          dNi    = max(Ninp-ni0,0.0_rk)/dt
+          dqi    = dNi*M_ICE_MIN
+          ani=ani+dNi; aqi=aqi+dqi; aqv=aqv-dqi; aT=aT+L_SUB/CP*dqi
+          anifa=anifa-dNi                         ! INP consumed by nucleation
+        end if
       end if
       ! --- homogeneous freezing (qc->qi, nc->ni): smooth temperature ramp,
       !     not an instant cutoff. Onset ~-35 C, effectively complete ~-40 C. ---
@@ -599,11 +689,13 @@ contains
         scal=DT_MAX/(abs(aT)*dt)
         aqv=aqv*scal; aqc=aqc*scal; aqi=aqi*scal
         anc=anc*scal; ani=ani*scal; aT=aT*scal
+        anifa=anifa*scal
       end if
       ! --- apply once ---
       qc(k)=max(qc0+aqc*dt,0.0_rk); qv(k)=max(qv0+aqv*dt,0.0_rk)
       qi(k)=max(qi0+aqi*dt,0.0_rk)
       nc(k)=max(nc0+anc*dt,0.0_rk); ni(k)=max(ni0+ani*dt,0.0_rk)
+      nifa(k)=max(nifa0+anifa*dt,0.0_rk)
       T(k) =T0k+aT*dt
     end do
   end subroutine nucleation
@@ -625,24 +717,54 @@ contains
     integer  :: k
     real(rk) :: qv0,qc0,qr0,nc0,nr0
     real(rk) :: aqv,aqc,aqr,anc,anr,aT
-    real(rk) :: Nc_cm3,dqr,D0,m_drop,dNr,Dc,n_coal
+    real(rk) :: dqr,dNr,dNc
     real(rk) :: qsat,sub,Cev,dqr_e,scal
-    D0=50.0e-6_rk; Dc=15.0e-6_rk
-    m_drop=(PI/6.0_rk)*RHO_W*D0**3; n_coal=(D0/Dc)**3
+    real(rk) :: am_r,rc,rc_s,nc_bulk,lamc,xDc,Dc_g,Dc_b,zeta1,zeta,taud,tau
+    real(rk) :: mvd_c,g2g1,g3g2
+    integer  :: nu_c
+    am_r = (PI/6.0_rk)*RHO_W
     do k = 1, nz
       qv0=qv(k); qc0=qc(k); qr0=qr(k); nc0=nc(k); nr0=nr(k)
       aqv=0.0_rk; aqc=0.0_rk; aqr=0.0_rk; anc=0.0_rk; anr=0.0_rk; aT=0.0_rk
-      ! --- autoconversion ---
-      if (qc0 > QC_MIN) then
-        Nc_cm3 = max(nc0*rho(k)*1.0e-6_rk, 1.0e-6_rk)
-        dqr = min(1350.0_rk*qc0**2.47_rk*Nc_cm3**(-1.79_rk), qc0/dt)
-        dNr = dqr/m_drop
-        aqr=aqr+dqr; aqc=aqc-dqr; anr=anr+dNr; anc=anc-dNr*n_coal
+      ! --- autoconversion: Berry & Reinhardt (1974) ---
+      !     The rate scales with the CHARACTERISTIC droplet diameter, which
+      !     grows with qc, so it switches on hard once the cloud thickens. The
+      !     previous KK2000 form (1350 qc^2.47 Nc^-1.79) is a stratocumulus
+      !     drizzle fit: 10x slower at qc = 1 g/kg and 30-49x slower at 2 g/kg,
+      !     so thick maritime cloud could not drain and LWP piled up.
+      rc = rho(k)*qc0                              ! cloud water per m3 [kg m-3]
+      if (qc0 > QC_MIN .and. rc > 0.01e-3_rk) then
+        rc_s    = max(rc, 1.0e-12_rk)
+        nc_bulk = max(nc0*rho(k), 1.0_rk)
+        ! droplet spectral shape: integer 2..15, gamma ratios from the table
+        nu_c = min(BR_NU_MAX, max(BR_NU_MIN, nint(1000.0e6_rk/nc_bulk) + 2))
+        g2g1 = BR_G2_G1(nu_c)
+        g3g2 = BR_G3_G2(nu_c)
+        lamc = (nc_bulk*am_r*g2g1/rc_s)**(1.0_rk/3.0_rk)
+        ! characteristic diameters, in micrometres (as in Thompson)
+        xDc  = max(BR_D0C*1.0e6_rk, (rc_s/(am_r*nc_bulk))**(1.0_rk/3.0_rk)*1.0e6_rk)
+        Dc_g = g3g2**(1.0_rk/3.0_rk)/lamc*1.0e6_rk
+        Dc_b = max(xDc**3*Dc_g**3 - xDc**6, 0.0_rk)**(1.0_rk/6.0_rk)
+        zeta1 = max(6.25e-6_rk*xDc*Dc_b**3 - 0.4_rk, 0.0_rk)
+        zeta  = 0.027_rk*rc_s*zeta1
+        taud  = max(0.5_rk*Dc_b - 7.5_rk, 0.0_rk) + 1.0e-12_rk
+        tau   = 3.72_rk/(rc_s*taud)
+        dqr   = min(zeta/tau/rho(k), qc0/dt)       ! [kg m-3 s-1] -> [kg kg-1 s-1]
+        if (dqr > 0.0_rk) then
+          dNr   = dqr/(am_r*real(nu_c,rk)*10.0_rk*BR_D0R**3)
+          mvd_c = min(max((3.0_rk+real(nu_c,rk)+0.672_rk)/lamc, BR_D0C), BR_D0R)
+          dNc   = min(dqr/(am_r*mvd_c**3), nc0/dt)
+          aqr=aqr+dqr; aqc=aqc-dqr; anr=anr+dNr; anc=anc-dNc
+        end if
       end if
       ! --- accretion ---
       if (qc0 > QC_MIN .and. qr0 > QR_MIN) then
         dqr = min(67.0_rk*(qc0*qr0)**1.15_rk, qc0/dt)
-        aqr=aqr+dqr; aqc=aqc-dqr
+        ! Droplet NUMBER is collected with the mass (Thompson pnc_rcw, :2325).
+        ! Removing mass alone left the survivors ever smaller as the cloud
+        ! drained, holding autoconversion down and keeping LWP high.
+        dNc = min(nc0*dqr/max(qc0,Q_MIN), nc0/dt)
+        aqr=aqr+dqr; aqc=aqc-dqr; anc=anc-dNc
       end if
       ! --- rain evaporation ---
       if (qr0 > QR_MIN) then
@@ -688,16 +810,18 @@ contains
   !       (active only -8..-3 C with cloud present).
   !     - melting: snow/graupel -> rain above 0 C (cools).
   !-----------------------------------------------------------------
-  subroutine cold(nz, T,P,rho, qv,qc,qr,qi,qs,qg, nr,ni, lam,Dm,Nb, dt)
+  subroutine cold(nz, T,P,rho, qv,qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb, dt)
     integer,  intent(in)    :: nz
     real(rk), intent(in)    :: P(nz),rho(nz),lam(nz,NCAT),Dm(nz,NCAT),Nb(nz,NCAT),dt
-    real(rk), intent(inout) :: T(nz),qv(nz),qc(nz),qr(nz),qi(nz),qs(nz),qg(nz),nr(nz),ni(nz)
+    real(rk), intent(inout) :: T(nz),qv(nz),qc(nz),qr(nz),qi(nz),qs(nz),qg(nz)
+    real(rk), intent(inout) :: nc(nz),nr(nz),ni(nz)
     integer  :: k
-    real(rk) :: T0k,qv0,qc0,qr0,qi0,qs0,qg0,nr0,ni0
-    real(rk) :: aqv,aqc,aqr,aqi,aqs,aqg,anr,ani,aT
+    real(rk) :: T0k,qv0,qc0,qr0,qi0,qs0,qg0,nc0,nr0,ni0
+    real(rk) :: aqv,aqc,aqr,aqi,aqs,aqg,anc,anr,ani,aT
     real(rk) :: dqi,dqs,dqg,dqr_f,dqs_a,dNi_h,dqi_h
     real(rk) :: fT,rim,coeff,rate_s,rate_g
     real(rk) :: C_bigg, dTf, E_agg, scal
+    real(rk) :: C_snow, fac_b, dqc_f, dNc_f, lamc
     ! Bigg immersion freezing of rain -> graupel, bulk-integrated over the
     ! rain PSD: dqr/dt = C_bigg*(exp(0.66*dT)-1)*nr*Dm^6.  The Dm^6 (6th moment)
     ! makes small drizzle drops freeze slowly so supercooled rain persists.
@@ -705,14 +829,24 @@ contains
     C_bigg=RHO_W*(PI/6.0_rk)**2*100.0_rk*(720.0_rk/4096.0_rk)
     do k = 1, nz
       T0k=T(k); qv0=qv(k); qc0=qc(k); qr0=qr(k)
-      qi0=qi(k); qs0=qs(k); qg0=qg(k); nr0=nr(k); ni0=ni(k)
+      qi0=qi(k); qs0=qs(k); qg0=qg(k); nc0=nc(k); nr0=nr(k); ni0=ni(k)
       aqv=0.0_rk; aqc=0.0_rk; aqr=0.0_rk; aqi=0.0_rk; aqs=0.0_rk
-      aqg=0.0_rk; anr=0.0_rk; ani=0.0_rk; aT=0.0_rk
+      aqg=0.0_rk; anc=0.0_rk; anr=0.0_rk; ani=0.0_rk; aT=0.0_rk
       ! --- deposition/sublimation on ice/snow/graupel ---
       dqi = dep_rate(qi0,Nb(k,II),Dm(k,II),lam(k,II),qv0,T0k,P(k),rho(k),QI_MIN,dt,II)
-      if (dqi < -1.0e-8_rk) ani = ani + ni0*dqi/max(qi0,Q_MIN)
+      ! sublimating ice loses crystal NUMBER in proportion to mass. This used to
+      ! test dqi < -1e-8, but dqi is a RATE [kg kg-1 s-1] and real sublimation
+      ! rates are ~1e-10, so the branch never fired: number was never removed and
+      ! stranded crystals accumulated (the ni ~1e7 prototype/Fortran divergence).
+      if (dqi < 0.0_rk) ani = ani + ni0*dqi/max(qi0,Q_MIN)
       aqi=aqi+dqi; aqv=aqv-dqi; aT=aT+L_SUB/CP*dqi
       dqs = dep_rate(qs0,Nb(k,IS),Dm(k,IS),lam(k,IS),qv0,T0k,P(k),rho(k),QS_MIN,dt,IS)
+      ! habit-dependent capacitance (see C_SNOW_*): dep_rate assumes the sphere
+      ! value 0.5*D, so rescale to the temperature-appropriate snow habit.
+      C_snow = C_SNOW_PLATE + ((T0k-T0)-T_C_SNOW_LO)*(C_SNOW_SPH-C_SNOW_PLATE) &
+                              /(T_C_SNOW_HI-T_C_SNOW_LO)
+      C_snow = min(max(C_snow, C_SNOW_PLATE), C_SNOW_SPH)
+      dqs = dqs*(C_snow/C_SNOW_SPH)
       aqs=aqs+dqs; aqv=aqv-dqs; aT=aT+L_SUB/CP*dqs
       dqg = dep_rate(qg0,Nb(k,IG),Dm(k,IG),lam(k,IG),qv0,T0k,P(k),rho(k),QG_MIN,dt,IG)
       aqg=aqg+dqg; aqv=aqv-dqg; aT=aT+L_SUB/CP*dqg
@@ -722,6 +856,25 @@ contains
         dqr_f = min(C_bigg*(exp(0.66_rk*dTf)-1.0_rk)*nr0*Dm(k,IR)**6, qr0/dt)
         aqr=aqr-dqr_f; aqg=aqg+dqr_f
         anr=anr - nr0*dqr_f/max(qr0,Q_MIN); aT=aT+L_FUS/CP*dqr_f
+      end if
+      ! --- Bigg (1953) immersion freezing of CLOUD DROPLETS -> ice ---
+      !     Integrated over the cloud gamma PSD (mu=3):
+      !       dN/dt = B (exp(a dT)-1) (pi/6)   <D^3> N
+      !       dq/dt = B (exp(a dT)-1) (pi/6)^2 (rho_w/rho) <D^6> N
+      !     The D^6 weighting keeps this negligible above ~-25 C and makes it
+      !     dominant by -35 C. It is the primary ice source that replaces the
+      !     ungated DeMott in warm mixed-phase cloud.
+      if (T0k < T_FREEZE .and. qc0 > QC_MIN) then
+        lamc  = max(lam(k,IC), 1.0_rk)
+        dTf   = max(T_FREEZE-T0k, 0.0_rk)
+        fac_b = B_BIGG*(exp(A_BIGG*dTf)-1.0_rk)
+        dqc_f = fac_b*(PI/6.0_rk)**2*(RHO_W/rho(k))*(nc0*rho(k))*G6_C/lamc**6
+        dNc_f = fac_b*(PI/6.0_rk)*(nc0*rho(k))*G3_C/lamc**3/rho(k)
+        dqc_f = min(dqc_f, qc0/dt)
+        dNc_f = min(dNc_f, nc0/dt)
+        aqc=aqc-dqc_f; aqi=aqi+dqc_f
+        anc=anc-dNc_f; ani=ani+dNc_f
+        aT=aT+L_FUS/CP*dqc_f
       end if
       ! --- ice -> snow autoconversion: only crystals grown past a snow-size
       !     threshold (Dm > D_I2S) convert; small pristine ice PERSISTS as
@@ -758,12 +911,14 @@ contains
       if (abs(aT)*dt > DT_MAX) then
         scal=DT_MAX/(abs(aT)*dt)
         aqv=aqv*scal; aqc=aqc*scal; aqr=aqr*scal; aqi=aqi*scal
-        aqs=aqs*scal; aqg=aqg*scal; anr=anr*scal; ani=ani*scal; aT=aT*scal
+        aqs=aqs*scal; aqg=aqg*scal; anc=anc*scal
+        anr=anr*scal; ani=ani*scal; aT=aT*scal
       end if
       ! --- apply once ---
       qv(k)=max(qv0+aqv*dt,0.0_rk); qc(k)=max(qc0+aqc*dt,0.0_rk)
       qr(k)=max(qr0+aqr*dt,0.0_rk); qi(k)=max(qi0+aqi*dt,0.0_rk)
       qs(k)=max(qs0+aqs*dt,0.0_rk); qg(k)=max(qg0+aqg*dt,0.0_rk)
+      nc(k)=max(nc0+anc*dt,0.0_rk)
       nr(k)=max(nr0+anr*dt,0.0_rk); ni(k)=max(ni0+ani*dt,0.0_rk)
       T(k) =T0k+aT*dt
     end do
@@ -798,7 +953,9 @@ contains
             *(0.5_rk*Nbx*(mu(c)+1.0_rk)/max(lamx,1.0_rk)) &
             /max(den,1.0e-30_rk)
       if (qx <= qmin) r = 0.0_rk
-      if (r < -1.0e-8_rk) r = max(r, -qx/dtl)
+      ! cap sublimation at the ice present. Same rate-vs-mass threshold bug as
+      ! above (was r < -1e-8): the cap never applied to realistic rates.
+      if (r < 0.0_rk) r = max(r, -qx/dtl)
       if (r > 0.0_rk) r = min(r,  qvx/dtl)
       dep_rate = r
     end function
@@ -823,6 +980,7 @@ contains
     real(rk) :: T0k,qc0,qr0,qi0,qs0,qg0,nc0,nr0,ni0
     real(rk) :: aqc,aqr,aqi,aqs,aqg,anc,anr,ani,aT
     real(rk) :: Vrel,rate,rate_qi,rate_qr,scal
+    real(rk) :: E_cs,E_cg,vts,vtg
     do k = 1, nz
       if (T(k) >= T_FREEZE) cycle
       T0k=T(k); qc0=qc(k); qr0=qr(k); qi0=qi(k); qs0=qs(k); qg0=qg(k)
@@ -838,16 +996,24 @@ contains
         aqc=aqc-rate; aqs=aqs+rate; aT=aT+L_FUS/CP*rate
       end if
       ! --- 2. cloud-snow riming: qc+qs -> qs (riming grows snow) ---
+      !     Efficiency from the Stokes number (Wang & Ji 2000) rather than a
+      !     fixed 0.5: it is exactly zero for droplets < 6 um or snow < 300 um,
+      !     so small polar droplets are no longer rimed out of the cloud.
       if (qc0 > QC_MIN .and. qs0 > QS_MIN) then
-        Vrel = abs(fall_speed_q(lam(k,IS),IS)-fall_speed_q(lam(k,IC),IC))
-        rate = min(max(0.5_rk*(PI/4.0_rk)*Dm(k,IS)**2*Nb(k,IS)*Vrel*qc0,0.0_rk), qc0/dt)
+        vts  = fall_speed_q(lam(k,IS),IS)
+        Vrel = abs(vts-fall_speed_q(lam(k,IC),IC))
+        E_cs = Ef_snow_cloud(Dm(k,IC), Dm(k,IS), vts)
+        rate = min(max(E_cs*(PI/4.0_rk)*Dm(k,IS)**2*Nb(k,IS)*Vrel*qc0,0.0_rk), qc0/dt)
         anc=anc + nc0*(-rate)/max(qc0,Q_MIN)
         aqc=aqc-rate; aqs=aqs+rate; aT=aT+L_FUS/CP*rate
       end if
       ! --- 3. cloud-graupel riming: qc+qg -> qg ---
+      !     Stokes-number efficiency (zero below St = 0.4) rather than 1.0.
       if (qc0 > QC_MIN .and. qg0 > QG_MIN) then
-        Vrel = abs(fall_speed_q(lam(k,IG),IG)-fall_speed_q(lam(k,IC),IC))
-        rate = min(max(1.0_rk*(PI/4.0_rk)*Dm(k,IG)**2*Nb(k,IG)*Vrel*qc0,0.0_rk), qc0/dt)
+        vtg  = fall_speed_q(lam(k,IG),IG)
+        Vrel = abs(vtg-fall_speed_q(lam(k,IC),IC))
+        E_cg = Ef_graupel_cloud(Dm(k,IC), Dm(k,IG), vtg)
+        rate = min(max(E_cg*(PI/4.0_rk)*Dm(k,IG)**2*Nb(k,IG)*Vrel*qc0,0.0_rk), qc0/dt)
         anc=anc + nc0*(-rate)/max(qc0,Q_MIN)
         aqc=aqc-rate; aqg=aqg+rate; aT=aT+L_FUS/CP*rate
       end if
@@ -883,6 +1049,59 @@ contains
       ni(k)=max(ni0+ani*dt,0.0_rk); T(k)=T0k+aT*dt
     end do
   end subroutine collection
+
+  !-----------------------------------------------------------------
+  ! Ef_snow_cloud
+  !   Snow-collects-droplet efficiency, Wang & Ji (2000), transliterated from
+  !   Thompson's table_Efsw (module_mp_thompson.F:5218) but evaluated at the
+  !   mean diameters instead of tabulated over the spectrum. Returns exactly
+  !   zero when the droplet is smaller than D_C_RIME, the snow smaller than
+  !   D_S_RIME, the size ratio p > 0.25, or the snow is not falling.
+  !     Dc  mean cloud-droplet diameter [m]
+  !     Ds  mean snow diameter          [m]
+  !     vts snow fall speed             [m s-1]
+  !-----------------------------------------------------------------
+  real(rk) function Ef_snow_cloud(Dc, Ds, vts)
+    real(rk), intent(in) :: Dc, Ds, vts
+    real(rk) :: Ds_m, p, stokes, reyn, F, G, K0, z, H, yc0, Ef
+    Ef_snow_cloud = 0.0_rk
+    if (Ds < D_S_RIME .or. Dc < D_C_RIME .or. vts < 1.0e-3_rk) return
+    ! melted-equivalent snow diameter (Wang & Ji's effective cross-section)
+    Ds_m = (am(IS)*Ds**bm(IS)/am(IR))**(1.0_rk/3.0_rk)
+    p    = Dc/max(Ds_m,1.0e-12_rk)
+    if (p > 0.25_rk) return
+    p    = max(p, 1.0e-6_rk)
+    stokes = max(Dc*Dc*vts*RHO_W/(9.0_rk*MU_AIR*max(Ds_m,1.0e-12_rk)), 1.0e-12_rk)
+    reyn   = max(9.0_rk*stokes/(p*p*RHO_W), 1.0e-12_rk)
+    F   = log(reyn)
+    G   = -0.1007_rk - 0.358_rk*F + 0.0261_rk*F*F
+    K0  = exp(G)
+    z   = log(stokes/(K0+1.0e-15_rk))
+    H   = 0.1465_rk + 1.302_rk*z - 0.607_rk*z*z + 0.293_rk*z*z*z
+    yc0 = 2.0_rk/PI*atan(H)
+    Ef  = (yc0+p)**2/(1.0_rk+p)**2
+    Ef_snow_cloud = min(max(Ef, 0.0_rk), 0.95_rk)
+  end function Ef_snow_cloud
+
+  !-----------------------------------------------------------------
+  ! Ef_graupel_cloud
+  !   Graupel-collects-droplet efficiency from the Stokes number
+  !   (module_mp_thompson.F:2548): zero below St = 0.4, 0.55*log10(2.51 St)
+  !   between 0.4 and 10, and 0.77 above.
+  !-----------------------------------------------------------------
+  real(rk) function Ef_graupel_cloud(Dc, Dg, vtg)
+    real(rk), intent(in) :: Dc, Dg, vtg
+    real(rk) :: St
+    St = Dc*Dc*vtg*RHO_W/(9.0_rk*MU_AIR*max(Dg,1.0e-12_rk))
+    if (St < 0.4_rk) then
+      Ef_graupel_cloud = 0.0_rk
+    else if (St > 10.0_rk) then
+      Ef_graupel_cloud = 0.77_rk
+    else
+      Ef_graupel_cloud = 0.55_rk*log10(max(2.51_rk*St, 1.0e-12_rk))
+    end if
+    Ef_graupel_cloud = min(max(Ef_graupel_cloud, 0.0_rk), 0.95_rk)
+  end function Ef_graupel_cloud
 
   !-----------------------------------------------------------------
   !-----------------------------------------------------------------
