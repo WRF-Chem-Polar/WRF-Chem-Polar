@@ -2,7 +2,8 @@
 
 This file describes the new namelist.input options in the WRF-Chem-Polar version.
 
-Many of these options are not specific to polar regions and can be used for modeling outside the poles. The main polar specific developments are related to sea ice, which should not negatively impact results outside the polar regions.
+> [!NOTE]
+> Many of these options are not specific to polar regions and can be used for modeling outside the poles. The main polar specific developments are related to sea ice, which should not negatively impact results outside the polar regions.
 
 ## Chemical mechanism options
 
