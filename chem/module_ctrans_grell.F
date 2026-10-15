@@ -1385,12 +1385,19 @@ CONTAINS
          ! grid-scale clouds and cumulus are always very unrealistic anyway.
          if(abs(totmas).gt.1.e-6)then
            CALL wrf_message ( 'cup_dellas_tr: TOTMAS > 1.e-6')
-           if(abs(totmas).gt.2.e-6)then
+           ! Only abort on a GENUINE imbalance, not single-precision roundoff.
+           ! totmas is a small residual of fluxes that are O(10-100); float32
+           ! gives ~1e-7 relative roundoff, which exceeds a fixed absolute 2e-6
+           ! tolerance whenever convection is strong. Test relative to the flux
+           ! magnitude so the check scales with convective intensity.
+           if(abs(totmas).gt.2.e-6 .and. abs(totmas).gt.1.e-5* &
+              (abs(subin)+abs(subdown)+abs(detup)+abs(entup)+abs(entdo) &
+               +abs(detdo)+abs(entupk)+abs(entdoj)+abs(detupk)) )then
              print *,'*********************',i,j,k,totmas,name
              print *,kpbl(i),k22(i),kbcon(i),ktop(i)
              print *,'updr stuff = ',subin,subdown,detup,entup,entupk,detupk
              print *,'dddr stuff = ',entdo,detdo,entdoj
-             CALL wrf_error_fatal ( 'cup_dellas_tr: TOTMAS > 2.e-6')
+             CALL wrf_error_fatal ( 'cup_dellas_tr: TOTMAS imbalance (relative)')
            endif
          endif
          dp=100.*(p_cup(i,k-1)-p_cup(i,k))
