@@ -412,7 +412,7 @@ master_proc_a : &
          !-------------------------------------------
          !...  from degrees to radians
          !-------------------------------------------
-          wrf_lat(1) = xlat(i,j)*d2r
+          wrf_lat(1) = max( xlat(i,j)*d2r, tropo_lat(1) + 1.e-8_r8 )
 
           wrf_lon(1) = xlon(i,j)     
           if( wrf_lon(1)  < 0.0_r8 ) wrf_lon(1) = wrf_lon(1) + 360.0_r8
