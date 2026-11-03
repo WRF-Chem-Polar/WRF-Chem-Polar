@@ -469,10 +469,13 @@ contains
   !   explicit scheme is only CFL-stable for Courant<=1, so the routine
   !   sub-steps internally (nsub) using this column's own V_max.
   !=================================================================
-  subroutine upstream_flux(nz, q, V, rho, dz, dt, dq)
+  subroutine upstream_flux(nz, q, V, rho, dz, dt, dq, flx)
     integer,  intent(in)  :: nz
     real(rk), intent(in)  :: q(nz), V(nz), rho(nz), dz(nz), dt
     real(rk), intent(out) :: dq(nz)
+    ! optional: downward flux out of the bottom of each level, averaged over
+    ! the sub-steps [kg m-2 s-1] (Thompson's precr/preci/precs/precg)
+    real(rk), intent(out), optional :: flx(nz)
     real(rk) :: qw(nz), q0(nz), flux(nz), dqs(nz)
     real(rk) :: Vmax, dzmin, dt_sub, fin, fout
     integer  :: nsub, s, k
@@ -485,10 +488,12 @@ contains
     else
       nsub = 1; dt_sub = dt
     end if
+    if (present(flx)) flx = 0.0_rk
     do s = 1, nsub
       do k = 1, nz
         flux(k) = rho(k)*V(k)*qw(k)
       end do
+      if (present(flx)) flx = flx + flux/real(nsub, rk)
       do k = 1, nz
         fout = flux(k)
         if (k < nz) then
@@ -520,7 +525,8 @@ contains
   !=================================================================
   subroutine mp_microwcp_column(nz, T, P, rho, w, dz, &
        qv,qc,qr,qi,qs,qg, nc,nr,ni, nwfa,nifa, has_aero, dt, &
-       pptrain, pptsnow, pptgraul, pptice)
+       pptrain, pptsnow, pptgraul, pptice, &
+       c2prec, rainprod, evapprod, precr, preci, precs, precg)
     integer,  intent(in)    :: nz
     real(rk), intent(inout) :: T(nz)
     real(rk), intent(in)    :: P(nz), rho(nz), w(nz), dz(nz)
@@ -529,31 +535,71 @@ contains
     logical,  intent(in)    :: has_aero
     real(rk), intent(in)    :: dt
     real(rk), intent(out)   :: pptrain, pptsnow, pptgraul, pptice
+    ! optional WRF-Chem wet-scavenging diagnostics: the same processes as
+    ! Thompson's (module_mp_thompson.F, WRF_CHEM blocks), in the units the
+    ! WRF-Chem routines document (kg kg-1 s-1, as Morrison provides them).
+    ! Thompson's own rainprod/c2prec are per unit volume (kg m-3 s-1), so its
+    ! rainprod and qlsink are rho times these; and its evapprod also counts
+    ! snow/graupel sublimation (used only for resuspension, off in GOCART).
+    !   c2prec    cloud water -> precipitation (autoconversion, accretion,
+    !             riming)                                       [kg kg-1 s-1]
+    !   rainprod  c2prec + cloud ice -> precipitation            [kg kg-1 s-1]
+    !   evapprod  rain evaporation                               [kg kg-1 s-1]
+    !   precr/i/s/g  sedimentation flux out of each level         [kg m-2 s-1]
+    real(rk), intent(out), optional :: c2prec(nz), rainprod(nz), evapprod(nz), &
+                                       precr(nz), preci(nz), precs(nz), precg(nz)
 
     real(rk) :: lam(nz,NCAT), Dm(nz,NCAT), Nb(nz,NCAT), N0s(nz), N0g(nz)
     real(rk) :: dqr_sed(nz), dqi_sed(nz), dqs_sed(nz), dqg_sed(nz)
+    real(rk) :: qc_b(nz), qr_b(nz), qi_b(nz), agg(nz)
+    logical  :: want_scav
 
     if (.not. initialized) call mp_microwcp_init()
 
     ! ---- 1. nucleation ----
     if (has_aero) call nucleation(nz, T,P,rho,w, qv,qc,qi, nc,ni, nwfa,nifa, dt)
 
+    want_scav = present(c2prec) .and. present(rainprod) .and. present(evapprod) &
+                .and. present(precr) .and. present(preci) .and. present(precs) &
+                .and. present(precg)
+
     ! ---- 2. warm phase ----
+    !      warm changes qc only by autoconversion + accretion (both -> rain),
+    !      and qr by those plus rain evaporation, so the scavenging rates
+    !      follow from differencing the state around the call.
     call diagnose(nz,T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb,N0s,N0g)
+    if (want_scav) then
+      qc_b = qc; qr_b = qr
+    end if
     call warm(nz, T,P,rho, qv,qc,qr, nc,nr, Dm, dt)
+    if (want_scav) then
+      c2prec   = max((qc_b-qc)/dt, 0.0_rk)
+      evapprod = max((qc_b-qc)/dt - (qr-qr_b)/dt, 0.0_rk)
+    end if
 
     ! ---- 3. cold phase ----
+    !      (cloud-droplet Bigg freezing makes cloud ICE, not precipitation, so
+    !      only the ice -> snow aggregation is counted, in rainprod)
     call diagnose(nz,T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb,N0s,N0g)
-    call cold(nz, T,P,rho, qv,qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb, dt)
+    call cold(nz, T,P,rho, qv,qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb, dt, agg)
 
     ! ---- 4. collection ----
+    !      qc falls only by riming (-> snow/graupel), qi only by rain-ice
+    !      collection (-> graupel)
     call diagnose(nz,T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb,N0s,N0g)
+    if (want_scav) then
+      qc_b = qc; qi_b = qi
+    end if
     call collection(nz, T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb, dt)
+    if (want_scav) then
+      c2prec   = c2prec + max((qc_b-qc)/dt, 0.0_rk)
+      rainprod = c2prec + agg + max((qi_b-qi)/dt, 0.0_rk)
+    end if
 
     ! ---- 5. sedimentation ----
     call diagnose(nz,T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb,N0s,N0g)
     call sedimentation(nz, rho,dz,dt, qc,qr,qi,qs,qg, nc,nr,ni, lam, &
-                       dqr_sed,dqi_sed,dqs_sed,dqg_sed)
+                       dqr_sed,dqi_sed,dqs_sed,dqg_sed, precr,preci,precs,precg)
 
     ! ---- 6. saturation adjustment ----
     call saturation_adjustment(nz, T,P, qv,qc,qi,qs,qg, nc)
@@ -810,11 +856,13 @@ contains
   !       (active only -8..-3 C with cloud present).
   !     - melting: snow/graupel -> rain above 0 C (cools).
   !-----------------------------------------------------------------
-  subroutine cold(nz, T,P,rho, qv,qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb, dt)
+  subroutine cold(nz, T,P,rho, qv,qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb, dt, agg)
     integer,  intent(in)    :: nz
     real(rk), intent(in)    :: P(nz),rho(nz),lam(nz,NCAT),Dm(nz,NCAT),Nb(nz,NCAT),dt
     real(rk), intent(inout) :: T(nz),qv(nz),qc(nz),qr(nz),qi(nz),qs(nz),qg(nz)
     real(rk), intent(inout) :: nc(nz),nr(nz),ni(nz)
+    ! ice -> snow aggregation rate actually applied [kg kg-1 s-1] (wet scavenging)
+    real(rk), intent(out)   :: agg(nz)
     integer  :: k
     real(rk) :: T0k,qv0,qc0,qr0,qi0,qs0,qg0,nc0,nr0,ni0
     real(rk) :: aqv,aqc,aqr,aqi,aqs,aqg,anc,anr,ani,aT
@@ -832,6 +880,7 @@ contains
       qi0=qi(k); qs0=qs(k); qg0=qg(k); nc0=nc(k); nr0=nr(k); ni0=ni(k)
       aqv=0.0_rk; aqc=0.0_rk; aqr=0.0_rk; aqi=0.0_rk; aqs=0.0_rk
       aqg=0.0_rk; anc=0.0_rk; anr=0.0_rk; ani=0.0_rk; aT=0.0_rk
+      dqs_a=0.0_rk
       ! --- deposition/sublimation on ice/snow/graupel ---
       dqi = dep_rate(qi0,Nb(k,II),Dm(k,II),lam(k,II),qv0,T0k,P(k),rho(k),QI_MIN,dt,II)
       ! sublimating ice loses crystal NUMBER in proportion to mass. This used to
@@ -913,7 +962,9 @@ contains
         aqv=aqv*scal; aqc=aqc*scal; aqr=aqr*scal; aqi=aqi*scal
         aqs=aqs*scal; aqg=aqg*scal; anc=anc*scal
         anr=anr*scal; ani=ani*scal; aT=aT*scal
+        dqs_a=dqs_a*scal
       end if
+      agg(k)=dqs_a
       ! --- apply once ---
       qv(k)=max(qv0+aqv*dt,0.0_rk); qc(k)=max(qc0+aqc*dt,0.0_rk)
       qr(k)=max(qr0+aqr*dt,0.0_rk); qi(k)=max(qi0+aqi*dt,0.0_rk)
@@ -1114,11 +1165,13 @@ contains
   !   routine integrates over the column to get surface precip.
   !-----------------------------------------------------------------
   subroutine sedimentation(nz, rho,dz,dt, qc,qr,qi,qs,qg, nc,nr,ni, lam, &
-                           dqr_sed,dqi_sed,dqs_sed,dqg_sed)
+                           dqr_sed,dqi_sed,dqs_sed,dqg_sed, flr,fli,fls,flg)
     integer,  intent(in)    :: nz
     real(rk), intent(in)    :: rho(nz),dz(nz),dt,lam(nz,NCAT)
     real(rk), intent(inout) :: qc(nz),qr(nz),qi(nz),qs(nz),qg(nz),nc(nz),nr(nz),ni(nz)
     real(rk), intent(out)   :: dqr_sed(nz),dqi_sed(nz),dqs_sed(nz),dqg_sed(nz)
+    ! optional precipitation fluxes out of each level [kg m-2 s-1]
+    real(rk), intent(out), optional :: flr(nz),fli(nz),fls(nz),flg(nz)
     real(rk) :: Vq(nz),Vn(nz),dq(nz),dN(nz),Nbk(nz),dummy(nz)
     integer  :: k
     ! cloud (2-moment)
@@ -1127,18 +1180,18 @@ contains
     Nbk=nc*rho; call upstream_flux(nz,Nbk,Vn,rho,dz,dt,dN); nc=max(nc+dN/rho*dt,0.0_rk)
     ! rain
     do k=1,nz; Vq(k)=fall_speed_q(lam(k,IR),IR); Vn(k)=fall_speed_N(lam(k,IR),IR); end do
-    call upstream_flux(nz,qr,Vq,rho,dz,dt,dqr_sed); qr=max(qr+dqr_sed*dt,0.0_rk)
+    call upstream_flux(nz,qr,Vq,rho,dz,dt,dqr_sed,flr); qr=max(qr+dqr_sed*dt,0.0_rk)
     Nbk=nr*rho; call upstream_flux(nz,Nbk,Vn,rho,dz,dt,dN); nr=max(nr+dN/rho*dt,0.0_rk)
     ! ice
     do k=1,nz; Vq(k)=fall_speed_q(lam(k,II),II); Vn(k)=fall_speed_N(lam(k,II),II); end do
-    call upstream_flux(nz,qi,Vq,rho,dz,dt,dqi_sed); qi=max(qi+dqi_sed*dt,0.0_rk)
+    call upstream_flux(nz,qi,Vq,rho,dz,dt,dqi_sed,fli); qi=max(qi+dqi_sed*dt,0.0_rk)
     Nbk=ni*rho; call upstream_flux(nz,Nbk,Vn,rho,dz,dt,dN); ni=max(ni+dN/rho*dt,0.0_rk)
     ! snow (1-moment)
     do k=1,nz; Vq(k)=fall_speed_q(lam(k,IS),IS); end do
-    call upstream_flux(nz,qs,Vq,rho,dz,dt,dqs_sed); qs=max(qs+dqs_sed*dt,0.0_rk)
+    call upstream_flux(nz,qs,Vq,rho,dz,dt,dqs_sed,fls); qs=max(qs+dqs_sed*dt,0.0_rk)
     ! graupel (1-moment)
     do k=1,nz; Vq(k)=fall_speed_q(lam(k,IG),IG); end do
-    call upstream_flux(nz,qg,Vq,rho,dz,dt,dqg_sed); qg=max(qg+dqg_sed*dt,0.0_rk)
+    call upstream_flux(nz,qg,Vq,rho,dz,dt,dqg_sed,flg); qg=max(qg+dqg_sed*dt,0.0_rk)
   end subroutine sedimentation
 
   !-----------------------------------------------------------------
@@ -1267,6 +1320,8 @@ contains
        RAINNC,RAINNCV, SNOWNC,SNOWNCV, GRAUPELNC,GRAUPELNCV, SR,          &
        refl_10cm, do_radar_ref,                                          &
        re_cloud, re_ice, re_snow, has_reqc, has_reqi, has_reqs,          &
+       wetscav_on, rainprod, evapprod, qlsink,                           &
+       precr, preci, precs, precg,                                       &
        ids,ide, jds,jde, kds,kde,                                        &
        ims,ime, jms,jme, kms,kme,                                        &
        its,ite, jts,jte, kts,kte)
@@ -1290,6 +1345,10 @@ contains
     real, dimension(ims:ime,kms:kme,jms:jme), optional, intent(inout) :: &
                           refl_10cm, re_cloud, re_ice, re_snow
     integer, optional, intent(in) :: do_radar_ref, has_reqc, has_reqi, has_reqs
+    ! ---- optional WRF-Chem wet-scavenging outputs (as Thompson's) ----
+    logical, optional, intent(in) :: wetscav_on
+    real, dimension(ims:ime,kms:kme,jms:jme), optional, intent(inout) :: &
+                          rainprod, evapprod, qlsink, precr, preci, precs, precg
 
     ! ---- locals : DOUBLE precision column work arrays ----
     integer  :: i,j,k, nz, i_end, j_end
@@ -1298,6 +1357,9 @@ contains
     real(rk) :: qv1d(kts:kte),qc1d(kts:kte),qr1d(kts:kte),qi1d(kts:kte),qs1d(kts:kte),qg1d(kts:kte)
     real(rk) :: nc1d(kts:kte),nr1d(kts:kte),ni1d(kts:kte),nwfa1d(kts:kte),nifa1d(kts:kte)
     real(rk) :: re_qc(kts:kte), re_qi(kts:kte), re_qs(kts:kte), dbz(kts:kte)
+    real(rk) :: c2p1d(kts:kte), rp1d(kts:kte), ep1d(kts:kte)
+    real(rk) :: pr1d(kts:kte), pi1d(kts:kte), ps1d(kts:kte), pg1d(kts:kte)
+    logical  :: want_scav
     real(rk) :: pptrain,pptsnow,pptgraul,pptice
     logical  :: has_aero, has_nc, want_refl, want_re
 
@@ -1309,6 +1371,9 @@ contains
     want_refl = present(refl_10cm)
     if (present(do_radar_ref)) want_refl = want_refl .and. (do_radar_ref == 1)
     want_re   = present(re_cloud) .and. present(re_ice) .and. present(re_snow)
+    want_scav = present(rainprod) .and. present(evapprod) .and. present(qlsink) .and. &
+                present(precr) .and. present(preci) .and. present(precs) .and. present(precg)
+    if (present(wetscav_on)) want_scav = want_scav .and. wetscav_on
 
     ! tile loop, clipped to domain interior (Thompson convention)
     i_end = min(ite, ide-1)
@@ -1355,9 +1420,16 @@ contains
         end do
 
         ! ---- advance the column ----
-        call mp_microwcp_column(nz, t1d,p1d,rho,w1d,dz1d, &
-             qv1d,qc1d,qr1d,qi1d,qs1d,qg1d, nc1d,nr1d,ni1d, nwfa1d,nifa1d, &
-             has_aero, dt, pptrain,pptsnow,pptgraul,pptice)
+        if (want_scav) then
+          call mp_microwcp_column(nz, t1d,p1d,rho,w1d,dz1d, &
+               qv1d,qc1d,qr1d,qi1d,qs1d,qg1d, nc1d,nr1d,ni1d, nwfa1d,nifa1d, &
+               has_aero, dt, pptrain,pptsnow,pptgraul,pptice, &
+               c2p1d, rp1d, ep1d, pr1d, pi1d, ps1d, pg1d)
+        else
+          call mp_microwcp_column(nz, t1d,p1d,rho,w1d,dz1d, &
+               qv1d,qc1d,qr1d,qi1d,qs1d,qg1d, nc1d,nr1d,ni1d, nwfa1d,nifa1d, &
+               has_aero, dt, pptrain,pptsnow,pptgraul,pptice)
+        end if
 
         ! ---- guard: abort only if the column produced NaN/Inf (genuine breakage).
         !      Physical soft-bound violations are clamped on write-back below, so a
@@ -1387,6 +1459,25 @@ contains
             nwfa(i,k,j) = max(real(nwfa1d(k)),0.0); nifa(i,k,j) = max(real(nifa1d(k)),0.0)
           end if
         end do
+
+        ! ---- WRF-Chem wet scavenging: the fields Thompson provides, units as
+        !      documented (qlsink = fractional cloud-water loss to precipitation,
+        !      s-1; see mp_microwcp_column for the difference from Thompson) ----
+        if (want_scav) then
+          do k = kts, kte
+            rainprod(i,k,j) = real(rp1d(k))
+            evapprod(i,k,j) = real(ep1d(k))
+            precr(i,k,j)    = real(pr1d(k))
+            preci(i,k,j)    = real(pi1d(k))
+            precs(i,k,j)    = real(ps1d(k))
+            precg(i,k,j)    = real(pg1d(k))
+            if (qc1d(k) > 1.0e-10_rk) then
+              qlsink(i,k,j) = real(min(1.0_rk, max(0.0_rk, c2p1d(k)/qc1d(k))))
+            else
+              qlsink(i,k,j) = 0.0
+            end if
+          end do
+        end if
 
         ! ---- optional diagnostics ----
         if (want_re .or. want_refl) then

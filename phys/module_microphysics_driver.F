@@ -1541,6 +1541,12 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                      REFL_10CM=refl_10cm, DO_RADAR_REF=do_radar_ref, &
                      RE_CLOUD=re_cloud, RE_ICE=re_ice, RE_SNOW=re_snow, &
                      HAS_REQC=has_reqc, HAS_REQI=has_reqi, HAS_REQS=has_reqs, &
+#if ( WRF_CHEM == 1 )
+                     ! fields GOCART/MOSAIC wet scavenging needs (as Thompson)
+                     WETSCAV_ON=config_flags%wetscav_onoff == 1, &
+                     RAINPROD=rainprod, EVAPPROD=evapprod, QLSINK=qlsink, &
+                     PRECR=precr, PRECI=preci, PRECS=precs, PRECG=precg, &
+#endif
                      IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde, &
                      IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme, &
                      ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte)

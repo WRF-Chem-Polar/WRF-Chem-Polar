@@ -2190,6 +2190,24 @@ ENDIF ghg_block
      ELSEIF(config_flags%aci_wrf_opt > 0) THEN
        CALL wrf_error_fatal("chemics_init: aci_wrf_opt and aci_wrfchem_opt cannot be&
        & enabled at the same time")
+     ! MICROWCP only takes NWFA/NIFA from chem (calc_chem_nwfa_nifa) and
+     ! activates them itself. The Abdul-Razzak & Ghan path (opt 1) and the
+     ! transfer of activated MOSAIC aerosol to the cloud-borne phase
+     ! (activate_mosaic_aer, with mixactivate switched off for aci>0) exist only
+     ! for THOMPSONAERO, so these runs would be silently wrong: stop instead.
+     ELSEIF (config_flags%mp_physics == MICROWCP &
+             .AND. config_flags%aci_wrfchem_opt == 1) THEN
+       CALL wrf_error_fatal('chemics_init: MICROWCP supports aci_wrfchem_opt=2 only&
+       & (opt 1, Abdul-Razzak & Ghan activation, is THOMPSONAERO-only)')
+     ELSEIF (config_flags%mp_physics == MICROWCP &
+             .AND. (config_flags%chem_opt == CBMZ_MOSAIC_4BIN_AQ &
+                    .OR. config_flags%chem_opt == CBMZ_MOSAIC_DMS_4BIN_AQ &
+                    .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_AQ_KPP &
+                    .OR. config_flags%chem_opt == MOZART_MOSAIC_4BIN_DMS_AQ_KPP &
+                    .OR. config_flags%chem_opt == CRI_MOSAIC_4BIN_AQ_KPP)) THEN
+       CALL wrf_error_fatal('chemics_init: MICROWCP with aci_wrfchem_opt>0 and MOSAIC _AQ&
+       & chemistry is not supported: no activation to cloud-borne aerosol&
+       & (activate_mosaic_aer is THOMPSONAERO-only)')
      ELSEIF (config_flags%aci_wrfchem_opt == 1 &
              .AND. .NOT. aer_is_mosaic4bin ) THEN
        CALL wrf_error_fatal('chemics_init: aci_wrfchem_opt==1 requires&

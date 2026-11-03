@@ -2456,12 +2456,14 @@
 #endif
 
 !-----------------------------------------------------------------------
-!  grav_settling = 1 must be turned off for mp_physics=28.
+!  grav_settling = 1 must be turned off for mp_physics=28 and 60 (MICROWCP
+!  also sediments cloud droplets itself).
 !-----------------------------------------------------------------------
       oops = 0
       DO i = 1, model_config_rec % max_dom
          IF ( .NOT. model_config_rec % grid_allowed(i) ) CYCLE
-         IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO ) THEN
+         IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO .OR. &
+              model_config_rec%mp_physics(i) .EQ. MICROWCP ) THEN
             IF ( model_config_rec%grav_settling(i) .NE. FOGSETTLING0 ) THEN
                 model_config_rec%grav_settling(i) = 0
                 oops = oops + 1
@@ -2469,7 +2471,7 @@
          END IF
       ENDDO      ! Loop over domains
       IF ( oops .GT. 0 ) THEN
-         wrf_err_message = '--- NOTE: mp_physics == 28, already has gravitational fog settling; resetting grav_settling to 0'
+         wrf_err_message = '--- NOTE: mp_physics == 28 or 60, already has gravitational fog settling; resetting grav_settling to 0'
          CALL wrf_debug ( 1, wrf_err_message )
       END IF
 

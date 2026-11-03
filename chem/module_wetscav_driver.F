@@ -379,7 +379,8 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
    CASE (MOZART_KPP,MOZCART_KPP,T1_MOZCART_KPP,MOZART_MOSAIC_4BIN_KPP)
        CALL wrf_debug(15,'wetscav_driver calling wetscav_mozcart')
        if( config_flags%mp_physics == THOMPSON &
-           .OR. config_flags%mp_physics == THOMPSONAERO) then
+           .OR. config_flags%mp_physics == THOMPSONAERO &
+           .OR. config_flags%mp_physics == MICROWCP) then
          rainrate(:,:,:) = rainprod(:,:,:)
          evaprate(:,:,:) = evapprod(:,:,:)
        elseif( config_flags%mp_physics == WSM6SCHEME ) then
@@ -436,7 +437,8 @@ REAL,  DIMENSION( ims:ime , kms:kme , jms:jme , ntot_amode ),       &
    CASE (MOZART_MOSAIC_4BIN_AQ_KPP, MOZART_MOSAIC_4BIN_DMS_AQ_KPP)
        CALL wrf_debug(15,'wetscav_driver calling mosaic_wetscav_driver')
        if( config_flags%mp_physics == THOMPSON &
-           .OR. config_flags%mp_physics == THOMPSONAERO) then
+           .OR. config_flags%mp_physics == THOMPSONAERO &
+           .OR. config_flags%mp_physics == MICROWCP) then
          rainrate(:,:,:) = rainprod(:,:,:)
          evaprate(:,:,:) = evapprod(:,:,:)
        elseif( config_flags%mp_physics == WSM6SCHEME ) then
@@ -495,7 +497,8 @@ CASE (CBMZ_CAM_MAM3_NOAQ,CBMZ_CAM_MAM3_AQ,CBMZ_CAM_MAM7_NOAQ,CBMZ_CAM_MAM7_AQ)
    CASE(GOCART_SIMPLE, GOCARTRADM2, GOCARTRACM_KPP)
      ! Additional simple scavenging for GOCART aerosols
      if( config_flags%mp_physics == THOMPSON &
-         .OR. config_flags%mp_physics == THOMPSONAERO) then
+         .OR. config_flags%mp_physics == THOMPSONAERO &
+         .OR. config_flags%mp_physics == MICROWCP) then
        rainrate(:,:,:) = rainprod(:,:,:)
        evaprate(:,:,:) = evapprod(:,:,:)
      elseif( config_flags%mp_physics == WSM6SCHEME ) then
