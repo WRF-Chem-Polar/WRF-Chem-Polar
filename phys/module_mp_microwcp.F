@@ -160,8 +160,8 @@ module module_mp_microwcp
   ! which is what lets observed supercooled liquid survive to -25 C.
   real(rk), parameter :: B_BIGG = 100.0_rk     ! freezing rate per volume [m-3 s-1]
   real(rk), parameter :: A_BIGG = 0.66_rk      ! supercooling exponent    [K-1]
-  real(rk), parameter :: G3_C   = 120.0_rk     ! gamma(mu+4)/gamma(mu+1), cloud mu=3
-  real(rk), parameter :: G6_C   = 60480.0_rk   ! gamma(mu+7)/gamma(mu+1), cloud mu=3
+  ! (the cloud-PSD moments <D^3>, <D^6> use the N_c-dependent droplet shape,
+  !  see cloud_nu and the CL_* tables)
 
   ! ---- snow capacitance (see dep_rate use in `cold`) ---------------
   ! Snow is not a sphere: its capacitance runs from ~0.15*D for the warm
@@ -195,6 +195,20 @@ module module_mp_microwcp
   integer,  parameter :: BR_NU_MIN = 2, BR_NU_MAX = 15
   real(rk) :: BR_G2_G1(BR_NU_MIN:BR_NU_MAX)    ! gamma(nu+4)/gamma(nu+1)
   real(rk) :: BR_G3_G2(BR_NU_MIN:BR_NU_MAX)    ! gamma(nu+7)/gamma(nu+4)
+
+  ! ---- cloud-droplet shape: N_c-dependent, as in Thompson ----------
+  ! Cloud droplets do NOT use the fixed mu(IC): like Thompson (nu_c =
+  ! MIN(15, NINT(1000.E6/Nc)+2), module_mp_thompson.F) the gamma shape is an
+  ! integer 2..15 set by the droplet number (cloud_nu), narrow in clean air.
+  ! EVERY droplet process uses it: slope, mean diameter, fall speeds, Bigg
+  ! freezing, effective radius, reflectivity and the B-R autoconversion. The
+  ! former fixed mu = 3 was broader than observed maritime cloud (Martin et al.
+  ! 1994, k ~ 0.8 <-> nu ~ 12): r_e ~13% too large and Bigg freezing ~2.4x too
+  ! fast at given qc, Nc, and it disagreed with the autoconversion's nu_c.
+  ! Tables over nu (BR_G2_G1 = gamma(nu+4)/gamma(nu+1) above is also used):
+  real(rk) :: CL_GQ(BR_NU_MIN:BR_NU_MAX)   ! gamma(nu+bm+bv+1)/gamma(nu+bm+1): mass-weighted V
+  real(rk) :: CL_GN(BR_NU_MIN:BR_NU_MAX)   ! gamma(nu+bv+1)/gamma(nu+1):       number-weighted V
+  real(rk) :: CL_G7_G1(BR_NU_MIN:BR_NU_MAX) ! gamma(nu+7)/gamma(nu+1):          <D^6> lam^6
   ! Robustness: max latent-heat T change a single process may apply per step [K].
   ! If a process would heat/cool a cell by more than this, its WHOLE tendency
   ! (mass + heat) is scaled back by the same factor -> conserving; the residual
@@ -211,6 +225,7 @@ module module_mp_microwcp
 
   ! ---- PSD mass-diameter params: m = am*D^bm,  shape mu ----------
   !                          cloud      rain     ice      snow     graupel
+  ! cloud entry NOT used: the droplet shape is N_c-dependent (cloud_nu)
   real(rk), parameter :: mu(NCAT) = (/ 3.0_rk, 0.0_rk, 0.0_rk, 0.0_rk, 0.0_rk /)
   real(rk), parameter :: bm(NCAT) = (/ 3.0_rk, 3.0_rk, 3.0_rk, 2.0_rk, 3.0_rk /)
   real(rk), parameter :: am(NCAT) = (/ PI/6.0_rk*RHO_W, PI/6.0_rk*RHO_W, &
@@ -263,6 +278,9 @@ contains
     do n = BR_NU_MIN, BR_NU_MAX
       BR_G2_G1(n) = gamma(real(n,rk)+4.0_rk) / gamma(real(n,rk)+1.0_rk)
       BR_G3_G2(n) = gamma(real(n,rk)+7.0_rk) / gamma(real(n,rk)+4.0_rk)
+      CL_GQ(n)    = gamma(real(n,rk)+bm(IC)+bv(IC)+1.0_rk) / gamma(real(n,rk)+bm(IC)+1.0_rk)
+      CL_GN(n)    = gamma(real(n,rk)+bv(IC)+1.0_rk) / gamma(real(n,rk)+1.0_rk)
+      CL_G7_G1(n) = gamma(real(n,rk)+7.0_rk) / gamma(real(n,rk)+1.0_rk)
     end do
     do c = 1, NCAT
       Gb1(c) = gamma(mu(c) + bm(c) + 1.0_rk)
@@ -395,6 +413,27 @@ contains
     fall_speed_N = av(c)*GN(c) / lam**bv(c)
   end function
 
+  ! Cloud-droplet gamma shape nu_c (integer 2..15) from the bulk droplet
+  ! number [m-3], exactly as Thompson: NINT(1000e6/Nc)+2, capped at 15, with Nc
+  ! floored at 1 m-3. The single definition every droplet process uses.
+  elemental integer function cloud_nu(nc_bulk)
+    real(rk), intent(in) :: nc_bulk
+    cloud_nu = min(BR_NU_MAX, max(BR_NU_MIN, nint(1000.0e6_rk/max(nc_bulk,1.0_rk)) + 2))
+  end function
+
+  ! Cloud-droplet bulk fall speeds [m s-1] for shape nu (mass- and number-weighted).
+  elemental real(rk) function cloud_vq(lam, nu)
+    real(rk), intent(in) :: lam
+    integer,  intent(in) :: nu
+    cloud_vq = av(IC)*CL_GQ(nu) / lam**bv(IC)
+  end function
+
+  elemental real(rk) function cloud_vn(lam, nu)
+    real(rk), intent(in) :: lam
+    integer,  intent(in) :: nu
+    cloud_vn = av(IC)*CL_GN(nu) / lam**bv(IC)
+  end function
+
   !-----------------------------------------------------------------
   ! diagnose
   !   Given the prognostic fields of one column, compute the PSD
@@ -413,12 +452,17 @@ contains
     real(rk), intent(in)  :: nc(nz),nr(nz),ni(nz)
     real(rk), intent(out) :: lam(nz,NCAT), Dm(nz,NCAT), Nbulk(nz,NCAT)
     real(rk), intent(out) :: N0s(nz), N0g(nz)
-    integer  :: k
+    integer  :: k, nu
     real(rk) :: q, Nb, ratio, N0
 
     do k = 1, nz
       ! ---- 2-moment: cloud, rain, ice  (lam from N_bulk, q) ----
-      call lam_from_Nq(qc(k), nc(k)*rho(k), rho(k), IC, lam(k,IC), Nbulk(k,IC))
+      ! cloud: shape nu_c from the droplet number (cloud_nu), so
+      ! lam = [am*N*gamma(nu+4)/(rho*q*gamma(nu+1))]**(1/3)
+      nu = cloud_nu(nc(k)*rho(k))
+      Nbulk(k,IC) = nc(k)*rho(k)
+      lam(k,IC) = (am(IC)*max(nc(k)*rho(k), N_MIN)*BR_G2_G1(nu) &
+                   /(rho(k)*max(qc(k), Q_MIN)))**(1.0_rk/bm(IC))
       call lam_from_Nq(qr(k), nr(k)*rho(k), rho(k), IR, lam(k,IR), Nbulk(k,IR))
       call lam_from_Nq(qi(k), ni(k)*rho(k), rho(k), II, lam(k,II), Nbulk(k,II))
       ! ---- 1-moment: snow, graupel  (N0 first, then lam, then N) ----
@@ -429,7 +473,7 @@ contains
       Nbulk(k,IS) = N0s(k)*G1(IS)/lam(k,IS)**(mu(IS)+1.0_rk)
       Nbulk(k,IG) = N0g(k)*G1(IG)/lam(k,IG)**(mu(IG)+1.0_rk)
       ! ---- mean diameters ----
-      Dm(k,IC) = (mu(IC)+bm(IC)+1.0_rk)/lam(k,IC)
+      Dm(k,IC) = (real(nu,rk)+bm(IC)+1.0_rk)/lam(k,IC)
       Dm(k,IR) = (mu(IR)+bm(IR)+1.0_rk)/lam(k,IR)
       Dm(k,II) = (mu(II)+bm(II)+1.0_rk)/lam(k,II)
       Dm(k,IS) = (mu(IS)+bm(IS)+1.0_rk)/lam(k,IS)
@@ -783,7 +827,7 @@ contains
         rc_s    = max(rc, 1.0e-12_rk)
         nc_bulk = max(nc0*rho(k), 1.0_rk)
         ! droplet spectral shape: integer 2..15, gamma ratios from the table
-        nu_c = min(BR_NU_MAX, max(BR_NU_MIN, nint(1000.0e6_rk/nc_bulk) + 2))
+        nu_c = cloud_nu(nc_bulk)
         g2g1 = BR_G2_G1(nu_c)
         g3g2 = BR_G3_G2(nu_c)
         lamc = (nc_bulk*am_r*g2g1/rc_s)**(1.0_rk/3.0_rk)
@@ -870,6 +914,7 @@ contains
     real(rk) :: fT,rim,coeff,rate_s,rate_g
     real(rk) :: C_bigg, dTf, E_agg, scal
     real(rk) :: C_snow, fac_b, dqc_f, dNc_f, lamc
+    integer  :: nu_b
     ! Bigg immersion freezing of rain -> graupel, bulk-integrated over the
     ! rain PSD: dqr/dt = C_bigg*(exp(0.66*dT)-1)*nr*Dm^6.  The Dm^6 (6th moment)
     ! makes small drizzle drops freeze slowly so supercooled rain persists.
@@ -907,7 +952,7 @@ contains
         anr=anr - nr0*dqr_f/max(qr0,Q_MIN); aT=aT+L_FUS/CP*dqr_f
       end if
       ! --- Bigg (1953) immersion freezing of CLOUD DROPLETS -> ice ---
-      !     Integrated over the cloud gamma PSD (mu=3):
+      !     Integrated over the cloud gamma PSD (shape nu_c = cloud_nu):
       !       dN/dt = B (exp(a dT)-1) (pi/6)   <D^3> N
       !       dq/dt = B (exp(a dT)-1) (pi/6)^2 (rho_w/rho) <D^6> N
       !     The D^6 weighting keeps this negligible above ~-25 C and makes it
@@ -917,8 +962,9 @@ contains
         lamc  = max(lam(k,IC), 1.0_rk)
         dTf   = max(T_FREEZE-T0k, 0.0_rk)
         fac_b = B_BIGG*(exp(A_BIGG*dTf)-1.0_rk)
-        dqc_f = fac_b*(PI/6.0_rk)**2*(RHO_W/rho(k))*(nc0*rho(k))*G6_C/lamc**6
-        dNc_f = fac_b*(PI/6.0_rk)*(nc0*rho(k))*G3_C/lamc**3/rho(k)
+        nu_b  = cloud_nu(nc0*rho(k))
+        dqc_f = fac_b*(PI/6.0_rk)**2*(RHO_W/rho(k))*(nc0*rho(k))*CL_G7_G1(nu_b)/lamc**6
+        dNc_f = fac_b*(PI/6.0_rk)*(nc0*rho(k))*BR_G2_G1(nu_b)/lamc**3/rho(k)
         dqc_f = min(dqc_f, qc0/dt)
         dNc_f = min(dNc_f, nc0/dt)
         aqc=aqc-dqc_f; aqi=aqi+dqc_f
@@ -1027,7 +1073,7 @@ contains
     integer,  intent(in)    :: nz
     real(rk), intent(in)    :: rho(nz),lam(nz,NCAT),Dm(nz,NCAT),Nb(nz,NCAT),dt
     real(rk), intent(inout) :: T(nz),qc(nz),qr(nz),qi(nz),qs(nz),qg(nz),nc(nz),nr(nz),ni(nz)
-    integer  :: k
+    integer  :: k, nu_k
     real(rk) :: T0k,qc0,qr0,qi0,qs0,qg0,nc0,nr0,ni0
     real(rk) :: aqc,aqr,aqi,aqs,aqg,anc,anr,ani,aT
     real(rk) :: Vrel,rate,rate_qi,rate_qr,scal
@@ -1036,11 +1082,12 @@ contains
       if (T(k) >= T_FREEZE) cycle
       T0k=T(k); qc0=qc(k); qr0=qr(k); qi0=qi(k); qs0=qs(k); qg0=qg(k)
       nc0=nc(k); nr0=nr(k); ni0=ni(k)
+      nu_k = cloud_nu(nc0*rho(k))            ! droplet shape for the cloud fall speed
       aqc=0.0_rk; aqr=0.0_rk; aqi=0.0_rk; aqs=0.0_rk; aqg=0.0_rk
       anc=0.0_rk; anr=0.0_rk; ani=0.0_rk; aT=0.0_rk
       ! --- 1. cloud-ice riming: qc+qi -> qs ---
       if (qc0 > QC_MIN .and. qi0 > QI_MIN) then
-        Vrel = abs(fall_speed_q(lam(k,II),II)-fall_speed_q(lam(k,IC),IC))
+        Vrel = abs(fall_speed_q(lam(k,II),II)-cloud_vq(lam(k,IC),nu_k))
         rate = min(max(0.7_rk*(PI/4.0_rk)*Dm(k,II)**2*Nb(k,II)*Vrel*qc0,0.0_rk), qc0/dt)
         anc=anc + nc0*(-rate)/max(qc0,Q_MIN)
         ani=ani + ni0*(-rate)/max(qi0,Q_MIN)
@@ -1052,7 +1099,7 @@ contains
       !     so small polar droplets are no longer rimed out of the cloud.
       if (qc0 > QC_MIN .and. qs0 > QS_MIN) then
         vts  = fall_speed_q(lam(k,IS),IS)
-        Vrel = abs(vts-fall_speed_q(lam(k,IC),IC))
+        Vrel = abs(vts-cloud_vq(lam(k,IC),nu_k))
         E_cs = Ef_snow_cloud(Dm(k,IC), Dm(k,IS), vts)
         rate = min(max(E_cs*(PI/4.0_rk)*Dm(k,IS)**2*Nb(k,IS)*Vrel*qc0,0.0_rk), qc0/dt)
         anc=anc + nc0*(-rate)/max(qc0,Q_MIN)
@@ -1062,7 +1109,7 @@ contains
       !     Stokes-number efficiency (zero below St = 0.4) rather than 1.0.
       if (qc0 > QC_MIN .and. qg0 > QG_MIN) then
         vtg  = fall_speed_q(lam(k,IG),IG)
-        Vrel = abs(vtg-fall_speed_q(lam(k,IC),IC))
+        Vrel = abs(vtg-cloud_vq(lam(k,IC),nu_k))
         E_cg = Ef_graupel_cloud(Dm(k,IC), Dm(k,IG), vtg)
         rate = min(max(E_cg*(PI/4.0_rk)*Dm(k,IG)**2*Nb(k,IG)*Vrel*qc0,0.0_rk), qc0/dt)
         anc=anc + nc0*(-rate)/max(qc0,Q_MIN)
@@ -1173,9 +1220,12 @@ contains
     ! optional precipitation fluxes out of each level [kg m-2 s-1]
     real(rk), intent(out), optional :: flr(nz),fli(nz),fls(nz),flg(nz)
     real(rk) :: Vq(nz),Vn(nz),dq(nz),dN(nz),Nbk(nz),dummy(nz)
-    integer  :: k
+    integer  :: k, nu
     ! cloud (2-moment)
-    do k=1,nz; Vq(k)=fall_speed_q(lam(k,IC),IC); Vn(k)=fall_speed_N(lam(k,IC),IC); end do
+    do k=1,nz
+      nu = cloud_nu(nc(k)*rho(k))
+      Vq(k)=cloud_vq(lam(k,IC),nu); Vn(k)=cloud_vn(lam(k,IC),nu)
+    end do
     call upstream_flux(nz,qc,Vq,rho,dz,dt,dq); qc=max(qc+dq*dt,0.0_rk)
     Nbk=nc*rho; call upstream_flux(nz,Nbk,Vn,rho,dz,dt,dN); nc=max(nc+dN/rho*dt,0.0_rk)
     ! rain
@@ -1264,13 +1314,14 @@ contains
     real(rk), intent(out) :: re_qc(nz),re_qi(nz),re_qs(nz),dbz(nz)
     real(rk) :: lam(nz,NCAT),Dm(nz,NCAT),Nb(nz,NCAT),N0s(nz),N0g(nz)
     real(rk) :: ze
-    integer  :: k
+    integer  :: k, nu
     call diagnose(nz,T,rho, qc,qr,qi,qs,qg, nc,nr,ni, lam,Dm,Nb,N0s,N0g)
     do k = 1, nz
-      re_qc(k) = min(max((mu(IC)+3.0_rk)/(2.0_rk*lam(k,IC)), REQC_MIN), REQC_MAX)
+      nu = cloud_nu(nc(k)*rho(k))
+      re_qc(k) = min(max((real(nu,rk)+3.0_rk)/(2.0_rk*lam(k,IC)), REQC_MIN), REQC_MAX)
       re_qi(k) = min(max((mu(II)+3.0_rk)/(2.0_rk*lam(k,II)), REQI_MIN), REQI_MAX)
       re_qs(k) = min(max((mu(IS)+3.0_rk)/(2.0_rk*lam(k,IS)), REQS_MIN), REQS_MAX)
-      ze = ze_cat(Nb(k,IC),lam(k,IC),IC,.true.)  &
+      ze = 1.0e18_rk*Nb(k,IC)*CL_G7_G1(nu)/lam(k,IC)**6  &
          + ze_cat(Nb(k,IR),lam(k,IR),IR,.true.)  &
          + ze_cat(Nb(k,II),lam(k,II),II,.false.) &
          + ze_cat(Nb(k,IS),lam(k,IS),IS,.false.) &
