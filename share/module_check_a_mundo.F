@@ -2456,12 +2456,14 @@
 #endif
 
 !-----------------------------------------------------------------------
-!  grav_settling = 1 must be turned off for mp_physics=28.
+!  grav_settling = 1 must be turned off for mp_physics=28 and 60 (MICROWCP
+!  also sediments cloud droplets itself).
 !-----------------------------------------------------------------------
       oops = 0
       DO i = 1, model_config_rec % max_dom
          IF ( .NOT. model_config_rec % grid_allowed(i) ) CYCLE
-         IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO ) THEN
+         IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO .OR. &
+              model_config_rec%mp_physics(i) .EQ. MICROWCP ) THEN
             IF ( model_config_rec%grav_settling(i) .NE. FOGSETTLING0 ) THEN
                 model_config_rec%grav_settling(i) = 0
                 oops = oops + 1
@@ -2469,7 +2471,7 @@
          END IF
       ENDDO      ! Loop over domains
       IF ( oops .GT. 0 ) THEN
-         wrf_err_message = '--- NOTE: mp_physics == 28, already has gravitational fog settling; resetting grav_settling to 0'
+         wrf_err_message = '--- NOTE: mp_physics == 28 or 60, already has gravitational fog settling; resetting grav_settling to 0'
          CALL wrf_debug ( 1, wrf_err_message )
       END IF
 
@@ -2479,7 +2481,8 @@
       oops = 0
       DO i = 1, model_config_rec % max_dom
          IF ( .NOT. model_config_rec % grid_allowed(i) ) CYCLE
-         IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO ) THEN
+         IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO .OR. &
+              model_config_rec%mp_physics(i) .EQ. MICROWCP ) THEN
             IF ( (model_config_rec%use_aero_icbc .OR. model_config_rec%use_rap_aero_icbc) &
                                       .AND. model_config_rec%scalar_pblmix(i) .NE. 1 ) THEN
                 model_config_rec%scalar_pblmix(i) = 1
@@ -2511,10 +2514,11 @@
       END IF
 
 !-----------------------------------------------------------------------
-!  Set aer_init_opt for Thompson-MP-Aero (mp_physics=28)
+!  Set aer_init_opt for Thompson-MP-Aero (mp_physics=28) and microWCP (60)
 !-----------------------------------------------------------------------
      DO i = 1, model_config_rec % max_dom
-       IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO ) THEN
+       IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO .OR. &
+            model_config_rec%mp_physics(i) .EQ. MICROWCP ) THEN
          IF ( model_config_rec%use_aero_icbc ) THEN
            model_config_rec%aer_init_opt = 1
          ELSE IF ( model_config_rec%use_rap_aero_icbc ) THEN
@@ -2527,9 +2531,10 @@
 !  Check if qna_update=0 when aer_init_opt>1 for Thompson-MP-Aero (mp_physics=28)
 !-----------------------------------------------------------------------
      DO i = 1, model_config_rec % max_dom
-       IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO ) THEN
+       IF ( model_config_rec%mp_physics(i) .EQ. THOMPSONAERO .OR. &
+            model_config_rec%mp_physics(i) .EQ. MICROWCP ) THEN
          IF ( model_config_rec%aer_init_opt .GT. 1 .and. model_config_rec%qna_update .EQ. 0 ) THEN
-           wrf_err_message = '--- ERROR: Time-varying sfc aerosol emissions not set for mp_physics=28 '
+           wrf_err_message = '--- ERROR: Time-varying sfc aerosol emissions not set for mp_physics=28/60 '
            CALL wrf_debug ( 0, TRIM( wrf_err_message ) )
            wrf_err_message = '--- ERROR: Please set qna_update=1 and control through auxinput17 options '
            CALL wrf_debug ( 0, TRIM( wrf_err_message ) )
